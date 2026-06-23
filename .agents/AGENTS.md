@@ -15,6 +15,7 @@ CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera
 
 - Trabajar por SDD: escribir spec detallada antes de implementar una epica.
 - Congelar interfaz del contrato antes de construir pantallas dependientes del ABI.
+- Si se hacen commits, no incluir `Co-authored-by:` ni ningun trailer de coautoria.
 - No agregar, adjuntar ni sugerir tests.
 - No ejecutar validaciones frontend: build, lint, e2e, Playwright o audit de `frontend`, salvo pedido explicito del usuario en ese turno.
 - No commitear secretos. Usar `.env` local y mantener `.env.example`.

@@ -59,6 +59,8 @@ npm run frontend:dev
 
 No agregar, adjuntar ni proponer tests. Los agentes tampoco deben ejecutar validaciones a nivel frontend, incluyendo `npm run frontend:build`, lint, e2e, Playwright o audits del paquete `frontend`, salvo que el usuario lo pida explicitamente en ese turno.
 
+Si un agente crea commits, no debe agregar trailers de coautoria. Queda prohibido incluir lineas como `Co-authored-by:` o variantes similares en los mensajes de commit.
+
 ## Flujo SDD recomendado
 
 1. Tomar una epica de `.agents/backlog.md`.

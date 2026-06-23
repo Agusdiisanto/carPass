@@ -32,3 +32,4 @@ Si una pantalla depende del contrato, primero estabilizar ABI y eventos.
 - No agregar, adjuntar ni sugerir tests.
 - No pedir ni ejecutar validaciones frontend.
 - No usar build, lint, e2e, Playwright ni audit de `frontend` como cierre de tarea salvo pedido explicito del usuario.
+- Si se hacen commits, no incluir `Co-authored-by:` ni ningun trailer de coautoria.

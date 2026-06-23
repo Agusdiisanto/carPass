@@ -40,6 +40,7 @@ npm audit --audit-level=high
 
 - Do not commit secrets.
 - Keep `.env` local and update `.env.example` when variables change.
+- Do not include commit co-author trailers. Commit messages must not contain `Co-authored-by:` or similar co-author lines.
 - Do not add, attach, scaffold or propose tests.
 - Do not run frontend validations: no frontend build, lint, e2e, Playwright or frontend audit unless the user explicitly asks in the current turn.
 - Write the SDD before implementation.

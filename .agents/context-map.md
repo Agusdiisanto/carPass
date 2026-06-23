@@ -30,3 +30,5 @@
 ## User Constraint
 
 Do not add tests. Do not run frontend validation commands unless the user explicitly asks in the current turn.
+
+Commit messages must not include `Co-authored-by:` or any co-author trailer.

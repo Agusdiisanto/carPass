@@ -23,3 +23,7 @@ npm audit --audit-level=high
 ## Reporting
 
 State exactly what ran and whether it passed. If a command cannot run, include the command and the blocking error.
+
+## Commit Messages
+
+If a commit is created, do not include `Co-authored-by:` or any co-author trailer. If commit metadata is reviewed, confirm the created commit message is free of co-author trailers.
