@@ -18,6 +18,7 @@ contract CarPass is ERC721, AccessControl {
     bytes32 public constant REGISTRADOR_ROLE   = keccak256("REGISTRADOR_ROLE");
     bytes32 public constant MECANICO_ROLE      = keccak256("MECANICO_ROLE");
     bytes32 public constant INSPECTOR_VTV_ROLE = keccak256("INSPECTOR_VTV_ROLE");
+    bytes32 public constant ASEGURADORA_ROLE   = keccak256("ASEGURADORA_ROLE");
 
     // -------------------------------------------------------------------------
     // Enums
@@ -95,6 +96,10 @@ contract CarPass is ERC721, AccessControl {
     mapping(uint256 => RegistroVTV[])       private _vtv;
     mapping(uint256 => SelloEstado)         private _sellos;
 
+    // Timestamp de la última revocación de cualquier rol (0 = nunca revocada).
+    // No se resetea si el rol es re-otorgado — marca histórica permanente.
+    mapping(address => uint256) public revocadoEn;
+
     // -------------------------------------------------------------------------
     // Eventos
     // -------------------------------------------------------------------------
@@ -129,6 +134,14 @@ contract CarPass is ERC721, AccessControl {
         SelloEstado         nuevoEstado
     );
 
+    // Emitido cuando se revoca un rol de una wallet.
+    // Complementa RoleRevoked de OZ agregando block.timestamp para trazabilidad on-chain.
+    event WalletRevocada(
+        address indexed wallet,
+        bytes32 indexed rol,
+        uint256         timestamp
+    );
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -136,6 +149,32 @@ contract CarPass is ERC721, AccessControl {
     constructor() ERC721("CarPass", "CPASS") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(REGISTRADOR_ROLE,   msg.sender);
+    }
+
+    // -------------------------------------------------------------------------
+    // Control de acceso — revocación con trazabilidad
+    // -------------------------------------------------------------------------
+
+    /**
+     * @notice Revoca `role` de `account` y registra la revocación on-chain.
+     * @dev Extiende OZ revokeRole: setea revocadoEn y emite WalletRevocada.
+     *      El historial de registros escritos por `account` queda inmutable.
+     */
+    function revokeRole(bytes32 role, address account) public override {
+        bool hadRole = hasRole(role, account);
+        super.revokeRole(role, account);
+        if (hadRole) {
+            revocadoEn[account] = block.timestamp;
+            emit WalletRevocada(account, role, block.timestamp);
+        }
+    }
+
+    /**
+     * @notice Devuelve true si la wallet tuvo al menos un rol revocado alguna vez.
+     * @dev Usar en el frontend para mostrar advertencia sobre registros del actor.
+     */
+    function estaRevocado(address wallet) external view returns (bool) {
+        return revocadoEn[wallet] != 0;
     }
 
     // -------------------------------------------------------------------------
