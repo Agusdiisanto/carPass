@@ -25,9 +25,9 @@ Mint seguro de vehiculos como ERC-721, evitando VIN duplicado y exponiendo busqu
 
 Dependencias: EPIC-02.
 
-## EPIC-04 - Historial tecnico
+## EPIC-04 - Roles
 
-Registrar services, kilometraje, VTV, siniestros y transferencias con eventos inmutables.
+Declarar roles de administrador, concesionaria, taller, aseguradora y VTV; proteger funciones de escritura con AccessControl y conservar historial aunque una wallet sea revocada.
 
 Dependencias: EPIC-02, EPIC-03.
 
@@ -43,11 +43,11 @@ Calcular un sello consultable publicamente segun historial, vigencia de VTV, sin
 
 Dependencias: EPIC-05.
 
-## EPIC-07 - Roles
+## EPIC-07 - Historial tecnico
 
-Ruteo de permisos para admin, taller, verificador, aseguradora y transferencia.
+Registrar services, kilometraje, VTV, siniestros y transferencias con eventos inmutables.
 
-Dependencias: EPIC-02.
+Dependencias: EPIC-02, EPIC-03, EPIC-04.
 
 ## EPIC-08 - Deploy Sepolia
 

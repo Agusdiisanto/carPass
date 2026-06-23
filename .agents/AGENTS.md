@@ -26,9 +26,9 @@ CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera
 
 1. EPIC-02: contrato madre y modelo de dominio.
 2. EPIC-03: mint de vehiculos y VIN.
-3. EPIC-04: hitos tecnicos.
+3. EPIC-04: roles y permisos.
 4. EPIC-05: reglas de consistencia.
 5. EPIC-06: sello de calidad.
-6. EPIC-07: roles y permisos.
+6. EPIC-07: hitos tecnicos.
 7. EPIC-08: deploy Sepolia y ABI estable.
 8. Frontend por roles y consulta publica por QR.

@@ -75,6 +75,7 @@ struct RegistroSiniestro {
     string            descripcion;
     bool              reparado;       // ¿el daño fue reparado?
     uint256           costoEstimado;  // en centavos (uint para evitar decimales)
+    address           declarante;      // msg.sender con REGISTRADOR_ROLE o ASEGURADORA_ROLE
 }
 
 // Registro de una inspección VTV
@@ -136,12 +137,14 @@ CarPass
 | Registrador | `REGISTRADOR_ROLE` | Concesionarias, admin | `registrarVehiculo`, `agregarSiniestro` |
 | Mecánico | `MECANICO_ROLE` | Talleres autorizados | `agregarService` |
 | Inspector VTV | `INSPECTOR_VTV_ROLE` | Plantas verificadoras habilitadas | `agregarVTV` |
+| Aseguradora | `ASEGURADORA_ROLE` | Compañías de seguros | `agregarSiniestro` |
 
 **Constantes de rol:**
 ```solidity
 bytes32 public constant REGISTRADOR_ROLE   = keccak256("REGISTRADOR_ROLE");
 bytes32 public constant MECANICO_ROLE      = keccak256("MECANICO_ROLE");
 bytes32 public constant INSPECTOR_VTV_ROLE = keccak256("INSPECTOR_VTV_ROLE");
+bytes32 public constant ASEGURADORA_ROLE   = keccak256("ASEGURADORA_ROLE");
 ```
 
 ---
@@ -191,11 +194,11 @@ function agregarService(uint256 tokenId, RegistroService calldata registro)
 
 /**
  * @notice Agrega un siniestro al historial del vehículo.
- * @dev Solo REGISTRADOR_ROLE. Puede disparar recálculo de sello.
+ * @dev Solo REGISTRADOR_ROLE o ASEGURADORA_ROLE. Puede disparar recálculo de sello.
  */
 function agregarSiniestro(uint256 tokenId, RegistroSiniestro calldata registro)
     external
-    onlyRole(REGISTRADOR_ROLE);
+    soloRegistradorOAseguradora;
 
 /**
  * @notice Agrega un resultado de inspección VTV.
@@ -310,4 +313,4 @@ event SelloActualizado(
 |-------------|---------|-----|
 | OpenZeppelin Contracts | ^5.0.0 | ERC721, AccessControl |
 | Solidity | ^0.8.20 | Compilador |
-| Hardhat o Foundry | — | Toolchain de desarrollo y tests |
+| Hardhat | — | Toolchain de desarrollo, compilación y deploy |

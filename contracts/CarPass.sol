@@ -77,6 +77,7 @@ contract CarPass is ERC721, AccessControl {
         string            descripcion;
         bool              reparado;
         uint256           costoEstimado;
+        address           declarante;    // msg.sender al momento de la carga (REGISTRADOR_ROLE o ASEGURADORA_ROLE)
     }
 
     struct RegistroVTV {
@@ -141,6 +142,17 @@ contract CarPass is ERC721, AccessControl {
         bytes32 indexed rol,
         uint256         timestamp
     );
+
+    // -------------------------------------------------------------------------
+    // Modifiers
+    // -------------------------------------------------------------------------
+
+    modifier soloRegistradorOAseguradora() {
+        if (!hasRole(REGISTRADOR_ROLE, msg.sender) && !hasRole(ASEGURADORA_ROLE, msg.sender)) {
+            revert AccessControlUnauthorizedAccount(msg.sender, REGISTRADOR_ROLE);
+        }
+        _;
+    }
 
     // -------------------------------------------------------------------------
     // Constructor
@@ -259,7 +271,7 @@ contract CarPass is ERC721, AccessControl {
      */
     function agregarSiniestro(uint256 tokenId, RegistroSiniestro calldata registro)
         external
-        onlyRole(REGISTRADOR_ROLE)
+        soloRegistradorOAseguradora
     {
         if (_ownerOf(tokenId) == address(0)) {
             revert VehiculoNoEncontrado(tokenId);
@@ -267,6 +279,7 @@ contract CarPass is ERC721, AccessControl {
 
         RegistroSiniestro memory nuevoRegistro = registro;
         nuevoRegistro.timestamp = block.timestamp;
+        nuevoRegistro.declarante = msg.sender;
 
         _siniestros[tokenId].push(nuevoRegistro);
 
