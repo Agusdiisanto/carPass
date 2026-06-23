@@ -57,7 +57,6 @@ struct VehiculoInfo {
     string  modelo;
     uint16  anio;
     string  color;
-    address propietario;  // dueño registral al momento del alta
 }
 
 // Registro de un service realizado
@@ -170,9 +169,10 @@ Todas las escrituras son append-only; no hay función que modifique ni elimine u
  * @notice Registra un vehículo nuevo y acuña su NFT.
  * @dev Deriva tokenId del VIN con keccak256. Revierte si el VIN ya existe.
  * @param info  Datos del vehículo a registrar.
+ * @param propietarioInicial  Direccion que recibira el pasaporte digital.
  * @return tokenId  Identificador del token acuñado.
  */
-function registrarVehiculo(VehiculoInfo calldata info)
+function registrarVehiculo(VehiculoInfo calldata info, address propietarioInicial)
     external
     onlyRole(REGISTRADOR_ROLE)
     returns (uint256 tokenId);
@@ -255,10 +255,11 @@ function vinToTokenId(string calldata vin) external pure returns (uint256);
 
 ```solidity
 // Emitido al registrar un vehículo nuevo
-event VehiculoRegistrado(
+event VehicleMinted(
     uint256 indexed tokenId,
-    string          vin,
-    address indexed propietario
+    string vin,
+    address indexed owner,
+    address indexed registrar
 );
 
 // Emitido al agregar un service

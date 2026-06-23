@@ -42,16 +42,24 @@ contract CarPass is ERC721, AccessControl {
     }
 
     // -------------------------------------------------------------------------
+    // Errores
+    // -------------------------------------------------------------------------
+
+    error VehiculoYaRegistrado(string vin);
+    error VehiculoNoEncontrado(uint256 tokenId);
+    error VinInvalido();
+    error TransferenciaSoloPropietario(address caller, uint256 tokenId);
+
+    // -------------------------------------------------------------------------
     // Structs
     // -------------------------------------------------------------------------
 
     struct VehiculoInfo {
-        string  vin;
-        string  marca;
-        string  modelo;
-        uint16  anio;
-        string  color;
-        address propietario;
+        string vin;
+        string marca;
+        string modelo;
+        uint16 anio;
+        string color;
     }
 
     struct RegistroService {
@@ -91,10 +99,11 @@ contract CarPass is ERC721, AccessControl {
     // Eventos
     // -------------------------------------------------------------------------
 
-    event VehiculoRegistrado(
+    event VehicleMinted(
         uint256 indexed tokenId,
-        string          vin,
-        address indexed propietario
+        string vin,
+        address indexed owner,
+        address indexed registrar
     );
 
     event ServiceAgregado(
@@ -137,12 +146,49 @@ contract CarPass is ERC721, AccessControl {
      * @notice Registra un vehículo nuevo y acuña su NFT.
      * @dev tokenId = uint256(keccak256(abi.encodePacked(vin))). Revierte si ya existe.
      */
-    function registrarVehiculo(VehiculoInfo calldata info)
+    function registrarVehiculo(VehiculoInfo calldata info, address propietarioInicial)
         external
         onlyRole(REGISTRADOR_ROLE)
         returns (uint256 tokenId)
     {
-        revert("not implemented");
+        _requireVinValido(info.vin);
+
+        tokenId = _tokenIdFromVin(info.vin);
+        if (_ownerOf(tokenId) != address(0)) {
+            revert VehiculoYaRegistrado(info.vin);
+        }
+
+        _safeMint(propietarioInicial, tokenId);
+        _vehiculos[tokenId] = info;
+
+        emit VehicleMinted(tokenId, info.vin, propietarioInicial, msg.sender);
+    }
+
+    // -------------------------------------------------------------------------
+    // Transferencias
+    // -------------------------------------------------------------------------
+
+    /**
+     * @notice Transfiere el pasaporte digital. Solo puede iniciarla el propietario.
+     * @dev Mantiene el evento ERC-721 Transfer y bloquea transferencias por aprobados.
+     */
+    function transferFrom(address from, address to, uint256 tokenId) public override {
+        _requireOwnerTransfer(from, tokenId);
+        _transfer(from, to, tokenId);
+    }
+
+    /**
+     * @notice Variante segura de transferencia. Solo puede iniciarla el propietario.
+     * @dev El overload de 3 parametros de ERC-721 delega en esta funcion.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override {
+        _requireOwnerTransfer(from, tokenId);
+        _safeTransfer(from, to, tokenId, data);
     }
 
     // -------------------------------------------------------------------------
@@ -156,7 +202,17 @@ contract CarPass is ERC721, AccessControl {
         external
         onlyRole(MECANICO_ROLE)
     {
-        revert("not implemented");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert VehiculoNoEncontrado(tokenId);
+        }
+
+        RegistroService memory nuevoRegistro = registro;
+        nuevoRegistro.timestamp = block.timestamp;
+        nuevoRegistro.taller = msg.sender;
+
+        _services[tokenId].push(nuevoRegistro);
+
+        emit ServiceAgregado(tokenId, nuevoRegistro.timestamp, nuevoRegistro.tipoServicio);
     }
 
     /**
@@ -166,7 +222,16 @@ contract CarPass is ERC721, AccessControl {
         external
         onlyRole(REGISTRADOR_ROLE)
     {
-        revert("not implemented");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert VehiculoNoEncontrado(tokenId);
+        }
+
+        RegistroSiniestro memory nuevoRegistro = registro;
+        nuevoRegistro.timestamp = block.timestamp;
+
+        _siniestros[tokenId].push(nuevoRegistro);
+
+        emit SiniestroAgregado(tokenId, nuevoRegistro.timestamp, nuevoRegistro.gravedad);
     }
 
     /**
@@ -176,7 +241,17 @@ contract CarPass is ERC721, AccessControl {
         external
         onlyRole(INSPECTOR_VTV_ROLE)
     {
-        revert("not implemented");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert VehiculoNoEncontrado(tokenId);
+        }
+
+        RegistroVTV memory nuevoRegistro = registro;
+        nuevoRegistro.timestamp = block.timestamp;
+        nuevoRegistro.planta = msg.sender;
+
+        _vtv[tokenId].push(nuevoRegistro);
+
+        emit VTVAgregada(tokenId, nuevoRegistro.timestamp, nuevoRegistro.resultado);
     }
 
     // -------------------------------------------------------------------------
@@ -188,7 +263,7 @@ contract CarPass is ERC721, AccessControl {
         view
         returns (VehiculoInfo memory)
     {
-        revert("not implemented");
+        return _vehiculos[tokenId];
     }
 
     function getHistorialService(uint256 tokenId)
@@ -196,7 +271,7 @@ contract CarPass is ERC721, AccessControl {
         view
         returns (RegistroService[] memory)
     {
-        revert("not implemented");
+        return _services[tokenId];
     }
 
     function getHistorialSiniestros(uint256 tokenId)
@@ -204,7 +279,7 @@ contract CarPass is ERC721, AccessControl {
         view
         returns (RegistroSiniestro[] memory)
     {
-        revert("not implemented");
+        return _siniestros[tokenId];
     }
 
     function getHistorialVTV(uint256 tokenId)
@@ -212,7 +287,7 @@ contract CarPass is ERC721, AccessControl {
         view
         returns (RegistroVTV[] memory)
     {
-        revert("not implemented");
+        return _vtv[tokenId];
     }
 
     // -------------------------------------------------------------------------
@@ -246,7 +321,23 @@ contract CarPass is ERC721, AccessControl {
      * @notice Convierte un VIN en su tokenId correspondiente (determinístico, sin estado).
      */
     function vinToTokenId(string calldata vin) external pure returns (uint256) {
+        return _tokenIdFromVin(vin);
+    }
+
+    function _tokenIdFromVin(string memory vin) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(vin)));
+    }
+
+    function _requireVinValido(string memory vin) internal pure {
+        if (bytes(vin).length != 17) {
+            revert VinInvalido();
+        }
+    }
+
+    function _requireOwnerTransfer(address from, uint256 tokenId) internal view {
+        if (msg.sender != from) {
+            revert TransferenciaSoloPropietario(msg.sender, tokenId);
+        }
     }
 
     // -------------------------------------------------------------------------
