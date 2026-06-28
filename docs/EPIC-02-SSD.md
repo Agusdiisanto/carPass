@@ -75,7 +75,7 @@ struct RegistroSiniestro {
     string            descripcion;
     bool              reparado;       // ¿el daño fue reparado?
     uint256           costoEstimado;  // en centavos (uint para evitar decimales)
-    address           declarante;      // msg.sender con REGISTRADOR_ROLE o ASEGURADORA_ROLE
+    address           declarante;      // msg.sender con ASEGURADORA_ROLE
 }
 
 // Registro de una inspección VTV
@@ -134,7 +134,7 @@ CarPass
 | Rol | Constante Solidity | Responsable | Puede hacer |
 |-----|--------------------|-------------|-------------|
 | Admin | `DEFAULT_ADMIN_ROLE` | Deployer | Asignar/revocar todos los roles |
-| Registrador | `REGISTRADOR_ROLE` | Concesionarias, admin | `registrarVehiculo`, `agregarSiniestro` |
+| Registrador | `REGISTRADOR_ROLE` | Concesionarias, admin | `registrarVehiculo` |
 | Mecánico | `MECANICO_ROLE` | Talleres autorizados | `agregarService` |
 | Inspector VTV | `INSPECTOR_VTV_ROLE` | Plantas verificadoras habilitadas | `agregarVTV` |
 | Aseguradora | `ASEGURADORA_ROLE` | Compañías de seguros | `agregarSiniestro` |
@@ -194,11 +194,11 @@ function agregarService(uint256 tokenId, RegistroService calldata registro)
 
 /**
  * @notice Agrega un siniestro al historial del vehículo.
- * @dev Solo REGISTRADOR_ROLE o ASEGURADORA_ROLE. Puede disparar recálculo de sello.
+ * @dev Solo ASEGURADORA_ROLE. Puede disparar recálculo de sello.
  */
 function agregarSiniestro(uint256 tokenId, RegistroSiniestro calldata registro)
     external
-    soloRegistradorOAseguradora;
+    onlyRole(ASEGURADORA_ROLE);
 
 /**
  * @notice Agrega un resultado de inspección VTV.

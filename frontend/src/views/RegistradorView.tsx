@@ -2,14 +2,8 @@ import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
 
-const GRAVEDAD_OPTIONS = [
-  { value: 0, label: 'Leve' },
-  { value: 1, label: 'Moderado' },
-  { value: 2, label: 'Grave' },
-]
-
 export function RegistradorView({ address }: { address: string }) {
-  const { busy, message, registrarVehiculo, agregarSiniestro, getVehiculoPorVin } = useCarPass()
+  const { busy, message, registrarVehiculo } = useCarPass()
 
   const [vin, setVin] = useState('8AJBA3CD4E1234567')
   const [marca, setMarca] = useState('Toyota')
@@ -18,23 +12,9 @@ export function RegistradorView({ address }: { address: string }) {
   const [color, setColor] = useState('Blanco')
   const [propietario, setPropietario] = useState(address)
 
-  const [sinVin, setSinVin] = useState('')
-  const [gravedad, setGravedad] = useState(0)
-  const [sinDesc, setSinDesc] = useState('')
-  const [reparado, setReparado] = useState(false)
-  const [costo, setCosto] = useState(0)
-
   async function handleRegistrar() {
     const info: VehiculoInfo = { vin, marca, modelo, anio, color }
     await registrarVehiculo(info, propietario || address)
-  }
-
-  async function handleSiniestro() {
-    if (sinVin.length !== 17) return
-    const { tokenId } = await getVehiculoPorVin(sinVin)
-    await agregarSiniestro(tokenId, gravedad, sinDesc, reparado, costo)
-    setSinDesc('')
-    setCosto(0)
   }
 
   return (
@@ -42,13 +22,13 @@ export function RegistradorView({ address }: { address: string }) {
       <div className="view-header">
         <div className="role-badge registrador">Concesionaria</div>
         <h2>Panel de concesionaria</h2>
-        <p className="view-desc">Registrá vehículos nuevos y declaratorias de siniestros.</p>
+        <p className="view-desc">Registrá vehículos nuevos. Cada pasaporte se emite con kilometraje inicial 0 km.</p>
       </div>
 
-      <div className="panels-grid">
+      <div className="panels-grid single">
         <section className="panel">
           <h3>Registrar vehiculo</h3>
-          <p className="panel-desc">Alta del pasaporte digital en la blockchain</p>
+          <p className="panel-desc">Alta del pasaporte digital en la blockchain. El primer service deberá superar 0 km.</p>
 
           <label className="field">
             VIN <span className="field-hint">17 caracteres</span>
@@ -82,54 +62,6 @@ export function RegistradorView({ address }: { address: string }) {
             onClick={handleRegistrar}
           >
             {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}
-          </button>
-        </section>
-
-        <section className="panel">
-          <h3>Declarar siniestro</h3>
-          <p className="panel-desc">Registrá un accidente o daño sobre un vehículo existente</p>
-
-          <label className="field">
-            VIN del vehiculo
-            <input maxLength={17} value={sinVin} onChange={(e) => setSinVin(e.target.value.toUpperCase())} />
-          </label>
-
-          <label className="field">
-            Gravedad
-            <select className="select-input" value={gravedad} onChange={(e) => setGravedad(Number(e.target.value))}>
-              {GRAVEDAD_OPTIONS.map((g) => (
-                <option key={g.value} value={g.value}>{g.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field">
-            Descripcion
-            <textarea
-              className="textarea-input"
-              placeholder="Descripcion del siniestro..."
-              rows={3}
-              value={sinDesc}
-              onChange={(e) => setSinDesc(e.target.value)}
-            />
-          </label>
-
-          <label className="field">
-            Costo estimado (en wei)
-            <input min="0" type="number" value={costo} onChange={(e) => setCosto(Number(e.target.value))} />
-          </label>
-
-          <label className="field checkbox-field">
-            <input checked={reparado} type="checkbox" onChange={(e) => setReparado(e.target.checked)} />
-            Ya fue reparado
-          </label>
-
-          <button
-            className="btn-primary full-width"
-            disabled={sinVin.length !== 17 || !sinDesc || Boolean(busy)}
-            onClick={handleSiniestro}
-          >
-            {busy === 'Registrando siniestro' ? 'Registrando...' : 'Declarar siniestro'}
           </button>
         </section>
       </div>

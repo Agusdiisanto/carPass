@@ -144,8 +144,8 @@ function VehicleHeroCard({ data }: { data: Historial }) {
         </div>
         <div className="vh-stat-sep" />
         <div className="vh-stat">
-          <span className="vh-stat-val">{lastKm > 0 ? lastKm.toLocaleString('es-AR') : '—'}</span>
-          <span className="vh-stat-lbl">Último km</span>
+          <span className="vh-stat-val">{lastKm.toLocaleString('es-AR')}</span>
+          <span className="vh-stat-lbl">{data.services.length ? 'Último km' : 'Km inicial'}</span>
         </div>
         <div className="vh-stat-sep" />
         <div className="vh-stat">

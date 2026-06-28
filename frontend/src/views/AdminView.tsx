@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
+import { RegistradorView } from './RegistradorView'
+import { TallerView } from './TallerView'
+import { AseguradoraView } from './AseguradoraView'
+import { InspectorVTVView } from './InspectorVTVView'
 
 const ROLES = [
   { label: 'Concesionaria / Registrador', fn: 'REGISTRADOR_ROLE' },
@@ -10,8 +14,19 @@ const ROLES = [
   { label: 'Inspector VTV', fn: 'INSPECTOR_VTV_ROLE' },
 ]
 
+const ADMIN_VIEWS = [
+  { key: 'admin', label: 'Administracion' },
+  { key: 'registrador', label: 'Concesionaria' },
+  { key: 'taller', label: 'Taller' },
+  { key: 'aseguradora', label: 'Aseguradora' },
+  { key: 'inspector', label: 'Inspector VTV' },
+] as const
+
+type AdminViewKey = (typeof ADMIN_VIEWS)[number]['key']
+
 export function AdminView({ address }: { address: string }) {
   const { busy, message, registrarVehiculo, grantRole, revokeRole } = useCarPass()
+  const [activeView, setActiveView] = useState<AdminViewKey>('admin')
 
   const [vin, setVin] = useState('8AJBA3CD4E1234567')
   const [marca, setMarca] = useState('Toyota')
@@ -40,101 +55,133 @@ export function AdminView({ address }: { address: string }) {
     setRoleTarget('')
   }
 
+  function renderActiveView() {
+    if (activeView === 'registrador') return <RegistradorView address={address} />
+    if (activeView === 'taller') return <TallerView address={address} />
+    if (activeView === 'aseguradora') return <AseguradoraView address={address} />
+    if (activeView === 'inspector') return <InspectorVTVView address={address} />
+
+    return (
+      <>
+        <div className="panels-grid">
+          <section className="panel">
+            <h3>Registrar vehiculo</h3>
+            <p className="panel-desc">Acuña el pasaporte digital vinculado al VIN en Sepolia con 0 km iniciales</p>
+
+            <label className="field">
+              VIN <span className="field-hint">17 caracteres</span>
+              <input maxLength={17} value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} />
+              {vin.length > 0 && (
+                <span className={`vin-count ${vin.length === 17 ? 'ok' : 'warn'}`}>{vin.length}/17</span>
+              )}
+            </label>
+
+            <div className="two-col">
+              <label className="field">Marca<input value={marca} onChange={(e) => setMarca(e.target.value)} /></label>
+              <label className="field">Modelo<input value={modelo} onChange={(e) => setModelo(e.target.value)} /></label>
+            </div>
+
+            <div className="two-col">
+              <label className="field">
+                Año
+                <input max="2099" min="1900" type="number" value={anio} onChange={(e) => setAnio(Number(e.target.value))} />
+              </label>
+              <label className="field">Color<input value={color} onChange={(e) => setColor(e.target.value)} /></label>
+            </div>
+
+            <label className="field">
+              Propietario
+              <input placeholder={address} value={propietario} onChange={(e) => setPropietario(e.target.value)} />
+            </label>
+
+            <button
+              className="btn-primary full-width"
+              disabled={vin.length !== 17 || Boolean(busy)}
+              onClick={handleRegistrar}
+            >
+              {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}
+            </button>
+          </section>
+
+          <section className="panel">
+            <h3>Gestión de roles</h3>
+            <p className="panel-desc">Asigná o revocá permisos a wallets del sistema</p>
+
+            <label className="field">
+              Rol
+              <select className="select-input" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
+                {ROLES.map((r) => (
+                  <option key={r.fn} value={r.fn}>{r.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field">
+              Wallet
+              <input
+                placeholder="Dirección 0x..."
+                value={roleTarget}
+                onChange={(e) => setRoleTarget(e.target.value)}
+              />
+            </label>
+
+            <div className="action-row">
+              <button
+                className="btn-primary"
+                disabled={!roleTarget || Boolean(busy)}
+                onClick={handleGrant}
+              >
+                {busy === 'Asignando rol' ? 'Asignando...' : 'Asignar'}
+              </button>
+              <button
+                className="btn-danger"
+                disabled={!roleTarget || Boolean(busy)}
+                onClick={handleRevoke}
+              >
+                {busy === 'Revocando rol' ? 'Revocando...' : 'Revocar'}
+              </button>
+            </div>
+
+            <div className="wallet-info">
+              <span>Tu wallet</span>
+              <code>{shortAddress(address)}</code>
+            </div>
+          </section>
+        </div>
+
+        {message && <div className="status-bar">{message}</div>}
+      </>
+    )
+  }
+
   return (
     <div className="view-container">
       <div className="view-header">
         <div className="role-badge admin">Administrador</div>
         <h2>Panel de administracion</h2>
-        <p className="view-desc">Registrá vehículos y gestioná los permisos del sistema.</p>
+        <p className="view-desc">Registrá vehículos, gestioná permisos y alterná entre las vistas operativas.</p>
       </div>
 
-      <div className="panels-grid">
-        <section className="panel">
-          <h3>Registrar vehiculo</h3>
-          <p className="panel-desc">Acuña el pasaporte digital vinculado al VIN en Sepolia</p>
-
-          <label className="field">
-            VIN <span className="field-hint">17 caracteres</span>
-            <input maxLength={17} value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} />
-            {vin.length > 0 && (
-              <span className={`vin-count ${vin.length === 17 ? 'ok' : 'warn'}`}>{vin.length}/17</span>
-            )}
-          </label>
-
-          <div className="two-col">
-            <label className="field">Marca<input value={marca} onChange={(e) => setMarca(e.target.value)} /></label>
-            <label className="field">Modelo<input value={modelo} onChange={(e) => setModelo(e.target.value)} /></label>
-          </div>
-
-          <div className="two-col">
-            <label className="field">
-              Año
-              <input max="2099" min="1900" type="number" value={anio} onChange={(e) => setAnio(Number(e.target.value))} />
-            </label>
-            <label className="field">Color<input value={color} onChange={(e) => setColor(e.target.value)} /></label>
-          </div>
-
-          <label className="field">
-            Propietario
-            <input placeholder={address} value={propietario} onChange={(e) => setPropietario(e.target.value)} />
-          </label>
-
+      <div className="admin-view-switcher" aria-label="Vistas disponibles para administrador">
+        {ADMIN_VIEWS.map((view) => (
           <button
-            className="btn-primary full-width"
-            disabled={vin.length !== 17 || Boolean(busy)}
-            onClick={handleRegistrar}
+            className={`admin-view-tab ${activeView === view.key ? 'active' : ''}`}
+            key={view.key}
+            onClick={() => setActiveView(view.key)}
+            type="button"
           >
-            {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}
+            {view.label}
           </button>
-        </section>
-
-        <section className="panel">
-          <h3>Gestión de roles</h3>
-          <p className="panel-desc">Asigná o revocá permisos a wallets del sistema</p>
-
-          <label className="field">
-            Rol
-            <select className="select-input" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
-              {ROLES.map((r) => (
-                <option key={r.fn} value={r.fn}>{r.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field">
-            Wallet
-            <input
-              placeholder="Dirección 0x..."
-              value={roleTarget}
-              onChange={(e) => setRoleTarget(e.target.value)}
-            />
-          </label>
-
-          <div className="action-row">
-            <button
-              className="btn-primary"
-              disabled={!roleTarget || Boolean(busy)}
-              onClick={handleGrant}
-            >
-              {busy === 'Asignando rol' ? 'Asignando...' : 'Asignar'}
-            </button>
-            <button
-              className="btn-danger"
-              disabled={!roleTarget || Boolean(busy)}
-              onClick={handleRevoke}
-            >
-              {busy === 'Revocando rol' ? 'Revocando...' : 'Revocar'}
-            </button>
-          </div>
-
-          <div className="wallet-info">
-            <span>Tu wallet</span>
-            <code>{shortAddress(address)}</code>
-          </div>
-        </section>
+        ))}
       </div>
 
-      {message && <div className="status-bar">{message}</div>}
+      {activeView !== 'admin' && (
+        <div className="admin-role-note">
+          Estás viendo este panel como administrador. Las escrituras siguen requiriendo el rol on-chain correspondiente.
+        </div>
+      )}
+
+      {renderActiveView()}
     </div>
   )
 }

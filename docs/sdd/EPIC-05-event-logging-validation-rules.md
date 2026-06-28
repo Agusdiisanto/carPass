@@ -39,7 +39,7 @@ Registra un siniestro para un vehiculo existente.
 
 Reglas implementadas:
 
-- Caller debe tener `REGISTRADOR_ROLE` o `ASEGURADORA_ROLE`.
+- Caller debe tener `ASEGURADORA_ROLE`.
 - `tokenId` debe existir.
 - El contrato sobrescribe `timestamp` con `block.timestamp`.
 - El contrato sobrescribe `declarante` con `msg.sender`.
@@ -60,7 +60,7 @@ Reglas implementadas:
 ## Roles autorizados
 
 - `MECANICO_ROLE`: unico rol autorizado para registrar services.
-- `REGISTRADOR_ROLE` o `ASEGURADORA_ROLE`: roles autorizados para registrar siniestros.
+- `ASEGURADORA_ROLE`: unico rol autorizado para registrar siniestros.
 - `INSPECTOR_VTV_ROLE`: rol autorizado para registrar VTV.
 - `DEFAULT_ADMIN_ROLE`: puede asignar o revocar `MECANICO_ROLE` via `grantRole` / `revokeRole`.
 
@@ -93,12 +93,13 @@ La autoria queda disponible en `RegistroService.taller`, `RegistroSiniestro.decl
 - Un taller con `MECANICO_ROLE` registra services posteriores con kilometraje mayor al ultimo aceptado.
 - Cada service queda guardado con `timestamp = block.timestamp` y `taller = msg.sender`.
 - `ultimoKilometrajeRegistrado(tokenId)` refleja el kilometraje del ultimo service aceptado.
-- Una aseguradora o registrador autorizado carga siniestros con `declarante = msg.sender`.
+- Una aseguradora autorizada carga siniestros con `declarante = msg.sender`.
 - Un inspector VTV autorizado carga revisiones con `planta = msg.sender`.
 
 ## Rechazos
 
 - Wallet sin `MECANICO_ROLE` no puede registrar service.
+- Wallet sin `ASEGURADORA_ROLE` no puede registrar siniestros.
 - Vehiculo inexistente no acepta service.
 - Primer service con `0` km revierte.
 - Service posterior con kilometraje menor o igual al ultimo registrado revierte.

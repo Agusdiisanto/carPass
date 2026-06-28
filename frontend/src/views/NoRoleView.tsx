@@ -2,7 +2,7 @@ import { shortAddress } from '../hooks/useWallet'
 
 const ROLES_DESC = [
   { label: 'Administrador', desc: 'Registra vehículos y gestiona roles del sistema' },
-  { label: 'Concesionaria', desc: 'Da el alta de vehículos y declara siniestros' },
+  { label: 'Concesionaria', desc: 'Da el alta de vehículos con 0 km iniciales' },
   { label: 'Taller', desc: 'Carga el historial de services y kilometraje' },
   { label: 'Aseguradora', desc: 'Declara siniestros y daños' },
   { label: 'Inspector VTV', desc: 'Certifica revisiones técnicas vehiculares' },

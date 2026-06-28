@@ -21,7 +21,7 @@ La política operativa de revocación de talleres queda para Fase 2, pero el con
 | Rol | Constante | Actor | Puede llamar |
 | --- | --- | --- | --- |
 | Administrador | `DEFAULT_ADMIN_ROLE` | Deployer / multisig futura | `grantRole`, `revokeRole` |
-| Concesionaria | `REGISTRADOR_ROLE` | Concesionarias autorizadas | `registrarVehiculo`, `agregarSiniestro` |
+| Concesionaria | `REGISTRADOR_ROLE` | Concesionarias autorizadas | `registrarVehiculo` |
 | Taller | `MECANICO_ROLE` | Talleres autorizados | `agregarService` |
 | Aseguradora | `ASEGURADORA_ROLE` | Compañías de seguros | `agregarSiniestro` |
 | VTV | `INSPECTOR_VTV_ROLE` | Plantas verificadoras | `agregarVTV` |
@@ -46,7 +46,7 @@ La política operativa de revocación de talleres queda para Fase 2, pero el con
 | --- | --- |
 | `registrarVehiculo` | `onlyRole(REGISTRADOR_ROLE)` |
 | `agregarService` | `onlyRole(MECANICO_ROLE)` |
-| `agregarSiniestro` | `REGISTRADOR_ROLE` o `ASEGURADORA_ROLE` |
+| `agregarSiniestro` | `ASEGURADORA_ROLE` |
 | `agregarVTV` | `onlyRole(INSPECTOR_VTV_ROLE)` |
 | `grantRole` | `AccessControl`, admin del rol |
 | `revokeRole` | `AccessControl`, admin del rol |
@@ -66,7 +66,7 @@ La política operativa de revocación de talleres queda para Fase 2, pero el con
 
 - `ASEGURADORA_ROLE` queda disponible como constante pública.
 - `RegistroSiniestro` agrega `address declarante` para conservar qué wallet cargó el registro.
-- `agregarSiniestro` acepta callers con `REGISTRADOR_ROLE` o `ASEGURADORA_ROLE`.
+- `agregarSiniestro` acepta callers con `ASEGURADORA_ROLE`.
 - `revocadoEn` y `estaRevocado` permiten marcar en lectura registros de una wallet revocada sin mutar historial.
 
 ## Criterios de aceptación
@@ -75,7 +75,7 @@ La política operativa de revocación de talleres queda para Fase 2, pero el con
 - Un admin puede otorgar roles con `grantRole`.
 - Una wallet sin rol no puede ejecutar funciones de escritura.
 - Una aseguradora con `ASEGURADORA_ROLE` puede cargar siniestros.
-- Un registrador con `REGISTRADOR_ROLE` puede cargar siniestros.
+- Un registrador con `REGISTRADOR_ROLE` no puede cargar siniestros.
 - Un siniestro queda guardado con `declarante = msg.sender`.
 - Revocar una wallet no borra ni modifica services, VTV ni siniestros previos.
 
