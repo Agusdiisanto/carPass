@@ -1,12 +1,14 @@
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --border: #d9dee7;
-  --muted: #64748b;
-  --text: #334155;
-  --text-strong: #101828;
-  --code-bg: #eef2f7;
-  --code-text: #1e3a5f;
+  --bg:          #0a0e12;
+  --surface:     #111820;
+  --surface-2:   #161e2a;
+  --border:      rgba(255,255,255,0.08);
+  --text:        #8b95a1;
+  --text-strong: #eef2f6;
+  --muted:       #5d6a7e;
+  --code-bg:     #1a2233;
+  --code-text:   #2dd4bf;
+
   color: var(--text);
   background: var(--bg);
   font-family:
