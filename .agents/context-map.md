@@ -16,6 +16,7 @@
 ## Spec Areas
 
 - `docs/sdd/`: product and epic specs.
+- `docs/sdd/EPIC-02-core-data-model-contract-skeleton.md`: canonical contract data model SDD.
 - `docs/superpowers/specs/`: infrastructure design history.
 - `docs/superpowers/plans/`: implementation plans.
 

@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+  on?: (event: string, handler: (...args: unknown[]) => void) => void
+  removeListener?: (event: string, handler: (...args: unknown[]) => void) => void
 }
 
 export type WalletState = {
@@ -24,6 +26,28 @@ export function shortAddress(address: string) {
 export function useWallet() {
   const [address, setAddress] = useState('')
   const [chainId, setChainId] = useState('')
+
+  useEffect(() => {
+    if (!window.ethereum) return
+    const eth = window.ethereum as EthereumProvider
+
+    const handleAccountsChanged = (accounts: unknown) => {
+      const nextAccounts = Array.isArray(accounts) ? accounts : []
+      setAddress(typeof nextAccounts[0] === 'string' ? nextAccounts[0] : '')
+    }
+
+    const handleChainChanged = (rawChainId: unknown) => {
+      setChainId(parseChainId(rawChainId))
+    }
+
+    eth.on?.('accountsChanged', handleAccountsChanged)
+    eth.on?.('chainChanged', handleChainChanged)
+
+    return () => {
+      eth.removeListener?.('accountsChanged', handleAccountsChanged)
+      eth.removeListener?.('chainChanged', handleChainChanged)
+    }
+  }, [])
 
   const connected = Boolean(address && chainId === expectedChainId)
   const wrongNetwork = Boolean(address && chainId && chainId !== expectedChainId)

@@ -1,45 +1,21 @@
-import { BrowserProvider, Contract, Interface, isAddress } from 'ethers'
+import { BrowserProvider, Contract, Interface, ZeroAddress, isAddress } from 'ethers'
 import { useState } from 'react'
+import { CARPASS_ABI } from '../contracts/carpassAbi'
+import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
 
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
 }
 
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CARPASS_CONTRACT_ADDRESS ?? ''
-export const hasContractAddress = isAddress(CONTRACT_ADDRESS)
+function resolveContractAddress() {
+  const envAddress = import.meta.env.VITE_CARPASS_CONTRACT_ADDRESS
+  if (envAddress && envAddress !== ZeroAddress) return envAddress
+  return CARPASS_DEPLOYMENT.address
+}
 
-export const ABI = [
-  // Roles
-  'function DEFAULT_ADMIN_ROLE() view returns (bytes32)',
-  'function REGISTRADOR_ROLE() view returns (bytes32)',
-  'function MECANICO_ROLE() view returns (bytes32)',
-  'function ASEGURADORA_ROLE() view returns (bytes32)',
-  'function INSPECTOR_VTV_ROLE() view returns (bytes32)',
-  'function hasRole(bytes32 role, address account) view returns (bool)',
-  'function grantRole(bytes32 role, address account)',
-  'function revokeRole(bytes32 role, address account)',
-  'function estaRevocado(address wallet) view returns (bool)',
-  // Vehiculo
-  'function registrarVehiculo((string vin,string marca,string modelo,uint16 anio,string color) info, address propietarioInicial) returns (uint256)',
-  'function vinToTokenId(string vin) view returns (uint256)',
-  'function getVehiculoInfo(uint256 tokenId) view returns ((string vin,string marca,string modelo,uint16 anio,string color))',
-  // Service
-  'function agregarService(uint256 tokenId,(uint256 timestamp,string tipoServicio,uint32 kilometraje,address taller,string descripcion) registro)',
-  'function getHistorialService(uint256 tokenId) view returns ((uint256 timestamp,string tipoServicio,uint32 kilometraje,address taller,string descripcion)[])',
-  'function ultimoKilometrajeRegistrado(uint256 tokenId) view returns (uint32)',
-  // Siniestro
-  'function agregarSiniestro(uint256 tokenId,(uint256 timestamp,uint8 gravedad,string descripcion,bool reparado,uint256 costoEstimado,address declarante) registro)',
-  'function getHistorialSiniestros(uint256 tokenId) view returns ((uint256 timestamp,uint8 gravedad,string descripcion,bool reparado,uint256 costoEstimado,address declarante)[])',
-  // VTV
-  'function agregarVTV(uint256 tokenId,(uint256 timestamp,uint8 resultado,uint256 vencimiento,address planta) registro)',
-  'function getHistorialVTV(uint256 tokenId) view returns ((uint256 timestamp,uint8 resultado,uint256 vencimiento,address planta)[])',
-  // Sello
-  'function getSelloCalidad(uint256 tokenId) view returns (uint8 estado, string motivo)',
-  // Errores
-  'error KilometrajeNoMonotonico(uint32 recibido, uint32 ultimo)',
-  'error VehiculoYaRegistrado(string vin)',
-  'error VehiculoNoEncontrado(uint256 tokenId)',
-]
+export const ABI = CARPASS_ABI
+export const CONTRACT_ADDRESS = resolveContractAddress()
+export const hasContractAddress = isAddress(CONTRACT_ADDRESS)
 
 export type Role = 'admin' | 'registrador' | 'mecanico' | 'aseguradora' | 'inspector' | 'none'
 

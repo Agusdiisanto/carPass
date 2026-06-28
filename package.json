@@ -10,6 +10,7 @@
     "clean": "hardhat clean",
     "compile": "hardhat compile",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "export:frontend": "node scripts/export-frontend-artifacts.mjs",
     "seed:sepolia": "hardhat run scripts/seed.ts --network sepolia",
     "node": "hardhat node",
     "test:contracts": "hardhat run test/CarPass.km.ts",

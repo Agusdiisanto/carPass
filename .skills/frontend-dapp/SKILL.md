@@ -10,7 +10,7 @@ Use esta skill para cambios en `frontend/`.
 
 ## Convenciones
 
-- Separar lectura publica por QR de operaciones con wallet.
+- Separar lectura publica por VIN de operaciones con wallet.
 - Detectar MetaMask con `window.ethereum`.
 - Validar `VITE_SEPOLIA_CHAIN_ID` antes de enviar transacciones.
 - Mostrar errores de contrato con mensajes claros y cortos.

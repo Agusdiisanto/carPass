@@ -1,12 +1,12 @@
 # Security Skill - CarPass
 
-Use this skill before changing roles, deploy scripts, environment variables, QR reads, or any contract function that mutates state.
+Use this skill before changing roles, deploy scripts, environment variables, public reads, or any contract function that mutates state.
 
 ## Threat Boundaries
 
 - Sepolia deploy key: secret, never commit.
 - VIN and milestone data: public blockchain data unless future spec hashes or redacts it.
-- QR reads: public and walletless.
+- Public VIN reads: public and walletless.
 - Write operations: wallet required and role-gated.
 
 ## Solidity Checks
@@ -19,7 +19,7 @@ Use this skill before changing roles, deploy scripts, environment variables, QR 
 
 ## Frontend Checks
 
-- Never ask for wallet connection for public QR reads.
+- Never ask for wallet connection for public VIN reads.
 - Validate chain id before transactions.
 - Do not expose private keys through `VITE_` variables.
 - Show failed transaction errors without leaking internals.

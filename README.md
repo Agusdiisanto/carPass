@@ -2,7 +2,7 @@
 
 TP final de la materia Blockchain: sistema de trazabilidad vehicular sobre blockchain.
 
-Cada auto sera representado como un NFT ERC-721 asociado a su VIN. El contrato acumulara historial tecnico inmutable y calculara un sello de calidad consultable por QR. La DApp conectara MetaMask, ruteara por rol y consumira el contrato con ethers.js.
+Cada auto sera representado como un NFT ERC-721 asociado a su VIN. El contrato acumulara historial tecnico inmutable y calculara un sello de calidad consultable publicamente por VIN. La DApp conectara MetaMask, ruteara por rol y consumira el contrato con ethers.js.
 
 ## Stack
 
@@ -21,9 +21,12 @@ frontend/              DApp React
 .agents/               Contexto operativo para agentes
 .skills/               Skills locales del proyecto
 docs/superpowers/      Specs y planes de infraestructura
+docs/sdd/              SDD canonicas por epica
 ```
 
 ## Setup
+
+Requiere Node `22.13.0+` para Hardhat 3.
 
 ```bash
 npm install
@@ -44,7 +47,7 @@ Completar `frontend/.env` luego de desplegar:
 
 ```bash
 VITE_SEPOLIA_CHAIN_ID=11155111
-VITE_CARPASS_CONTRACT_ADDRESS=0x...
+VITE_CARPASS_CONTRACT_ADDRESS=0x... # opcional si existe deployments/sepolia/CarPass.json exportado
 ```
 
 ## Comandos
@@ -52,8 +55,18 @@ VITE_CARPASS_CONTRACT_ADDRESS=0x...
 ```bash
 npm run compile
 npm run deploy:sepolia
+npm run export:frontend
+npm run seed:sepolia
 npm run frontend:dev
 ```
+
+Flujo recomendado de deploy:
+
+1. `npm run compile`
+2. `npm run deploy:sepolia`
+3. `npm run export:frontend`
+4. Copiar o mantener `VITE_CARPASS_CONTRACT_ADDRESS` solo si se necesita override local.
+5. `npm run seed:sepolia` para datos demo.
 
 ## Restriccion del usuario
 
@@ -64,11 +77,11 @@ Si un agente crea commits, no debe agregar trailers de coautoria. Queda prohibid
 ## Flujo SDD recomendado
 
 1. Tomar una epica de `.agents/backlog.md`.
-2. Escribir spec detallada en `docs/sdd/`.
+2. Escribir o completar la spec detallada en `docs/sdd/`.
 3. Implementar contra la spec.
 4. Verificar solo lo que no sea frontend, por ejemplo `npm run compile` para contrato.
 
-EPIC-02 debe detallarse antes del frontend porque define el ABI madre del contrato.
+EPIC-02 debe detallarse antes del frontend porque define el ABI madre del contrato. Si cambia el ABI, ejecutar `npm run export:frontend` antes de tocar vistas.
 
 ## Agentes y skills
 

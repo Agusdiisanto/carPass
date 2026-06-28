@@ -1,0 +1,8 @@
+{
+  "contractName": "CarPass",
+  "network": "sepolia",
+  "address": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
+  "deployer": "",
+  "deployedAt": "",
+  "source": "legacy seed address moved out of scripts/seed.ts"
+}

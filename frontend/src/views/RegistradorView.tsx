@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isAddress } from 'ethers'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
 
@@ -11,6 +12,7 @@ export function RegistradorView({ address }: { address: string }) {
   const [anio, setAnio] = useState(2024)
   const [color, setColor] = useState('Blanco')
   const [propietario, setPropietario] = useState(address)
+  const propietarioValido = !propietario || isAddress(propietario)
 
   async function handleRegistrar() {
     const info: VehiculoInfo = { vin, marca, modelo, anio, color }
@@ -55,10 +57,11 @@ export function RegistradorView({ address }: { address: string }) {
             Propietario
             <input placeholder={address} value={propietario} onChange={(e) => setPropietario(e.target.value)} />
           </label>
+          {!propietarioValido && <p className="error-msg">Direccion invalida</p>}
 
           <button
             className="btn-primary full-width"
-            disabled={vin.length !== 17 || Boolean(busy)}
+            disabled={vin.length !== 17 || !propietarioValido || Boolean(busy)}
             onClick={handleRegistrar}
           >
             {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}

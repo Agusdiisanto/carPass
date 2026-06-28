@@ -9,7 +9,7 @@ Use esta skill para cambios en `contracts/` o `scripts/`.
 - Usar ERC721 para identidad del vehiculo y AccessControl para actores.
 - Preferir custom errors para validaciones de dominio.
 - Emitir eventos para cada hito relevante.
-- Mantener consultas publicas simples para el frontend y QR.
+- Mantener consultas publicas simples para el frontend y busqueda por VIN.
 
 ## Verificacion
 

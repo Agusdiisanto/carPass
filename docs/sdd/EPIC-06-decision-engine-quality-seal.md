@@ -37,7 +37,7 @@ Reglas, en orden de prioridad:
 
 ### `getSelloEstado(uint256 tokenId) returns (SelloEstado)`
 
-Devuelve solo el estado calculado, para lecturas simples o QR compacto.
+Devuelve solo el estado calculado, para lecturas publicas simples.
 
 ### `calcularSello(uint256 tokenId)`
 
@@ -60,7 +60,7 @@ Recalcula el sello y guarda el estado en `_sellos[tokenId]`. Emite `SelloActuali
 
 ## Riesgos de seguridad y privacidad
 
-- La funcion recorre arreglos de historial; para volumenes grandes puede ser costosa si se llama on-chain desde otro contrato. Para frontend/QR como `eth_call` es aceptable en esta fase.
+- La funcion recorre arreglos de historial; para volumenes grandes puede ser costosa si se llama on-chain desde otro contrato. Para frontend como `eth_call` es aceptable en esta fase.
 - Los motivos no agregan datos privados; resumen informacion ya publica on-chain.
 - La regla de mantenimiento al dia usa una ventana simple de 365 dias desde el ultimo service.
 

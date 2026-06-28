@@ -4,7 +4,7 @@ This is the first file an agent should read in this repository.
 
 ## Mission
 
-Build CarPass with spec-driven development. CarPass represents each vehicle as an ERC-721 NFT linked to its VIN and stores an immutable technical history: services, mileage, VTV, accidents and transfers. The contract validates consistency rules and exposes a quality seal that can be queried through a QR flow without requiring a wallet.
+Build CarPass with spec-driven development. CarPass represents each vehicle as an ERC-721 NFT linked to its VIN and stores an immutable technical history: services, mileage, VTV, accidents and transfers. The contract validates consistency rules and exposes a quality seal that can be queried through a public VIN lookup without requiring a wallet.
 
 ## Required Reading Order
 

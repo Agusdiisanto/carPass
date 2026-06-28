@@ -16,5 +16,7 @@ npm run dev
 
 ```bash
 VITE_SEPOLIA_CHAIN_ID=11155111
-VITE_CARPASS_CONTRACT_ADDRESS=0x...
+VITE_CARPASS_CONTRACT_ADDRESS=0x... # opcional si existe artefacto exportado
 ```
+
+El ABI se importa desde `src/contracts/carpassAbi.ts`, generado con `npm run export:frontend` desde la raiz.

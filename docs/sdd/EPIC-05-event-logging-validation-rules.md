@@ -9,7 +9,7 @@ CarPass necesita que cada hito tecnico escrito por un actor autorizado quede atr
 - Aplicar validacion de kilometraje monotonicamente creciente a `agregarService`.
 - Mantener la autoria del service sobrescribiendo `RegistroService.taller` con `msg.sender`.
 - Mantener `timestamp` como `block.timestamp`, ignorando cualquier timestamp enviado por el caller.
-- Exponer el ultimo kilometraje aceptado para lecturas simples de frontend/QR.
+- Exponer el ultimo kilometraje aceptado para lecturas simples de frontend.
 - Mantener la carga base de siniestro y VTV ya integrada: se guardan append-only, con rol y autoria.
 - No implementar reglas avanzadas nuevas para siniestro ni VTV en esta epica; sus reglas de coherencia completas quedan para fase posterior.
 

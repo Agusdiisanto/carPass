@@ -1,23 +1,38 @@
 import { network } from "hardhat";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const { ethers } = await network.create();
 
-const CONTRACT_ADDRESS = "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D";
+function readJson(path: string) {
+  return JSON.parse(readFileSync(path, "utf8"));
+}
 
-const ABI = [
-  "function MECANICO_ROLE() view returns (bytes32)",
-  "function INSPECTOR_VTV_ROLE() view returns (bytes32)",
-  "function ASEGURADORA_ROLE() view returns (bytes32)",
-  "function grantRole(bytes32 role, address account)",
-  "function registrarVehiculo((string vin,string marca,string modelo,uint16 anio,string color) info, address propietarioInicial) returns (uint256)",
-  "function vinToTokenId(string vin) view returns (uint256)",
-  "function agregarService(uint256 tokenId,(uint256 timestamp,string tipoServicio,uint32 kilometraje,address taller,string descripcion) registro)",
-  "function agregarSiniestro(uint256 tokenId,(uint256 timestamp,uint8 gravedad,string descripcion,bool reparado,uint256 costoEstimado,address declarante) registro)",
-  "function agregarVTV(uint256 tokenId,(uint256 timestamp,uint8 resultado,uint256 vencimiento,address planta) registro)",
-];
+function resolveContractAddress() {
+  const envAddress =
+    process.env.CARPASS_CONTRACT_ADDRESS ??
+    process.env.VITE_CARPASS_CONTRACT_ADDRESS;
+  if (envAddress) return envAddress;
+
+  const deploymentPath = join(process.cwd(), "deployments", "sepolia", "CarPass.json");
+  if (existsSync(deploymentPath)) {
+    return readJson(deploymentPath).address as string;
+  }
+
+  throw new Error(
+    "CarPass address not configured. Set CARPASS_CONTRACT_ADDRESS or run deploy:sepolia first.",
+  );
+}
+
+const artifact = readJson(
+  join(process.cwd(), "artifacts", "contracts", "CarPass.sol", "CarPass.json"),
+);
+const ABI = artifact.abi;
+const CONTRACT_ADDRESS = resolveContractAddress();
 
 const [deployer] = await ethers.getSigners();
 console.log("Seeding CarPass desde:", deployer.address);
+console.log("Contrato CarPass:", CONTRACT_ADDRESS);
 
 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, deployer);
 

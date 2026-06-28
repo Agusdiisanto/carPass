@@ -2,7 +2,7 @@
 
 ## Proyecto
 
-CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera un NFT ERC-721 asociado a su VIN. El contrato acumulara historial tecnico inmutable: services, kilometraje, VTV, siniestros y transferencias. La DApp permitira consultar el sello de calidad por QR sin wallet y operar funciones privadas con MetaMask segun rol.
+CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera un NFT ERC-721 asociado a su VIN. El contrato acumulara historial tecnico inmutable: services, kilometraje, VTV, siniestros y transferencias. La DApp permitira consultar el sello de calidad por VIN sin wallet y operar funciones privadas con MetaMask segun rol.
 
 ## Arquitectura objetivo
 
@@ -31,4 +31,8 @@ CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera
 5. EPIC-06: sello de calidad.
 6. EPIC-07: contract test suite.
 7. EPIC-08: deploy Sepolia y ABI estable.
-8. Frontend por roles y consulta publica por QR.
+8. EPIC-09: frontend scaffold, wallet y ruteo por rol.
+9. EPIC-10: capa de integracion con contrato.
+10. EPIC-11: formularios por rol.
+11. EPIC-12: QR descartado del alcance actual.
+12. EPIC-13: IPFS descartado del alcance actual.

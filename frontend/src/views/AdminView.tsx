@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isAddress } from 'ethers'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
@@ -37,6 +38,8 @@ export function AdminView({ address }: { address: string }) {
 
   const [roleTarget, setRoleTarget] = useState('')
   const [selectedRole, setSelectedRole] = useState(ROLES[0].fn)
+  const propietarioValido = !propietario || isAddress(propietario)
+  const roleTargetValido = isAddress(roleTarget)
 
   async function handleRegistrar() {
     const info: VehiculoInfo = { vin, marca, modelo, anio, color }
@@ -93,10 +96,11 @@ export function AdminView({ address }: { address: string }) {
               Propietario
               <input placeholder={address} value={propietario} onChange={(e) => setPropietario(e.target.value)} />
             </label>
+            {!propietarioValido && <p className="error-msg">Direccion invalida</p>}
 
             <button
               className="btn-primary full-width"
-              disabled={vin.length !== 17 || Boolean(busy)}
+              disabled={vin.length !== 17 || !propietarioValido || Boolean(busy)}
               onClick={handleRegistrar}
             >
               {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}
@@ -124,18 +128,19 @@ export function AdminView({ address }: { address: string }) {
                 onChange={(e) => setRoleTarget(e.target.value)}
               />
             </label>
+            {roleTarget && !roleTargetValido && <p className="error-msg">Direccion invalida</p>}
 
             <div className="action-row">
               <button
                 className="btn-primary"
-                disabled={!roleTarget || Boolean(busy)}
+                disabled={!roleTargetValido || Boolean(busy)}
                 onClick={handleGrant}
               >
                 {busy === 'Asignando rol' ? 'Asignando...' : 'Asignar'}
               </button>
               <button
                 className="btn-danger"
-                disabled={!roleTarget || Boolean(busy)}
+                disabled={!roleTargetValido || Boolean(busy)}
                 onClick={handleRevoke}
               >
                 {busy === 'Revocando rol' ? 'Revocando...' : 'Revocar'}
