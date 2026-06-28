@@ -16,7 +16,7 @@ CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera
 - Trabajar por SDD: escribir spec detallada antes de implementar una epica.
 - Congelar interfaz del contrato antes de construir pantallas dependientes del ABI.
 - Si se hacen commits, no incluir `Co-authored-by:` ni ningun trailer de coautoria.
-- No agregar, adjuntar ni sugerir tests.
+- No agregar, adjuntar ni sugerir tests salvo pedido explicito del usuario en ese turno o trabajo directo sobre EPIC-07.
 - No ejecutar validaciones frontend: build, lint, e2e, Playwright o audit de `frontend`, salvo pedido explicito del usuario en ese turno.
 - No commitear secretos. Usar `.env` local y mantener `.env.example`.
 - Validar solo superficies no frontend, por ejemplo `npm run compile` para contrato.
@@ -29,6 +29,6 @@ CarPass es un sistema de trazabilidad vehicular sobre blockchain. Cada auto sera
 3. EPIC-04: roles y permisos.
 4. EPIC-05: reglas de consistencia.
 5. EPIC-06: sello de calidad.
-6. EPIC-07: hitos tecnicos.
+6. EPIC-07: contract test suite.
 7. EPIC-08: deploy Sepolia y ABI estable.
 8. Frontend por roles y consulta publica por QR.

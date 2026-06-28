@@ -49,6 +49,7 @@ contract CarPass is ERC721, AccessControl {
     error VehiculoYaRegistrado(string vin);
     error VehiculoNoEncontrado(uint256 tokenId);
     error VinInvalido();
+    error KilometrajeNoMonotonico(uint32 recibido, uint32 ultimo);
     error TransferenciaSoloPropietario(address caller, uint256 tokenId);
 
     // -------------------------------------------------------------------------
@@ -87,6 +88,11 @@ contract CarPass is ERC721, AccessControl {
         address      planta;      // msg.sender al momento de la carga (INSPECTOR_VTV_ROLE)
     }
 
+    struct SelloCalidad {
+        SelloEstado estado;
+        string      motivo;
+    }
+
     // -------------------------------------------------------------------------
     // Estado
     // -------------------------------------------------------------------------
@@ -100,6 +106,9 @@ contract CarPass is ERC721, AccessControl {
     // Timestamp de la última revocación de cualquier rol (0 = nunca revocada).
     // No se resetea si el rol es re-otorgado — marca histórica permanente.
     mapping(address => uint256) public revocadoEn;
+
+    // Ultimo kilometraje aceptado por vehiculo. 0 = sin services registrados.
+    mapping(uint256 => uint32) public ultimoKilometrajeRegistrado;
 
     // -------------------------------------------------------------------------
     // Eventos
@@ -257,11 +266,17 @@ contract CarPass is ERC721, AccessControl {
             revert VehiculoNoEncontrado(tokenId);
         }
 
+        uint32 ultimoKilometraje = ultimoKilometrajeRegistrado[tokenId];
+        if (registro.kilometraje <= ultimoKilometraje) {
+            revert KilometrajeNoMonotonico(registro.kilometraje, ultimoKilometraje);
+        }
+
         RegistroService memory nuevoRegistro = registro;
         nuevoRegistro.timestamp = block.timestamp;
         nuevoRegistro.taller = msg.sender;
 
         _services[tokenId].push(nuevoRegistro);
+        ultimoKilometrajeRegistrado[tokenId] = nuevoRegistro.kilometraje;
 
         emit ServiceAgregado(tokenId, nuevoRegistro.timestamp, nuevoRegistro.tipoServicio);
     }
@@ -354,7 +369,7 @@ contract CarPass is ERC721, AccessControl {
         view
         returns (SelloEstado)
     {
-        revert("not implemented");
+        return _calcularSello(tokenId).estado;
     }
 
     /**
@@ -362,7 +377,115 @@ contract CarPass is ERC721, AccessControl {
      * @dev Reglas: REVOCADO si siniestro GRAVE o VTV RECHAZADA; VENCIDO si VTV expirada o sin VTV; ACTIVO si no.
      */
     function calcularSello(uint256 tokenId) external {
-        revert("not implemented");
+        SelloEstado nuevoEstado = _calcularSello(tokenId).estado;
+        if (_sellos[tokenId] != nuevoEstado) {
+            _sellos[tokenId] = nuevoEstado;
+            emit SelloActualizado(tokenId, nuevoEstado);
+        }
+    }
+
+    /**
+     * @notice Devuelve el estado calculado y el motivo del sello del vehiculo.
+     */
+    function getSelloCalidad(uint256 tokenId)
+        external
+        view
+        returns (SelloEstado estado, string memory motivo)
+    {
+        SelloCalidad memory sello = _calcularSello(tokenId);
+        return (sello.estado, sello.motivo);
+    }
+
+    function _calcularSello(uint256 tokenId)
+        internal
+        view
+        returns (SelloCalidad memory)
+    {
+        if (_ownerOf(tokenId) == address(0)) {
+            revert VehiculoNoEncontrado(tokenId);
+        }
+
+        RegistroService[] storage services = _services[tokenId];
+        uint32 kilometrajeAnterior = 0;
+        for (uint256 i = 0; i < services.length; i++) {
+            if (services[i].kilometraje <= kilometrajeAnterior) {
+                return SelloCalidad(
+                    SelloEstado.REVOCADO,
+                    "Historial con kilometraje no monotonico"
+                );
+            }
+            kilometrajeAnterior = services[i].kilometraje;
+        }
+
+        RegistroVTV[] storage vtvs = _vtv[tokenId];
+        uint256 ultimaVTVIndex = 0;
+        bool tieneVTV = false;
+        for (uint256 i = 0; i < vtvs.length; i++) {
+            if (vtvs[i].resultado == VTVResultado.RECHAZADO) {
+                return SelloCalidad(
+                    SelloEstado.REVOCADO,
+                    "VTV rechazada"
+                );
+            }
+
+            if (!tieneVTV || vtvs[i].timestamp > vtvs[ultimaVTVIndex].timestamp) {
+                ultimaVTVIndex = i;
+                tieneVTV = true;
+            }
+        }
+
+        RegistroSiniestro[] storage siniestros = _siniestros[tokenId];
+        for (uint256 i = 0; i < siniestros.length; i++) {
+            if (
+                siniestros[i].gravedad == SiniestroGravedad.GRAVE &&
+                !siniestros[i].reparado
+            ) {
+                return SelloCalidad(
+                    SelloEstado.REVOCADO,
+                    "Siniestro grave sin reparacion registrada"
+                );
+            }
+        }
+
+        if (!tieneVTV) {
+            return SelloCalidad(
+                SelloEstado.VENCIDO,
+                "Sin VTV registrada"
+            );
+        }
+
+        if (vtvs[ultimaVTVIndex].vencimiento < block.timestamp) {
+            return SelloCalidad(
+                SelloEstado.VENCIDO,
+                "VTV vencida"
+            );
+        }
+
+        if (vtvs[ultimaVTVIndex].resultado == VTVResultado.APROBADO_CON_OBSERVACIONES) {
+            return SelloCalidad(
+                SelloEstado.VENCIDO,
+                "VTV aprobada con observaciones"
+            );
+        }
+
+        if (services.length == 0) {
+            return SelloCalidad(
+                SelloEstado.VENCIDO,
+                "Sin service registrado"
+            );
+        }
+
+        if (services[services.length - 1].timestamp + 365 days < block.timestamp) {
+            return SelloCalidad(
+                SelloEstado.VENCIDO,
+                "Mantenimiento vencido"
+            );
+        }
+
+        return SelloCalidad(
+            SelloEstado.ACTIVO,
+            "Sello valido"
+        );
     }
 
     // -------------------------------------------------------------------------

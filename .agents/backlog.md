@@ -43,11 +43,15 @@ Calcular un sello consultable publicamente segun historial, vigencia de VTV, sin
 
 Dependencias: EPIC-05.
 
-## EPIC-07 - Historial tecnico
+## EPIC-07 - Contract Test Suite
 
-Registrar services, kilometraje, VTV, siniestros y transferencias con eventos inmutables.
+Agregar una suite automatizada de contrato para demostrar reglas y rechazos durante la defensa.
 
-Dependencias: EPIC-02, EPIC-03, EPIC-04.
+MVP implementado: carga valida de service y rechazo de kilometraje menor al ultimo registrado.
+
+Fase 2: doble VIN, operaciones sin rol, transferencia no autorizada y estados del sello.
+
+Dependencias: EPIC-03, EPIC-04, EPIC-05, EPIC-06.
 
 ## EPIC-08 - Deploy Sepolia
 

@@ -9,7 +9,7 @@
 
 ## Implementation Areas
 
-- `contracts/CarPass.sol`: current placeholder contract.
+- `contracts/CarPass.sol`: ERC-721 vehicular con roles, hitos, validacion de km, sello de calidad y consultas publicas.
 - `scripts/deploy.ts`: Sepolia deploy script.
 - `frontend/src/App.tsx`: current DApp shell.
 
@@ -29,6 +29,6 @@
 
 ## User Constraint
 
-Do not add tests. Do not run frontend validation commands unless the user explicitly asks in the current turn.
+Do not add tests unless the user explicitly asks in the current turn or the task is EPIC-07. Do not run frontend validation commands unless the user explicitly asks in the current turn.
 
 Commit messages must not include `Co-authored-by:` or any co-author trailer.
