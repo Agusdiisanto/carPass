@@ -7,5 +7,7 @@
     "outDir": "dist",
     "types": ["node"],
     "verbatimModuleSyntax": true
-  }
+  },
+  "include": ["hardhat.config.ts", "scripts/**/*.ts"],
+  "exclude": ["frontend", "test", "node_modules", "artifacts", "cache", "dist"]
 }

@@ -1,47 +1,30 @@
 import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
+import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
+import { formatKm } from '../domain/carpass/formatters'
+import { isValidMileage, isValidVin } from '../domain/carpass/validators'
 
 export function TallerView({ address }: { address: string }) {
-  const { busy, message, agregarService, getVehiculoPorVin, getUltimoKm } = useCarPass()
-
-  const [vin, setVin] = useState('')
-  const [tokenId, setTokenId] = useState<bigint | null>(null)
-  const [lastKm, setLastKm] = useState(0)
-  const [vinOk, setVinOk] = useState(false)
-  const [vinError, setVinError] = useState('')
+  const { busy, message, agregarService } = useCarPass()
+  const lookup = useVehicleLookup({ loadMileage: true })
 
   const [km, setKm] = useState(0)
   const [tipo, setTipo] = useState('Service oficial')
   const [desc, setDesc] = useState('')
 
-  const kmValido = km > lastKm
+  const kmValido = isValidMileage(km, lookup.lastKm)
 
   async function buscarVehiculo() {
-    if (vin.length !== 17) return
-    setVinError('')
-    setVinOk(false)
-    try {
-      const { tokenId: tid, info } = await getVehiculoPorVin(vin)
-      if (!info.vin) {
-        setVinError('Vehiculo no encontrado')
-        return
-      }
-      const ultimo = await getUltimoKm(tid)
-      setTokenId(tid)
-      setLastKm(ultimo)
-      setKm(ultimo + 1000)
-      setVinOk(true)
-    } catch {
-      setVinError('No se pudo consultar el contrato')
-    }
+    const result = await lookup.search()
+    if (result) setKm(result.lastKm + 1000)
   }
 
   async function handleService() {
-    if (!tokenId) return
-    const ok = await agregarService(tokenId, km, tipo, desc || 'Service registrado')
+    if (!lookup.tokenId) return
+    const ok = await agregarService(lookup.tokenId, km, tipo, desc || 'Service registrado')
     if (ok) {
-      setLastKm(km)
+      lookup.setLastKm(km)
       setKm(km + 1000)
       setDesc('')
     }
@@ -52,7 +35,7 @@ export function TallerView({ address }: { address: string }) {
       <div className="view-header">
         <div className="role-badge taller">Taller</div>
         <h2>Carga de service</h2>
-        <p className="view-desc">Registrá el mantenimiento de un vehículo. El kilometraje debe ser mayor al último registrado.</p>
+        <p className="view-desc">Registra el mantenimiento de un vehiculo. El kilometraje debe ser mayor al ultimo registrado.</p>
       </div>
 
       <div className="panels-grid single">
@@ -65,30 +48,30 @@ export function TallerView({ address }: { address: string }) {
               <input
                 maxLength={17}
                 placeholder="17 caracteres"
-                value={vin}
-                onChange={(e) => { setVin(e.target.value.toUpperCase()); setVinOk(false) }}
+                value={lookup.vin}
+                onChange={(e) => lookup.setVin(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && buscarVehiculo()}
               />
             </label>
             <button
               className="btn-secondary search-btn"
-              disabled={vin.length !== 17}
+              disabled={!isValidVin(lookup.vin) || lookup.loading}
               onClick={buscarVehiculo}
             >
-              Buscar
+              {lookup.loading ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
 
-          {vinError && <p className="error-msg">{vinError}</p>}
+          {lookup.error && <p className="error-msg">{lookup.error}</p>}
 
-          {vinOk && (
+          {lookup.found && (
             <div className="km-info-banner">
-              Ultimo kilometraje registrado: <strong>{lastKm.toLocaleString('es-AR')} km</strong>
+              Ultimo kilometraje registrado: <strong>{formatKm(lookup.lastKm)}</strong>
             </div>
           )}
         </section>
 
-        {vinOk && (
+        {lookup.found && (
           <section className="panel">
             <h3>Datos del service</h3>
 
@@ -120,11 +103,11 @@ export function TallerView({ address }: { address: string }) {
             />
 
             <div className={`km-validation ${kmValido ? 'valid' : 'invalid'}`}>
-              <span className="km-icon">{kmValido ? '✓' : '✗'}</span>
+              <span className="km-icon">{kmValido ? 'OK' : 'X'}</span>
               <span>
                 {kmValido
-                  ? `${km.toLocaleString('es-AR')} km — valido`
-                  : `${km.toLocaleString('es-AR')} km — debe superar ${lastKm.toLocaleString('es-AR')} km`}
+                  ? `${formatKm(km)} - valido`
+                  : `${formatKm(km)} - debe superar ${formatKm(lookup.lastKm)}`}
               </span>
             </div>
 

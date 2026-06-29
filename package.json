@@ -9,11 +9,12 @@
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",
+    "deploy:check": "node scripts/check-deploy-readiness.mjs",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "export:frontend": "node scripts/export-frontend-artifacts.mjs",
     "seed:sepolia": "hardhat run scripts/seed.ts --network sepolia",
     "node": "hardhat node",
-    "test:contracts": "hardhat run test/CarPass.km.ts",
+    "test:contracts": "hardhat run test/CarPass.defense.ts",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:preview": "npm --prefix frontend run preview"

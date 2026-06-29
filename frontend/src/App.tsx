@@ -3,6 +3,7 @@ import './App.css'
 import { useWallet, shortAddress, expectedChainId } from './hooks/useWallet'
 import { detectRole, hasContractAddress } from './hooks/useCarPass'
 import type { Role } from './hooks/useCarPass'
+import { ROLE_BADGE_CLASS, ROLE_LABELS } from './domain/carpass/roles'
 import { AdminView } from './views/AdminView'
 import { RegistradorView } from './views/RegistradorView'
 import { TallerView } from './views/TallerView'
@@ -10,24 +11,6 @@ import { AseguradoraView } from './views/AseguradoraView'
 import { InspectorVTVView } from './views/InspectorVTVView'
 import { NoRoleView } from './views/NoRoleView'
 import { PublicView } from './views/PublicView'
-
-const ROLE_LABELS: Record<Role, string> = {
-  admin: 'Administrador',
-  registrador: 'Concesionaria',
-  mecanico: 'Taller',
-  aseguradora: 'Aseguradora',
-  inspector: 'Inspector VTV',
-  none: 'Sin rol',
-}
-
-const ROLE_BADGE_CLASS: Record<Role, string> = {
-  admin: 'admin',
-  registrador: 'registrador',
-  mecanico: 'taller',
-  aseguradora: 'aseguradora',
-  inspector: 'inspector',
-  none: 'none',
-}
 
 export default function App() {
   const { address, chainId, connected, wrongNetwork, connect } = useWallet()
@@ -98,6 +81,21 @@ export default function App() {
           </button>
         </nav>
       </header>
+
+      <section className="runtime-strip" aria-label="Estado de conexion">
+        <div className={`runtime-item ${hasContractAddress ? 'ok' : 'warn'}`}>
+          <span>Contrato</span>
+          <strong>{hasContractAddress ? 'Configurado' : 'Pendiente'}</strong>
+        </div>
+        <div className={`runtime-item ${!connected || !wrongNetwork ? 'ok' : 'warn'}`}>
+          <span>Red</span>
+          <strong>{chainId ? (wrongNetwork ? `Chain ${chainId}` : 'Sepolia') : 'Sin wallet'}</strong>
+        </div>
+        <div className={`runtime-item ${connected ? 'ok' : 'neutral'}`}>
+          <span>Wallet</span>
+          <strong>{connected ? shortAddress(address) : 'No conectada'}</strong>
+        </div>
+      </section>
 
       {!hasContractAddress && (
         <div className="config-warning">

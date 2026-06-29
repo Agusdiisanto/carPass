@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
+import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
+import { isValidVin } from '../domain/carpass/validators'
 
 const GRAVEDAD_OPTIONS = [
   { value: 0, label: 'Leve' },
@@ -9,38 +11,17 @@ const GRAVEDAD_OPTIONS = [
 ]
 
 export function AseguradoraView({ address }: { address: string }) {
-  const { busy, message, agregarSiniestro, getVehiculoPorVin } = useCarPass()
-
-  const [vin, setVin] = useState('')
-  const [tokenId, setTokenId] = useState<bigint | null>(null)
-  const [vinOk, setVinOk] = useState(false)
-  const [vinError, setVinError] = useState('')
+  const { busy, message, agregarSiniestro } = useCarPass()
+  const lookup = useVehicleLookup()
 
   const [gravedad, setGravedad] = useState(0)
   const [desc, setDesc] = useState('')
   const [reparado, setReparado] = useState(false)
   const [costo, setCosto] = useState(0)
 
-  async function buscarVehiculo() {
-    if (vin.length !== 17) return
-    setVinError('')
-    setVinOk(false)
-    try {
-      const { tokenId: tid, info } = await getVehiculoPorVin(vin)
-      if (!info.vin) {
-        setVinError('Vehiculo no encontrado')
-        return
-      }
-      setTokenId(tid)
-      setVinOk(true)
-    } catch {
-      setVinError('No se pudo consultar el contrato')
-    }
-  }
-
   async function handleSiniestro() {
-    if (!tokenId) return
-    const ok = await agregarSiniestro(tokenId, gravedad, desc, reparado, costo)
+    if (!lookup.tokenId) return
+    const ok = await agregarSiniestro(lookup.tokenId, gravedad, desc, reparado, costo)
     if (ok) {
       setDesc('')
       setCosto(0)
@@ -53,7 +34,7 @@ export function AseguradoraView({ address }: { address: string }) {
       <div className="view-header">
         <div className="role-badge aseguradora">Aseguradora</div>
         <h2>Registro de siniestros</h2>
-        <p className="view-desc">Declaratoria de accidentes y daños sobre vehículos asegurados.</p>
+        <p className="view-desc">Declaratoria de accidentes y danos sobre vehiculos asegurados.</p>
       </div>
 
       <div className="panels-grid single">
@@ -66,25 +47,25 @@ export function AseguradoraView({ address }: { address: string }) {
               <input
                 maxLength={17}
                 placeholder="17 caracteres"
-                value={vin}
-                onChange={(e) => { setVin(e.target.value.toUpperCase()); setVinOk(false) }}
-                onKeyDown={(e) => e.key === 'Enter' && buscarVehiculo()}
+                value={lookup.vin}
+                onChange={(e) => lookup.setVin(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && lookup.search()}
               />
             </label>
             <button
               className="btn-secondary search-btn"
-              disabled={vin.length !== 17}
-              onClick={buscarVehiculo}
+              disabled={!isValidVin(lookup.vin) || lookup.loading}
+              onClick={() => lookup.search()}
             >
-              Buscar
+              {lookup.loading ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
 
-          {vinError && <p className="error-msg">{vinError}</p>}
-          {vinOk && <div className="km-info-banner">Vehiculo encontrado. Completá los datos del siniestro.</div>}
+          {lookup.error && <p className="error-msg">{lookup.error}</p>}
+          {lookup.found && <div className="km-info-banner">Vehiculo encontrado. Completa los datos del siniestro.</div>}
         </section>
 
-        {vinOk && (
+        {lookup.found && (
           <section className="panel">
             <h3>Datos del siniestro</h3>
 
@@ -101,7 +82,7 @@ export function AseguradoraView({ address }: { address: string }) {
               Descripcion
               <textarea
                 className="textarea-input"
-                placeholder="Describí el siniestro en detalle..."
+                placeholder="Describi el siniestro en detalle..."
                 rows={4}
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
@@ -115,7 +96,7 @@ export function AseguradoraView({ address }: { address: string }) {
 
             <label className="field checkbox-field">
               <input checked={reparado} type="checkbox" onChange={(e) => setReparado(e.target.checked)} />
-              El vehículo ya fue reparado
+              El vehiculo ya fue reparado
             </label>
 
             <div className="wallet-info">

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { isAddress } from 'ethers'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
+import { normalizeVin } from '../domain/carpass/formatters'
+import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
 import { shortAddress } from '../hooks/useWallet'
 import { RegistradorView } from './RegistradorView'
 import { TallerView } from './TallerView'
@@ -38,12 +39,13 @@ export function AdminView({ address }: { address: string }) {
 
   const [roleTarget, setRoleTarget] = useState('')
   const [selectedRole, setSelectedRole] = useState(ROLES[0].fn)
-  const propietarioValido = !propietario || isAddress(propietario)
-  const roleTargetValido = isAddress(roleTarget)
+  const propietarioValido = !propietario || isValidWalletAddress(propietario)
+  const roleTargetValido = isValidWalletAddress(roleTarget)
+  const vehicleInfo: VehiculoInfo = { vin, marca, modelo, anio, color }
+  const vehicleFormValido = isValidVehicleInfo(vehicleInfo) && propietarioValido
 
   async function handleRegistrar() {
-    const info: VehiculoInfo = { vin, marca, modelo, anio, color }
-    await registrarVehiculo(info, propietario || address)
+    await registrarVehiculo(vehicleInfo, propietario || address)
   }
 
   async function handleGrant() {
@@ -73,9 +75,9 @@ export function AdminView({ address }: { address: string }) {
 
             <label className="field">
               VIN <span className="field-hint">17 caracteres</span>
-              <input maxLength={17} value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} />
+              <input maxLength={17} value={vin} onChange={(e) => setVin(normalizeVin(e.target.value))} />
               {vin.length > 0 && (
-                <span className={`vin-count ${vin.length === 17 ? 'ok' : 'warn'}`}>{vin.length}/17</span>
+                <span className={`vin-count ${isValidVin(vin) ? 'ok' : 'warn'}`}>{vin.length}/17</span>
               )}
             </label>
 
@@ -100,7 +102,7 @@ export function AdminView({ address }: { address: string }) {
 
             <button
               className="btn-primary full-width"
-              disabled={vin.length !== 17 || !propietarioValido || Boolean(busy)}
+              disabled={!vehicleFormValido || Boolean(busy)}
               onClick={handleRegistrar}
             >
               {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}

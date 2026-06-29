@@ -12,7 +12,14 @@ const carPass = await ethers.deployContract("CarPass");
 await carPass.waitForDeployment();
 
 const address = await carPass.getAddress();
+const deploymentTx = carPass.deploymentTransaction();
+const receipt = deploymentTx === null ? null : await deploymentTx.wait();
+const chain = await ethers.provider.getNetwork();
+
 console.log("CarPass deployed to:", address);
+if (deploymentTx !== null) {
+  console.log("Deployment tx:", deploymentTx.hash);
+}
 
 const deploymentDir = join(process.cwd(), "deployments", "sepolia");
 await mkdir(deploymentDir, { recursive: true });
@@ -22,8 +29,11 @@ await writeFile(
     {
       contractName: "CarPass",
       network: "sepolia",
+      chainId: chain.chainId.toString(),
       address,
       deployer: deployer.address,
+      transactionHash: deploymentTx?.hash ?? "",
+      blockNumber: receipt?.blockNumber ?? null,
       deployedAt: new Date().toISOString(),
     },
     null,

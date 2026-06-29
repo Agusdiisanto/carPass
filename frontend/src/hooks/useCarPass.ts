@@ -1,7 +1,9 @@
-import { BrowserProvider, Contract, Interface, ZeroAddress, isAddress } from 'ethers'
+import { BrowserProvider, Contract, ZeroAddress, isAddress } from 'ethers'
 import { useState } from 'react'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
+import { parseContractError } from '../domain/carpass/errors'
+import type { Role } from '../domain/carpass/roles'
 
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
@@ -17,7 +19,7 @@ export const ABI = CARPASS_ABI
 export const CONTRACT_ADDRESS = resolveContractAddress()
 export const hasContractAddress = isAddress(CONTRACT_ADDRESS)
 
-export type Role = 'admin' | 'registrador' | 'mecanico' | 'aseguradora' | 'inspector' | 'none'
+export type { Role } from '../domain/carpass/roles'
 
 export type VehiculoInfo = {
   vin: string
@@ -54,50 +56,6 @@ export type RegistroVTV = {
 export type SelloCalidad = {
   estado: number
   motivo: string
-}
-
-function parseContractError(error: unknown): string {
-  const raw = error as Record<string, unknown>
-  const data =
-    (raw?.data as string) ??
-    ((raw?.error as Record<string, unknown>)?.data as string) ??
-    ((raw?.info as Record<string, unknown>)?.error as Record<string, unknown>)?.data as string
-
-  if (data) {
-    try {
-      const iface = new Interface(ABI)
-      const parsed = iface.parseError(data)
-      if (parsed) {
-        switch (parsed.name) {
-          case 'VehiculoYaRegistrado':
-            return `El VIN ${parsed.args[0]} ya está registrado`
-          case 'VehiculoNoEncontrado':
-            return 'Vehículo no encontrado en el contrato'
-          case 'KilometrajeNoMonotonico':
-            return `Kilometraje inválido: ${Number(parsed.args[0]).toLocaleString('es-AR')} km debe superar ${Number(parsed.args[1]).toLocaleString('es-AR')} km`
-          case 'VinInvalido':
-            return 'VIN inválido: debe tener exactamente 17 caracteres'
-          case 'TransferenciaSoloPropietario':
-            return 'Solo el propietario puede transferir este vehículo'
-          case 'AccessControlUnauthorizedAccount':
-            return 'Tu wallet no tiene permisos para esta operación'
-          default:
-            return `Error del contrato: ${parsed.name}`
-        }
-      }
-    } catch {
-      // no se pudo parsear, continúa al fallback
-    }
-  }
-
-  if (error instanceof Error) {
-    const msg = error.message.split('\n')[0]
-    if (msg.includes('user rejected')) return 'Transacción cancelada por el usuario'
-    if (msg.includes('insufficient funds')) return 'Fondos insuficientes para pagar el gas'
-    return msg.slice(0, 120)
-  }
-
-  return 'Transacción rechazada'
 }
 
 function getProvider() {

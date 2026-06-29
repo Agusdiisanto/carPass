@@ -26,8 +26,8 @@ El trabajo pendiente principal no es agregar mas alcance a ciegas, sino ordenar 
 | EPIC-04 | Roles & Access Control | Contrato | 02 | MVP roles, Fase 2 revocacion | DONE |
 | EPIC-05 | Event Logging & Validation Rules | Contrato | 03, 04 | MVP service + km | PARTIAL |
 | EPIC-06 | Decision Engine & Quality Seal | Contrato | 05 | Fase 2 | DONE |
-| EPIC-07 | Contract Test Suite | Contrato | 03-06 | MVP minimo, Fase 2 completa | PARTIAL |
-| EPIC-08 | Deployment & On-chain Verification | Contrato | 07 | MVP | BLOCKED |
+| EPIC-07 | Contract Test Suite | Contrato | 03-06 | MVP + defensa | DONE |
+| EPIC-08 | Deployment & On-chain Verification | Contrato | 07 | MVP | PARTIAL |
 | EPIC-09 | Frontend Scaffold & Wallet Connection | Frontend | 08 | MVP | DONE |
 | EPIC-10 | Contract Integration Layer | Frontend | 08, 09 | MVP | DONE |
 | EPIC-11 | Role-Based Forms | Frontend | 10 | MVP alta + service, Fase 2 resto | DONE |
@@ -111,7 +111,7 @@ Spec:
 
 ### EPIC-05 - Event Logging & Validation Rules
 
-Estado: `BLOCKED`.
+Estado: `PARTIAL`.
 
 Implementado:
 
@@ -147,18 +147,22 @@ Spec:
 
 ### EPIC-07 - Contract Test Suite
 
-Estado: `PARTIAL`.
+Estado: `DONE`.
 
 Implementado:
 
-- Suite MVP `test/CarPass.km.ts`.
+- Suite de defensa `test/CarPass.defense.ts` con helpers compartidos en `test/helpers/carPass.ts`.
 - Script `npm run test:contracts`.
-- Cobertura minima de service valido y rechazo por kilometraje menor.
+- Service valido y rechazo por kilometraje menor.
+- Doble VIN.
+- Wallet sin rol.
+- Transferencia por no-owner.
+- Revocacion de taller conservando historial previo.
+- Sello `ACTIVO`, `VENCIDO` y `REVOCADO`.
 
 Falta:
 
-- Completar cobertura final de rechazos y estados si se trabaja EPIC-07.
-- Verificar suite con Node compatible.
+- Solo quedarian bordes extra de auditoria si el equipo quiere ir mas alla de la defensa.
 
 Spec:
 
@@ -171,21 +175,23 @@ Estado: `PARTIAL`.
 Implementado:
 
 - `scripts/deploy.ts`.
-- `scripts/seed.ts` con datos demo.
+- `scripts/check-deploy-readiness.mjs`.
+- `scripts/seed.ts` con datos demo idempotentes.
 - `scripts/export-frontend-artifacts.mjs`.
+- `docs/DEPLOY.md` con receta operativa de Sepolia y seed.
 - `deployments/sepolia/CarPass.json` con la address publica heredada del seed.
 - ABI/address exportados a `frontend/src/contracts/`.
 - Variables de entorno Sepolia documentadas.
 
 Falta:
 
-- Verificar compile/deploy con Node `22.13.0+`.
+- Ejecutar deploy real en Sepolia si se decide redeployar.
 - Confirmar si la address heredada sigue siendo la final para defensa o redeployar.
 - Verificacion del contrato en explorador si se requiere para entrega.
 
 Bloqueo:
 
-- El entorno actual usa Node `20.18.1`; Hardhat 3 requiere Node `22.13.0+`.
+- Deploy, seed y verificacion on-chain requieren credenciales locales (`SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`) y fondos Sepolia.
 
 Spec:
 
@@ -297,12 +303,34 @@ Decision:
 | IPFS | Fuera de alcance | Es almacenamiento documental externo; no hace falta para demostrar trazabilidad on-chain. |
 | Roles | Cerrado: 5 roles | Admin, registrador, mecanico, aseguradora, inspector VTV. |
 | Alta del vehiculo | Cerrado: registrador/concesionaria | Ya esta implementado con `REGISTRADOR_ROLE`. |
-| ABI frontend | Pendiente | Conviene exportar desde artifacts para evitar desincronizacion. |
+| ABI frontend | Cerrado | Exportado desde artifacts con `npm run export:frontend`; repetir si cambia el contrato. |
 
 ## Bloqueos Conocidos
 
-- `npm run compile` no verifica en Node `20.18.1`; Hardhat 3 requiere Node `22.13.0+`.
-- Hay implementacion de frontend por encima de specs canonicas, por lo que antes de tocar pantallas conviene escribir o consolidar SDD de EPIC-09 a EPIC-11.
+- Deploy real de EPIC-08 requiere credenciales locales y fondos Sepolia.
+- Verificacion en explorador requiere decidir si se agrega plugin/flujo de verify o si se documenta manualmente para la entrega.
+
+## Hardening antes de entrega
+
+Estado: `PARTIAL`.
+
+Implementado:
+
+- Capa de dominio frontend en `frontend/src/domain/carpass/`.
+- Validadores compartidos en `frontend/src/domain/carpass/validators.ts`.
+- Busqueda reutilizable por VIN en `frontend/src/hooks/useVehicleLookup.ts`.
+- Suite de defensa organizada con helpers.
+- Seed demo idempotente.
+- Guia de deploy en `docs/DEPLOY.md`.
+- Mapa de codigo en `docs/CODEMAP.md`.
+
+Pendiente recomendado:
+
+- Limpiar mojibake restante en textos de UI/docs.
+- Dividir `PublicView.tsx` en componentes mas chicos.
+- Agregar `scripts/verify-deployment.mjs`.
+- Sumar tests puntuales de VIN invalido, km igual, autoria VTV/siniestro y VTV rechazada.
+- Definir address final Sepolia y cerrar EPIC-08.
 
 ## Regla de Trabajo
 

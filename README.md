@@ -54,6 +54,7 @@ VITE_CARPASS_CONTRACT_ADDRESS=0x... # opcional si existe deployments/sepolia/Car
 
 ```bash
 npm run compile
+npm run deploy:check
 npm run deploy:sepolia
 npm run export:frontend
 npm run seed:sepolia
@@ -63,14 +64,17 @@ npm run frontend:dev
 Flujo recomendado de deploy:
 
 1. `npm run compile`
-2. `npm run deploy:sepolia`
-3. `npm run export:frontend`
-4. Copiar o mantener `VITE_CARPASS_CONTRACT_ADDRESS` solo si se necesita override local.
-5. `npm run seed:sepolia` para datos demo.
+2. `npm run deploy:check`
+3. `npm run deploy:sepolia`
+4. `npm run export:frontend`
+5. Copiar o mantener `VITE_CARPASS_CONTRACT_ADDRESS` solo si se necesita override local.
+6. `npm run seed:sepolia` para datos demo.
+
+Guia detallada: `docs/DEPLOY.md`.
 
 ## Restriccion del usuario
 
-No agregar, adjuntar ni proponer tests. Los agentes tampoco deben ejecutar validaciones a nivel frontend, incluyendo `npm run frontend:build`, lint, e2e, Playwright o audits del paquete `frontend`, salvo que el usuario lo pida explicitamente en ese turno.
+No agregar, adjuntar ni proponer tests salvo pedido explicito del usuario o trabajo directo sobre EPIC-07. Los agentes tampoco deben ejecutar validaciones a nivel frontend, incluyendo `npm run frontend:build`, lint, e2e, Playwright o audits del paquete `frontend`, salvo que el usuario lo pida explicitamente en ese turno.
 
 Si un agente crea commits, no debe agregar trailers de coautoria. Queda prohibido incluir lineas como `Co-authored-by:` o variantes similares en los mensajes de commit.
 

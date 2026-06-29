@@ -4,6 +4,14 @@ import { join } from "node:path";
 
 const { ethers } = await network.create();
 
+type DemoVehicle = {
+  vin: string;
+  marca: string;
+  modelo: string;
+  anio: number;
+  color: string;
+};
+
 function readJson(path: string) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -27,112 +35,208 @@ function resolveContractAddress() {
 const artifact = readJson(
   join(process.cwd(), "artifacts", "contracts", "CarPass.sol", "CarPass.json"),
 );
-const ABI = artifact.abi;
-const CONTRACT_ADDRESS = resolveContractAddress();
+const contractAddress = resolveContractAddress();
+if (!ethers.isAddress(contractAddress)) {
+  throw new Error(`Invalid CarPass address: ${contractAddress}`);
+}
 
 const [deployer] = await ethers.getSigners();
-console.log("Seeding CarPass desde:", deployer.address);
-console.log("Contrato CarPass:", CONTRACT_ADDRESS);
-
-const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, deployer);
-
-// Otorgar todos los roles al deployer para el seed
-console.log("\nAsignando roles al deployer...");
-const [mecRole, vtvRole, asegRole] = await Promise.all([
-  contract.MECANICO_ROLE(),
-  contract.INSPECTOR_VTV_ROLE(),
-  contract.ASEGURADORA_ROLE(),
-]);
-await (await contract.grantRole(mecRole, deployer.address)).wait();
-await (await contract.grantRole(vtvRole, deployer.address)).wait();
-await (await contract.grantRole(asegRole, deployer.address)).wait();
-console.log("Roles asignados.");
+const carPass = new ethers.Contract(contractAddress, artifact.abi, deployer);
 
 const now = Math.floor(Date.now() / 1000);
 const oneYear = 365 * 24 * 60 * 60;
 const zero = "0x0000000000000000000000000000000000000000";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Vehiculo 1 — Sello ACTIVO
-// Honda Civic con service reciente y VTV aprobada vigente
-// ─────────────────────────────────────────────────────────────────────────────
-console.log("\n[1/5] Honda Civic 2022 — sello ACTIVO...");
-await (await contract.registrarVehiculo(
-  { vin: "1HGBH41JXMN109186", marca: "Honda", modelo: "Civic", anio: 2022, color: "Gris" },
-  deployer.address,
-)).wait();
-const tid1 = await contract.vinToTokenId("1HGBH41JXMN109186");
-await (await contract.agregarService(tid1, { timestamp: 0, tipoServicio: "Service 10.000 km", kilometraje: 10000, taller: zero, descripcion: "Cambio de aceite y filtros" })).wait();
-await (await contract.agregarService(tid1, { timestamp: 0, tipoServicio: "Service 20.000 km", kilometraje: 20000, taller: zero, descripcion: "Cambio de aceite, filtros y bujias" })).wait();
-await (await contract.agregarService(tid1, { timestamp: 0, tipoServicio: "Service 30.000 km", kilometraje: 30000, taller: zero, descripcion: "Service mayor: frenos, suspension y liquidos" })).wait();
-await (await contract.agregarVTV(tid1, { timestamp: 0, resultado: 0, vencimiento: now + oneYear, planta: zero })).wait();
-console.log("  VIN: 1HGBH41JXMN109186 — 3 services, VTV aprobada vigente → ACTIVO");
+async function grantSeedRoles() {
+  const roles = await Promise.all([
+    carPass.MECANICO_ROLE(),
+    carPass.INSPECTOR_VTV_ROLE(),
+    carPass.ASEGURADORA_ROLE(),
+  ]);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Vehiculo 2 — Sello VENCIDO por sin VTV
-// Ford Focus con services pero nunca fue a VTV
-// ─────────────────────────────────────────────────────────────────────────────
-console.log("\n[2/5] Ford Focus 2020 — sello VENCIDO (sin VTV)...");
-await (await contract.registrarVehiculo(
-  { vin: "3FADP4EJ8FM123456", marca: "Ford", modelo: "Focus", anio: 2020, color: "Rojo" },
-  deployer.address,
-)).wait();
-const tid2 = await contract.vinToTokenId("3FADP4EJ8FM123456");
-await (await contract.agregarService(tid2, { timestamp: 0, tipoServicio: "Service 15.000 km", kilometraje: 15000, taller: zero, descripcion: "Cambio de aceite" })).wait();
-await (await contract.agregarService(tid2, { timestamp: 0, tipoServicio: "Service 30.000 km", kilometraje: 30000, taller: zero, descripcion: "Service completo" })).wait();
-console.log("  VIN: 3FADP4EJ8FM123456 — 2 services, sin VTV → VENCIDO");
+  for (const role of roles) {
+    if (!(await carPass.hasRole(role, deployer.address))) {
+      await (await carPass.grantRole(role, deployer.address)).wait();
+      console.log("Granted seed role:", role);
+    }
+  }
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Vehiculo 3 — Sello VENCIDO por VTV con observaciones
-// Chevrolet Cruze con VTV aprobada pero con observaciones
-// ─────────────────────────────────────────────────────────────────────────────
-console.log("\n[3/5] Chevrolet Cruze 2019 — sello VENCIDO (VTV con observaciones)...");
-await (await contract.registrarVehiculo(
-  { vin: "1G1BE5SM1H7123456", marca: "Chevrolet", modelo: "Cruze", anio: 2019, color: "Blanco" },
-  deployer.address,
-)).wait();
-const tid3 = await contract.vinToTokenId("1G1BE5SM1H7123456");
-await (await contract.agregarService(tid3, { timestamp: 0, tipoServicio: "Service 25.000 km", kilometraje: 25000, taller: zero, descripcion: "Cambio de aceite y filtros" })).wait();
-await (await contract.agregarVTV(tid3, { timestamp: 0, resultado: 1, vencimiento: now + oneYear, planta: zero })).wait();
-console.log("  VIN: 1G1BE5SM1H7123456 — service + VTV con observaciones → VENCIDO");
+async function registrar(vehicle: DemoVehicle) {
+  const tokenId = await carPass.vinToTokenId(vehicle.vin);
+  const [existingVin] = await carPass.getVehiculoInfo(tokenId);
+  if (existingVin === vehicle.vin) {
+    console.log("Vehicle already seeded:", vehicle.vin);
+    return tokenId;
+  }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Vehiculo 4 — Sello REVOCADO por siniestro grave sin reparar
-// Toyota Corolla con choque frontal grave no reparado
-// ─────────────────────────────────────────────────────────────────────────────
-console.log("\n[4/5] Toyota Corolla 2021 — sello REVOCADO (siniestro grave)...");
-await (await contract.registrarVehiculo(
-  { vin: "2T1BURHE0JC043821", marca: "Toyota", modelo: "Corolla", anio: 2021, color: "Negro" },
-  deployer.address,
-)).wait();
-const tid4 = await contract.vinToTokenId("2T1BURHE0JC043821");
-await (await contract.agregarService(tid4, { timestamp: 0, tipoServicio: "Service 10.000 km", kilometraje: 10000, taller: zero, descripcion: "Cambio de aceite" })).wait();
-await (await contract.agregarVTV(tid4, { timestamp: 0, resultado: 0, vencimiento: now + oneYear, planta: zero })).wait();
-await (await contract.agregarSiniestro(tid4, { timestamp: 0, gravedad: 2, descripcion: "Choque frontal a alta velocidad. Airbags desplegados. Daño estructural en tren delantero.", reparado: false, costoEstimado: 800000, declarante: zero })).wait();
-console.log("  VIN: 2T1BURHE0JC043821 — siniestro GRAVE sin reparar → REVOCADO");
+  await (await carPass.registrarVehiculo(vehicle, deployer.address)).wait();
+  console.log("Vehicle seeded:", vehicle.vin);
+  return tokenId;
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Vehiculo 5 — Sello REVOCADO por VTV rechazada
-// Renault Logan que reprobó la VTV
-// ─────────────────────────────────────────────────────────────────────────────
-console.log("\n[5/5] Renault Logan 2018 — sello REVOCADO (VTV rechazada)...");
-await (await contract.registrarVehiculo(
-  { vin: "8A1FB1AB2JT123456", marca: "Renault", modelo: "Logan", anio: 2018, color: "Azul" },
-  deployer.address,
-)).wait();
-const tid5 = await contract.vinToTokenId("8A1FB1AB2JT123456");
-await (await contract.agregarService(tid5, { timestamp: 0, tipoServicio: "Service 40.000 km", kilometraje: 40000, taller: zero, descripcion: "Cambio de aceite y revision general" })).wait();
-await (await contract.agregarVTV(tid5, { timestamp: 0, resultado: 2, vencimiento: 0, planta: zero })).wait();
-console.log("  VIN: 8A1FB1AB2JT123456 — VTV rechazada → REVOCADO");
+async function service(tokenId: bigint, km: number, tipo: string, descripcion: string) {
+  const history = await carPass.getHistorialService(tokenId);
+  const exists = history.some(
+    (record: { kilometraje: bigint; tipoServicio: string }) =>
+      record.kilometraje === BigInt(km) && record.tipoServicio === tipo,
+  );
+  if (exists) {
+    console.log("Service already seeded:", tokenId.toString(), km, tipo);
+    return;
+  }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Resumen
-// ─────────────────────────────────────────────────────────────────────────────
-console.log("\n─────────────────────────────────────────");
-console.log("Seed completado. VINs para probar:");
-console.log("  1HGBH41JXMN109186  Honda Civic 2022       → ACTIVO");
-console.log("  3FADP4EJ8FM123456  Ford Focus 2020        → VENCIDO (sin VTV)");
-console.log("  1G1BE5SM1H7123456  Chevrolet Cruze 2019   → VENCIDO (VTV con obs.)");
-console.log("  2T1BURHE0JC043821  Toyota Corolla 2021    → REVOCADO (siniestro grave)");
-console.log("  8A1FB1AB2JT123456  Renault Logan 2018     → REVOCADO (VTV rechazada)");
-console.log("─────────────────────────────────────────");
+  const lastKm = await carPass.ultimoKilometrajeRegistrado(tokenId);
+  if (lastKm >= BigInt(km)) {
+    console.log("Service skipped by mileage guard:", tokenId.toString(), km, "last", lastKm.toString());
+    return;
+  }
+
+  await (
+    await carPass.agregarService(tokenId, {
+      timestamp: 0,
+      tipoServicio: tipo,
+      kilometraje: km,
+      taller: zero,
+      descripcion,
+    })
+  ).wait();
+  console.log("Service seeded:", tokenId.toString(), km, tipo);
+}
+
+async function vtv(tokenId: bigint, resultado: number, vencimiento: number) {
+  const history = await carPass.getHistorialVTV(tokenId);
+  const exists = history.some(
+    (record: { resultado: bigint; vencimiento: bigint }) =>
+      record.resultado === BigInt(resultado) &&
+      (record.vencimiento === BigInt(vencimiento) ||
+        (vencimiento > now && record.vencimiento > BigInt(now))),
+  );
+  if (exists) {
+    console.log("VTV already seeded:", tokenId.toString(), resultado, vencimiento);
+    return;
+  }
+
+  await (
+    await carPass.agregarVTV(tokenId, {
+      timestamp: 0,
+      resultado,
+      vencimiento,
+      planta: zero,
+    })
+  ).wait();
+  console.log("VTV seeded:", tokenId.toString(), resultado, vencimiento);
+}
+
+async function siniestro(
+  tokenId: bigint,
+  gravedad: number,
+  descripcion: string,
+  reparado: boolean,
+  costoEstimado: number,
+) {
+  const history = await carPass.getHistorialSiniestros(tokenId);
+  const exists = history.some(
+    (record: {
+      gravedad: bigint;
+      descripcion: string;
+      reparado: boolean;
+      costoEstimado: bigint;
+    }) =>
+      record.gravedad === BigInt(gravedad) &&
+      record.descripcion === descripcion &&
+      record.reparado === reparado &&
+      record.costoEstimado === BigInt(costoEstimado),
+  );
+  if (exists) {
+    console.log("Siniestro already seeded:", tokenId.toString(), gravedad, descripcion);
+    return;
+  }
+
+  await (
+    await carPass.agregarSiniestro(tokenId, {
+      timestamp: 0,
+      gravedad,
+      descripcion,
+      reparado,
+      costoEstimado,
+      declarante: zero,
+    })
+  ).wait();
+  console.log("Siniestro seeded:", tokenId.toString(), gravedad, descripcion);
+}
+
+console.log("Seeding CarPass demo data");
+console.log("Deployer:", deployer.address);
+console.log("Contract:", contractAddress);
+console.log("Network:", (await ethers.provider.getNetwork()).name);
+
+await grantSeedRoles();
+console.log("Seed roles ready.");
+
+const civic = await registrar({
+  vin: "1HGBH41JXMN109186",
+  marca: "Honda",
+  modelo: "Civic",
+  anio: 2022,
+  color: "Gris",
+});
+await service(civic, 10000, "Service 10.000 km", "Cambio de aceite y filtros");
+await service(civic, 20000, "Service 20.000 km", "Cambio de aceite, filtros y bujias");
+await service(civic, 30000, "Service 30.000 km", "Service mayor: frenos, suspension y liquidos");
+await vtv(civic, 0, now + oneYear);
+
+const focus = await registrar({
+  vin: "3FADP4EJ8FM123456",
+  marca: "Ford",
+  modelo: "Focus",
+  anio: 2020,
+  color: "Rojo",
+});
+await service(focus, 15000, "Service 15.000 km", "Cambio de aceite");
+await service(focus, 30000, "Service 30.000 km", "Service completo");
+
+const cruze = await registrar({
+  vin: "1G1BE5SM1H7123456",
+  marca: "Chevrolet",
+  modelo: "Cruze",
+  anio: 2019,
+  color: "Blanco",
+});
+await service(cruze, 25000, "Service 25.000 km", "Cambio de aceite y filtros");
+await vtv(cruze, 1, now + oneYear);
+
+const corolla = await registrar({
+  vin: "2T1BURHE0JC043821",
+  marca: "Toyota",
+  modelo: "Corolla",
+  anio: 2021,
+  color: "Negro",
+});
+await service(corolla, 10000, "Service 10.000 km", "Cambio de aceite");
+await vtv(corolla, 0, now + oneYear);
+await siniestro(
+  corolla,
+  2,
+  "Choque frontal a alta velocidad. Airbags desplegados. Dano estructural en tren delantero.",
+  false,
+  800000,
+);
+
+const logan = await registrar({
+  vin: "8A1FB1AB2JT123456",
+  marca: "Renault",
+  modelo: "Logan",
+  anio: 2018,
+  color: "Azul",
+});
+await service(logan, 40000, "Service 40.000 km", "Cambio de aceite y revision general");
+await vtv(logan, 2, 0);
+
+console.log("");
+console.log("Seed complete. Demo VINs:");
+console.log("1HGBH41JXMN109186  Honda Civic 2022       -> ACTIVO");
+console.log("3FADP4EJ8FM123456  Ford Focus 2020        -> VENCIDO (sin VTV)");
+console.log("1G1BE5SM1H7123456  Chevrolet Cruze 2019   -> VENCIDO (VTV con observaciones)");
+console.log("2T1BURHE0JC043821  Toyota Corolla 2021    -> REVOCADO (siniestro grave)");
+console.log("8A1FB1AB2JT123456  Renault Logan 2018     -> REVOCADO (VTV rechazada)");

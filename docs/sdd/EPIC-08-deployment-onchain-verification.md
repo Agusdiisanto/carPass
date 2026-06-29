@@ -31,7 +31,8 @@ No incluye QR ni IPFS.
 ## Interfaces y artefactos
 
 - `scripts/deploy.ts`: despliega `CarPass`.
-- `scripts/seed.ts`: carga datos demo contra una address configurada.
+- `scripts/check-deploy-readiness.mjs`: valida Node, artifact, env, red Sepolia y balance sin imprimir secretos.
+- `scripts/seed.ts`: carga datos demo idempotentes contra una address configurada.
 - `scripts/export-frontend-artifacts.mjs`: exporta ABI/address para frontend.
 - `frontend/src/contracts/carpassAbi.ts`: ABI versionado para la DApp.
 - `frontend/src/contracts/carpassDeployment.ts`: address fallback versionada si existe deploy confirmado.
@@ -46,15 +47,18 @@ No incluye QR ni IPFS.
 ## Criterios de aceptacion
 
 - `npm run deploy:sepolia` despliega y muestra address.
+- `npm run deploy:check` informa si faltan credenciales, artifact o fondos antes de desplegar.
 - El deploy deja una fuente clara para configurar frontend.
 - `npm run export:frontend` actualiza ABI/address del frontend desde artifacts.
 - El seed usa la misma address configurada que el deploy documentado.
+- El seed puede re-ejecutarse para demo sin duplicar VINs ni hitos ya cargados.
 - README explica el flujo.
 
 ## Verificacion
 
 ```bash
 npm run compile
+npm run deploy:check
 npm run export:frontend
 ```
 

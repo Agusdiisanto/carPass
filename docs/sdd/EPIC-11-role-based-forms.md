@@ -59,6 +59,8 @@ No incluye QR ni adjuntos IPFS.
 - Validar VIN de 17 caracteres antes de buscar/escribir.
 - Deshabilitar escrituras mientras hay transaccion pendiente.
 - Mostrar mensajes cortos de exito/error.
+- Mostrar errores de contrato frecuentes con texto claro para defensa.
+- Mantener visible el estado de contrato, red y wallet.
 - No ocultar que el contrato puede rechazar aunque la UI permita intentar.
 
 ## Impacto en ABI
@@ -71,6 +73,8 @@ No cambia ABI. Consume la capa EPIC-10.
 - Admin puede gestionar roles y alternar vistas.
 - Taller anticipa rechazo de kilometraje menor o igual.
 - Consulta publica muestra historial y sello por VIN.
+- Consulta publica incluye panel demo con los 5 VINs semilla y sello esperado.
+- La app muestra si el contrato esta configurado, si la red es Sepolia y si hay wallet conectada.
 - No hay formularios de QR ni adjuntos documentales.
 
 ## Verificacion

@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
 import type { RegistroService, RegistroSiniestro, RegistroVTV, SelloCalidad, VehiculoInfo } from '../hooks/useCarPass'
+import { DEMO_VEHICLES } from '../domain/carpass/demoVehicles'
+import { formatDate, formatKm, formatMonthYear, formatNumber, normalizeVin } from '../domain/carpass/formatters'
+import {
+  SINIESTRO_GRAVEDAD_CLASSES,
+  SINIESTRO_GRAVEDAD_LABELS,
+  VTV_RESULT_CLASSES,
+  VTV_RESULT_LABELS,
+} from '../domain/carpass/eventLabels'
+import { getSealUi } from '../domain/carpass/seal'
+import { isValidVin } from '../domain/carpass/validators'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,36 +29,6 @@ type Historial = {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const GRAVEDAD  = ['Leve', 'Moderado', 'Grave']
-const VTV_LABEL = ['Aprobado', 'Con observaciones', 'Rechazada']
-
-const SELLO: Record<number, { label: string; shortLabel: string; cls: string }> = {
-  0: { label: 'Válido',        shortLabel: 'Válido',        cls: 'seal-ok'   },
-  1: { label: 'Observaciones', shortLabel: 'Observaciones', cls: 'seal-warn' },
-  2: { label: 'No válido',     shortLabel: 'No válido',     cls: 'seal-bad'  },
-}
-
-const DEMO_VINS = [
-  { vin: '1HGBH41JXMN109186', label: 'Honda Civic',     sello: 0 },
-  { vin: '3FADP4EJ8FM123456', label: 'Ford Focus',      sello: 1 },
-  { vin: '2T1BURHE0JC043821', label: 'Toyota Corolla',  sello: 2 },
-]
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmtDate(ts: bigint | number) {
-  const n = typeof ts === 'bigint' ? Number(ts) : ts
-  if (!n) return '—'
-  return new Date(n * 1000).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function fmtMonthYear(ts: bigint | number) {
-  const n = typeof ts === 'bigint' ? Number(ts) : ts
-  if (!n) return null
-  const d = new Date(n * 1000)
-  return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
-}
 
 function buildTimeline(
   services: RegistroService[],
@@ -113,7 +93,7 @@ function VehicleHeroCard({ data }: { data: Historial }) {
   const lastKm = data.services.length
     ? Number(data.services[data.services.length - 1].kilometraje)
     : 0
-  const sello = SELLO[data.sello.estado] ?? SELLO[1]
+  const sello = getSealUi(data.sello.estado)
 
   return (
     <div className="vh-card">
@@ -131,7 +111,7 @@ function VehicleHeroCard({ data }: { data: Historial }) {
         </div>
         <div className={`vh-seal-badge ${sello.cls}`}>
           <span className="vh-seal-check">
-            {data.sello.estado === 0 ? '✓' : data.sello.estado === 2 ? '✕' : '!'}
+            {sello.icon}
           </span>
           <span className="vh-seal-label">{sello.label.toUpperCase()}</span>
         </div>
@@ -144,7 +124,7 @@ function VehicleHeroCard({ data }: { data: Historial }) {
         </div>
         <div className="vh-stat-sep" />
         <div className="vh-stat">
-          <span className="vh-stat-val">{lastKm.toLocaleString('es-AR')}</span>
+          <span className="vh-stat-val">{formatNumber(lastKm)}</span>
           <span className="vh-stat-lbl">{data.services.length ? 'Último km' : 'Km inicial'}</span>
         </div>
         <div className="vh-stat-sep" />
@@ -165,13 +145,12 @@ function VehicleHeroCard({ data }: { data: Historial }) {
 // ── Seal quality card ─────────────────────────────────────────────────────────
 
 function SealQualityCard({ sello }: { sello: SelloCalidad }) {
-  const info = SELLO[sello.estado] ?? SELLO[1]
-  const icon = sello.estado === 0 ? '✓' : sello.estado === 2 ? '✕' : '!'
+  const info = getSealUi(sello.estado)
 
   return (
     <div className={`sqc ${info.cls}`}>
       <div className="sqc-body">
-        <div className={`sqc-icon-wrap ${info.cls}`}>{icon}</div>
+        <div className={`sqc-icon-wrap ${info.cls}`}>{info.icon}</div>
         <div>
           <p className="sqc-label">{info.label.toUpperCase()}</p>
           <p className="sqc-reason">{sello.motivo}</p>
@@ -194,20 +173,20 @@ function ServiceCard({ data }: { data: RegistroService }) {
   return (
     <>
       <p className="tl-title">{data.tipoServicio}</p>
-      <p className="tl-km">{Number(data.kilometraje).toLocaleString('es-AR')} km</p>
+      <p className="tl-km">{formatKm(data.kilometraje)}</p>
       {data.descripcion && <p className="tl-desc">{data.descripcion}</p>}
     </>
   )
 }
 
 function VTVCard({ data }: { data: RegistroVTV }) {
-  const cls = ['vtv-ok', 'vtv-warn', 'vtv-bad'][data.resultado] ?? 'vtv-ok'
-  const venc = data.vencimiento > 0n ? fmtMonthYear(data.vencimiento) : null
+  const cls = VTV_RESULT_CLASSES[data.resultado] ?? 'vtv-ok'
+  const venc = data.vencimiento > 0n ? formatMonthYear(data.vencimiento) : null
   return (
     <>
       <div className="tl-header-row">
         <p className="tl-title">Inspección VTV</p>
-        <span className={`tl-badge ${cls}`}>● {VTV_LABEL[data.resultado]}</span>
+        <span className={`tl-badge ${cls}`}>● {VTV_RESULT_LABELS[data.resultado]}</span>
       </div>
       {venc && <p className="tl-km">Vence {venc}</p>}
     </>
@@ -215,12 +194,12 @@ function VTVCard({ data }: { data: RegistroVTV }) {
 }
 
 function SiniestroCard({ data }: { data: RegistroSiniestro }) {
-  const cls = ['sin-leve', 'sin-mod', 'sin-grave'][data.gravedad] ?? 'sin-leve'
+  const cls = SINIESTRO_GRAVEDAD_CLASSES[data.gravedad] ?? 'sin-leve'
   return (
     <>
       <div className="tl-header-row">
         <p className="tl-title">Siniestro declarado</p>
-        <span className={`tl-badge ${cls}`}>{GRAVEDAD[data.gravedad]}</span>
+        <span className={`tl-badge ${cls}`}>{SINIESTRO_GRAVEDAD_LABELS[data.gravedad]}</span>
       </div>
       {data.descripcion && <p className="tl-desc">{data.descripcion}</p>}
       <p className="tl-km">{data.reparado ? 'Reparado' : 'Sin reparar'}</p>
@@ -242,7 +221,7 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
         <div className="tl-line" />
       </div>
       <div className="tl-card">
-        <span className="tl-date">{fmtDate(event.ts)}</span>
+        <span className="tl-date">{formatDate(event.ts)}</span>
         {event.kind === 'service'   && <ServiceCard   data={event.data as RegistroService}   />}
         {event.kind === 'vtv'       && <VTVCard       data={event.data as RegistroVTV}       />}
         {event.kind === 'siniestro' && <SiniestroCard data={event.data as RegistroSiniestro} />}
@@ -261,7 +240,7 @@ export function PublicView() {
   const { getVehiculoPorVin, getHistorial } = useCarPass()
 
   async function buscar(vinToSearch = vin) {
-    if (vinToSearch.length !== 17) return
+    if (!isValidVin(vinToSearch)) return
     setLoading(true)
     setError('')
     setData(null)
@@ -308,7 +287,7 @@ export function PublicView() {
               maxLength={17}
               placeholder="1HGEM21503L000000"
               value={vin}
-              onChange={(e) => { setVin(e.target.value.toUpperCase()); setError('') }}
+              onChange={(e) => { setVin(normalizeVin(e.target.value)); setError('') }}
               onKeyDown={(e) => e.key === 'Enter' && buscar()}
               autoComplete="off"
               spellCheck={false}
@@ -318,7 +297,7 @@ export function PublicView() {
 
           <button
             className="pv-btn-consult"
-            disabled={vin.length !== 17 || loading}
+            disabled={!isValidVin(vin) || loading}
             onClick={() => buscar()}
           >
             <SearchIcon />
@@ -327,13 +306,35 @@ export function PublicView() {
 
           {error && <p className="pv-error">{error}</p>}
 
+          <div className="pv-demo-panel">
+            <div className="pv-demos-head">
+              <span className="pv-demos-label">Demo</span>
+              <p>Elegi un caso para mostrar sello, motivo e historial.</p>
+            </div>
+            <div className="pv-demo-grid">
+              {DEMO_VEHICLES.map((d) => (
+                <button key={d.vin} className="pv-demo-card" onClick={() => selectDemo(d.vin)}>
+                  <span className={`pv-chip-dot ${getSealUi(d.seal).cls}`} />
+                  <span className="pv-demo-main">
+                    <strong>{d.label}</strong>
+                    <code>{d.vin}</code>
+                  </span>
+                  <span className="pv-demo-meta">
+                    <b>{getSealUi(d.seal).label}</b>
+                    <small>{d.reason}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="pv-demos">
             <span className="pv-demos-label">VINS DE DEMOSTRACIÓN</span>
             <div className="pv-chips">
-              {DEMO_VINS.map((d) => (
+              {DEMO_VEHICLES.map((d) => (
                 <button key={d.vin} className="pv-chip" onClick={() => selectDemo(d.vin)}>
-                  <span className={`pv-chip-dot ${SELLO[d.sello].cls}`} />
-                  {d.label} — {SELLO[d.sello].label}
+                  <span className={`pv-chip-dot ${getSealUi(d.seal).cls}`} />
+                  {d.label} - {getSealUi(d.seal).label}
                 </button>
               ))}
             </div>

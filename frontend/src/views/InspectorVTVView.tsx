@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
+import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
+import { isValidVin } from '../domain/carpass/validators'
 
 const RESULTADO_OPTIONS = [
   { value: 0, label: 'Aprobado' },
@@ -8,47 +10,26 @@ const RESULTADO_OPTIONS = [
   { value: 2, label: 'Rechazado' },
 ]
 
-export function InspectorVTVView({ address }: { address: string }) {
-  const { busy, message, agregarVTV, getVehiculoPorVin } = useCarPass()
+function defaultExpiryDate() {
+  const next = new Date()
+  next.setFullYear(next.getFullYear() + 1)
+  return next.toISOString().split('T')[0]
+}
 
-  const [vin, setVin] = useState('')
-  const [tokenId, setTokenId] = useState<bigint | null>(null)
-  const [vinOk, setVinOk] = useState(false)
-  const [vinError, setVinError] = useState('')
+export function InspectorVTVView({ address }: { address: string }) {
+  const { busy, message, agregarVTV } = useCarPass()
+  const lookup = useVehicleLookup()
 
   const [resultado, setResultado] = useState(0)
-
-  const today = new Date()
-  const oneYearLater = new Date(today)
-  oneYearLater.setFullYear(today.getFullYear() + 1)
-  const [vencimiento, setVencimiento] = useState(oneYearLater.toISOString().split('T')[0])
-
-  async function buscarVehiculo() {
-    if (vin.length !== 17) return
-    setVinError('')
-    setVinOk(false)
-    try {
-      const { tokenId: tid, info } = await getVehiculoPorVin(vin)
-      if (!info.vin) {
-        setVinError('Vehiculo no encontrado')
-        return
-      }
-      setTokenId(tid)
-      setVinOk(true)
-    } catch {
-      setVinError('No se pudo consultar el contrato')
-    }
-  }
+  const [vencimiento, setVencimiento] = useState(defaultExpiryDate())
 
   async function handleVTV() {
-    if (!tokenId) return
+    if (!lookup.tokenId) return
     const vencTs = Math.floor(new Date(vencimiento).getTime() / 1000)
-    const ok = await agregarVTV(tokenId, resultado, vencTs)
+    const ok = await agregarVTV(lookup.tokenId, resultado, vencTs)
     if (ok) {
       setResultado(0)
-      const next = new Date()
-      next.setFullYear(next.getFullYear() + 1)
-      setVencimiento(next.toISOString().split('T')[0])
+      setVencimiento(defaultExpiryDate())
     }
   }
 
@@ -57,7 +38,7 @@ export function InspectorVTVView({ address }: { address: string }) {
       <div className="view-header">
         <div className="role-badge inspector">Inspector VTV</div>
         <h2>Registro de revision VTV</h2>
-        <p className="view-desc">Certificá el resultado de la inspección técnica vehicular.</p>
+        <p className="view-desc">Certifica el resultado de la inspeccion tecnica vehicular.</p>
       </div>
 
       <div className="panels-grid single">
@@ -70,25 +51,25 @@ export function InspectorVTVView({ address }: { address: string }) {
               <input
                 maxLength={17}
                 placeholder="17 caracteres"
-                value={vin}
-                onChange={(e) => { setVin(e.target.value.toUpperCase()); setVinOk(false) }}
-                onKeyDown={(e) => e.key === 'Enter' && buscarVehiculo()}
+                value={lookup.vin}
+                onChange={(e) => lookup.setVin(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && lookup.search()}
               />
             </label>
             <button
               className="btn-secondary search-btn"
-              disabled={vin.length !== 17}
-              onClick={buscarVehiculo}
+              disabled={!isValidVin(lookup.vin) || lookup.loading}
+              onClick={() => lookup.search()}
             >
-              Buscar
+              {lookup.loading ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
 
-          {vinError && <p className="error-msg">{vinError}</p>}
-          {vinOk && <div className="km-info-banner">Vehiculo encontrado. Completá el resultado de la inspeccion.</div>}
+          {lookup.error && <p className="error-msg">{lookup.error}</p>}
+          {lookup.found && <div className="km-info-banner">Vehiculo encontrado. Completa el resultado de la inspeccion.</div>}
         </section>
 
-        {vinOk && (
+        {lookup.found && (
           <section className="panel">
             <h3>Resultado de la inspeccion</h3>
 
