@@ -156,7 +156,10 @@ export function mergeHydratedActivities(
   if (hydrated.length === 0) return
   const existingHashes = new Set(entries.map((entry) => entry.txHash).filter(Boolean))
   const novel = hydrated.filter(
-    (entry) => entry.txHash && !existingHashes.has(entry.txHash),
+    (entry) =>
+      entry.walletAddress.toLowerCase() === walletAddress.toLowerCase() &&
+      entry.txHash &&
+      !existingHashes.has(entry.txHash),
   )
   if (novel.length === 0) return
   entries = [...novel, ...entries]
