@@ -21,6 +21,7 @@ import { DemoVehicleCard } from '../components/DemoVehicleCard'
 import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
 import { BrandLogo } from '../components/BrandLogo'
 import { VehiclePassportFlipHero } from '../components/VehiclePassportFlipHero'
+import { VehiclePartsStatusDiagram } from '../components/VehiclePartsStatusDiagram'
 import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
 import { VinSearchPanel } from '../components/VinSearchPanel'
@@ -202,6 +203,8 @@ function VehicleHeroCard({
           <span className="vh-stat-lbl">Siniestros</span>
         </div>
       </div>
+
+      <VehiclePartsStatusDiagram tokenId={data.tokenId} />
     </div>
   )
 }

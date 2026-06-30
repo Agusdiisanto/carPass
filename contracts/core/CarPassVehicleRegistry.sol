@@ -41,6 +41,15 @@ abstract contract CarPassVehicleRegistry is CarPassRoles {
         return _tokenIdFromVin(vin);
     }
 
+    /**
+     * @notice Devuelve true si existe un vehiculo minteado con ese tokenId.
+     * @dev Pensada para integraciones cross-contract (ej. VehicleParts) que necesitan
+     *      validar existencia sin depender de que ownerOf revierta.
+     */
+    function vehiculoExiste(uint256 tokenId) external view returns (bool) {
+        return _carPassOwnerOf(tokenId) != address(0);
+    }
+
     function _tokenIdFromVin(string memory vin) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(vin)));
     }

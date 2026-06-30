@@ -5622,6 +5622,40 @@ main:has(.public-view) {
   padding-top: 10px;
 }
 
+.vps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+}
+
+.vps-car {
+  max-width: 220px;
+}
+
+.vps-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.vps--original .vps-label { color: #4ade80; }
+.vps--reemplazada .vps-label { color: #facc15; }
+.vps--sin-datos .vps-label,
+.vps--loading .vps-label { color: #8b95a1; }
+
+.vps-detail {
+  margin: 0;
+  font-size: 12px;
+  color: #8b95a1;
+}
+
 .sqc-fallback {
   margin: 8px 0 0;
   color: #b45309;

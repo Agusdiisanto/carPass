@@ -3,9 +3,12 @@ import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
 import { OperativeShell } from '../components/OperativeShell'
 import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { formatKm } from '../domain/carpass/formatters'
+import { generateNumeroGrabado } from '../domain/carpass/idGenerators'
 import { isValidMileage } from '../domain/carpass/validators'
+import { TIPOS_PARTE } from '../domain/carpass/vehicleParts'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
+import { useVehicleParts } from '../hooks/useVehicleParts'
 import { shortAddress } from '../hooks/useWallet'
 
 export function TallerView({
@@ -19,12 +22,16 @@ export function TallerView({
 }) {
   const { busy, message, lastOp, agregarService } = useCarPass()
   const lookup = useVehicleLookup({ loadMileage: true })
+  const { busy: parteBusy, message: parteMessage, reemplazarParte } = useVehicleParts()
 
   const [km, setKm] = useState(0)
   const [tipo, setTipo] = useState('Service oficial')
   const [desc, setDesc] = useState('')
+  const [tipoParte, setTipoParte] = useState(0)
+  const [nuevoNumeroGrabado, setNuevoNumeroGrabado] = useState(() => generateNumeroGrabado(0))
 
   const kmValido = isValidMileage(km, lookup.lastKm)
+  const numeroGrabadoValido = nuevoNumeroGrabado.trim().length > 0
 
   async function handleService() {
     if (!lookup.tokenId) return
@@ -34,6 +41,17 @@ export function TallerView({
       setKm(km + 1000)
       setDesc('')
     }
+  }
+
+  function handleTipoParteChange(nuevoTipo: number) {
+    setTipoParte(nuevoTipo)
+    setNuevoNumeroGrabado(generateNumeroGrabado(nuevoTipo))
+  }
+
+  async function handleReemplazarParte() {
+    if (!lookup.tokenId) return
+    const ok = await reemplazarParte(lookup.tokenId, tipoParte, nuevoNumeroGrabado)
+    if (ok) setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))
   }
 
   const panels = (
@@ -114,6 +132,57 @@ export function TallerView({
           >
             {busy === 'Cargando service' ? 'Registrando...' : 'Registrar service'}
           </button>
+        </section>
+      ) : null}
+
+      {lookup.found ? (
+        <section className="panel panel--operative">
+          <div className="panel-step">
+            <span className="panel-step__num">3</span>
+            <div>
+              <h3>Reemplazo de autoparte grabada</h3>
+              <p className="panel-desc">
+                Usar solo cuando se cambia una pieza con grabado antirrobo (ej. cambio de motor).
+                La pieza anterior queda en el historial, no se borra.
+              </p>
+            </div>
+          </div>
+
+          <label className="field">
+            Autoparte
+            <select
+              className="select-input"
+              value={tipoParte}
+              onChange={(e) => handleTipoParteChange(Number(e.target.value))}
+            >
+              {TIPOS_PARTE.map((parteTipo) => (
+                <option key={parteTipo.value} value={parteTipo.value}>
+                  {parteTipo.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            Nuevo número de grabado <span className="field-hint">generado automáticamente</span>
+            <input readOnly value={nuevoNumeroGrabado} />
+          </label>
+          <button
+            className="btn-secondary full-width"
+            onClick={() => setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))}
+          >
+            Regenerar número
+          </button>
+
+          <button
+            className="btn-primary full-width"
+            disabled={!numeroGrabadoValido || Boolean(parteBusy)}
+            onClick={handleReemplazarParte}
+          >
+            {parteBusy === 'Reemplazando autoparte' ? 'Reemplazando...' : 'Reemplazar autoparte'}
+          </button>
+
+          {parteMessage ? <p className="panel-desc">{parteMessage}</p> : null}
         </section>
       ) : null}
     </div>
