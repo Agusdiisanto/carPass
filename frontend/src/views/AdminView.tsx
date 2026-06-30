@@ -4,6 +4,7 @@ import type { VehiculoInfo } from '../hooks/useCarPass'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
 import { shortAddress } from '../hooks/useWallet'
+import { OperativeShell } from '../components/OperativeShell'
 import { RegistradorView } from './RegistradorView'
 import { TallerView } from './TallerView'
 import { AseguradoraView } from './AseguradoraView'
@@ -26,7 +27,7 @@ const ADMIN_VIEWS = [
 
 type AdminViewKey = (typeof ADMIN_VIEWS)[number]['key']
 
-export function AdminView({ address }: { address: string }) {
+export function AdminView({ address, wrongNetwork = false }: { address: string; wrongNetwork?: boolean }) {
   const { busy, message, registrarVehiculo, grantRole, revokeRole } = useCarPass()
   const [activeView, setActiveView] = useState<AdminViewKey>('admin')
 
@@ -61,10 +62,10 @@ export function AdminView({ address }: { address: string }) {
   }
 
   function renderActiveView() {
-    if (activeView === 'registrador') return <RegistradorView address={address} />
-    if (activeView === 'taller') return <TallerView address={address} />
-    if (activeView === 'aseguradora') return <AseguradoraView address={address} />
-    if (activeView === 'inspector') return <InspectorVTVView address={address} />
+    if (activeView === 'registrador') return <RegistradorView address={address} wrongNetwork={wrongNetwork} embedded />
+    if (activeView === 'taller') return <TallerView address={address} wrongNetwork={wrongNetwork} embedded />
+    if (activeView === 'aseguradora') return <AseguradoraView address={address} wrongNetwork={wrongNetwork} embedded />
+    if (activeView === 'inspector') return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} embedded />
 
     return (
       <>
@@ -162,13 +163,13 @@ export function AdminView({ address }: { address: string }) {
   }
 
   return (
-    <div className="view-container">
-      <div className="view-header">
-        <div className="role-badge admin">Administrador</div>
-        <h2>Panel de administracion</h2>
-        <p className="view-desc">Registrá vehículos, gestioná permisos y alterná entre las vistas operativas.</p>
-      </div>
-
+    <OperativeShell
+      role="admin"
+      title="Panel de administración"
+      description="Registrá vehículos, gestioná permisos y alterná entre las vistas operativas."
+      address={address}
+      wrongNetwork={wrongNetwork}
+    >
       <div className="admin-view-switcher" aria-label="Vistas disponibles para administrador">
         {ADMIN_VIEWS.map((view) => (
           <button
@@ -182,13 +183,13 @@ export function AdminView({ address }: { address: string }) {
         ))}
       </div>
 
-      {activeView !== 'admin' && (
+      {activeView !== 'admin' ? (
         <div className="admin-role-note">
           Estás viendo este panel como administrador. Las escrituras siguen requiriendo el rol on-chain correspondiente.
         </div>
-      )}
+      ) : null}
 
       {renderActiveView()}
-    </div>
+    </OperativeShell>
   )
 }

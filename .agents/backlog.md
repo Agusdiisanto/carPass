@@ -33,7 +33,7 @@ El trabajo pendiente principal no es agregar mas alcance a ciegas, sino ordenar 
 | EPIC-11 | Role-Based Forms | Frontend | 10 | MVP alta + service, Fase 2 resto | DONE |
 | EPIC-12 | Public QR Verification | Frontend | 10 | Fuera de alcance | OUT |
 | EPIC-13 | IPFS Document Storage | Frontend / Servicio | 05, 11 | Fuera de alcance | OUT |
-| EPIC-14 | Public Read Orchestration & Defense Mode | Frontend / Infra | 08, 10, 11 | Defensa online | PENDING |
+| EPIC-14 | Public Read Orchestration & Defense Mode | Frontend / Infra | 08, 10, 11 | Defensa online | DONE |
 
 ## Camino de Cierre Recomendado
 
@@ -297,7 +297,7 @@ Decision:
 
 ### EPIC-14 - Public Read Orchestration & Defense Mode
 
-Estado: `PENDING`.
+Estado: `DONE`.
 
 Objetivo:
 
@@ -311,6 +311,13 @@ Alcance recomendado:
 - Hook `usePublicVehicleLookup` para que la vista publica deje de depender directamente de `useCarPass`.
 - Script `npm run sync:public-snapshot` para exportar los VINs oficiales de defensa desde Sepolia.
 - Indicadores en `RuntimeStrip` sobre contrato, RPC, snapshot y fuente de lectura.
+
+Implementado:
+
+- Capa de lectura publica con live Sepolia, snapshot sincronizado y demo local.
+- Snapshot versionado en `frontend/src/data/publicVehicleSnapshot.json`.
+- Comandos `sync:public-snapshot` y `defense:prepare`.
+- Fuente visible en la vista publica: `Live Sepolia`, `Snapshot Sepolia` o `Demo local`.
 
 Spec:
 

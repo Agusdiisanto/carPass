@@ -13,6 +13,14 @@ export const SEAL_STATES: Record<SealState, SealUi> = {
   2: { label: 'No valido', shortLabel: 'No valido', cls: 'seal-bad', icon: 'X' },
 }
 
+/** Etiqueta corta para chips en cards del catálogo. */
+export function getSealChipLabel(state: number): string {
+  const seal = getSealUi(state)
+  if (seal.cls === 'seal-ok') return 'OK'
+  if (seal.cls === 'seal-bad') return 'No OK'
+  return 'Obs.'
+}
+
 export function getSealUi(state: number): SealUi {
   return SEAL_STATES[state as SealState] ?? SEAL_STATES[1]
 }

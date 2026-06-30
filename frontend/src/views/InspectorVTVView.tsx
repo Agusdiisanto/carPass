@@ -3,6 +3,7 @@ import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
 import { isValidVin } from '../domain/carpass/validators'
+import { OperativeShell } from '../components/OperativeShell'
 
 const RESULTADO_OPTIONS = [
   { value: 0, label: 'Aprobado' },
@@ -16,7 +17,15 @@ function defaultExpiryDate() {
   return next.toISOString().split('T')[0]
 }
 
-export function InspectorVTVView({ address }: { address: string }) {
+export function InspectorVTVView({
+  address,
+  wrongNetwork = false,
+  embedded = false,
+}: {
+  address: string
+  wrongNetwork?: boolean
+  embedded?: boolean
+}) {
   const { busy, message, agregarVTV } = useCarPass()
   const lookup = useVehicleLookup()
 
@@ -33,14 +42,7 @@ export function InspectorVTVView({ address }: { address: string }) {
     }
   }
 
-  return (
-    <div className="view-container">
-      <div className="view-header">
-        <div className="role-badge inspector">Inspector VTV</div>
-        <h2>Registro de revision VTV</h2>
-        <p className="view-desc">Certifica el resultado de la inspeccion tecnica vehicular.</p>
-      </div>
-
+  const panels = (
       <div className="panels-grid single">
         <section className="panel">
           <h3>Identificar vehiculo</h3>
@@ -107,8 +109,27 @@ export function InspectorVTVView({ address }: { address: string }) {
           </section>
         )}
       </div>
+  )
 
-      {message && <div className="status-bar">{message}</div>}
-    </div>
+  if (embedded) {
+    return (
+      <>
+        {panels}
+        {message ? <div className="status-bar">{message}</div> : null}
+      </>
+    )
+  }
+
+  return (
+    <OperativeShell
+      role="inspector"
+      title="Registro de revisión VTV"
+      description="Certificá el resultado de la inspección técnica vehicular."
+      address={address}
+      wrongNetwork={wrongNetwork}
+      footer={message ? <div className="status-bar">{message}</div> : null}
+    >
+      {panels}
+    </OperativeShell>
   )
 }

@@ -1,8 +1,14 @@
-import { useState } from 'react'
-import { useCarPass } from '../hooks/useCarPass'
-import type { RegistroService, RegistroSiniestro, RegistroVTV, SelloCalidad, VehiculoInfo } from '../hooks/useCarPass'
-import { DEMO_VEHICLES } from '../domain/carpass/demoVehicles'
+import { useEffect, useMemo, useState } from 'react'
+import type { RegistroService, RegistroSiniestro, RegistroVTV } from '../hooks/useCarPass'
+import { DEMO_VEHICLES, filterDemoVehicles, findDemoVehicle } from '../domain/carpass/demoVehicles'
+import {
+  applyDemoCatalogFilters,
+  DEMO_CATALOG_FILTER_THRESHOLD,
+  type DemoCatalogFilterState,
+} from '../domain/carpass/demoCatalogFilters'
+import { DemoCatalogFilters } from '../components/DemoCatalogFilters'
 import { formatDate, formatKm, formatMonthYear, formatNumber, normalizeVin } from '../domain/carpass/formatters'
+import { getReadSourceDetail, type PublicVehicleRecord } from '../domain/carpass/publicRead'
 import {
   SINIESTRO_GRAVEDAD_CLASSES,
   SINIESTRO_GRAVEDAD_LABELS,
@@ -11,7 +17,26 @@ import {
 } from '../domain/carpass/eventLabels'
 import { getSealUi } from '../domain/carpass/seal'
 import { isValidVin } from '../domain/carpass/validators'
-
+import { DemoVehicleCard } from '../components/DemoVehicleCard'
+import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
+import { BrandLogo } from '../components/BrandLogo'
+import { VehicleMediaHero } from '../components/VehicleMediaHero'
+import { VinQrScanner } from '../components/VinQrScanner'
+import { PublicContractBar } from '../components/PublicContractBar'
+import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
+import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
+import { VinRelayDisplay } from '../components/VinRelayDisplay'
+import type { Role } from '../hooks/useCarPass'
+import { shortAddress } from '../hooks/useWallet'
+import { usePublicVehicleLookup } from '../hooks/usePublicVehicleLookup'
+import { useVehicleMedia } from '../hooks/useVehicleMedia'
+import { isMobileDevice, prefersPhoneCompanion } from '../lib/deviceProfile'
+import {
+  clearCompanionFromUrl,
+  clearVinFromUrl,
+  getVinFromLocation,
+  isCompanionScanMode,
+} from '../lib/companionUrl'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type TimelineEvent =
@@ -19,14 +44,7 @@ type TimelineEvent =
   | { kind: 'vtv';       ts: number; data: RegistroVTV }
   | { kind: 'siniestro'; ts: number; data: RegistroSiniestro }
 
-type Historial = {
-  info: VehiculoInfo
-  tokenId: bigint
-  services: RegistroService[]
-  siniestros: RegistroSiniestro[]
-  vtv: RegistroVTV[]
-  sello: SelloCalidad
-}
+type Historial = PublicVehicleRecord
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -42,21 +60,7 @@ function buildTimeline(
   ].sort((a, b) => b.ts - a.ts)
 }
 
-// ── Logo ─────────────────────────────────────────────────────────────────────
-
-function CarPassLogo() {
-  return (
-    <div className="pv-logo">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 2 L6 6.5 v9.5 c0 7.8 5.3 13.6 10 16 4.7-2.4 10-8.2 10-16 V6.5 Z" fill="#2dd4bf"/>
-        <path d="M11 16 l3.5 3.5 7-7.5" stroke="#0a0e12" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-      <span className="pv-logo-text">Car<span className="pv-logo-accent">Pass</span></span>
-    </div>
-  )
-}
-
-// ── Search icon ───────────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
 function SearchIcon() {
   return (
@@ -94,12 +98,30 @@ function VehicleHeroCard({ data }: { data: Historial }) {
     ? Number(data.services[data.services.length - 1].kilometraje)
     : 0
   const sello = getSealUi(data.sello.estado)
+  const media = useVehicleMedia({
+    vin: data.info.vin,
+    marca: data.info.marca,
+    modelo: data.info.modelo,
+    anio: data.info.anio,
+  })
 
   return (
     <div className="vh-card">
-      <div className="vh-top">
+      <VehicleMediaHero
+        marca={data.info.marca}
+        modelo={data.info.modelo}
+        anio={data.info.anio}
+        imageUrl={media.imageUrl}
+        loading={media.loading}
+        sealLabel={sello.label.toUpperCase()}
+        sealClassName={sello.cls}
+      />
+      <div className="vh-top vh-top--with-media">
         <div className="vh-identity">
-          <p className="vh-brand">{data.info.marca.toUpperCase()}</p>
+          <div className="vh-identity-row">
+            <BrandLogo marca={data.info.marca} size="sm" />
+            <p className="vh-brand">{data.info.marca.toUpperCase()}</p>
+          </div>
           <h2 className="vh-model">{data.info.modelo}</h2>
           <p className="vh-meta">
             {String(data.info.anio)}
@@ -108,12 +130,16 @@ function VehicleHeroCard({ data }: { data: Historial }) {
             <span className="vh-sep">·</span>
             <span className="vh-vin">{data.info.vin}</span>
           </p>
-        </div>
-        <div className={`vh-seal-badge ${sello.cls}`}>
-          <span className="vh-seal-check">
-            {sello.icon}
-          </span>
-          <span className="vh-seal-label">{sello.label.toUpperCase()}</span>
+          <p className="vh-owner">
+            Propietario NFT:{' '}
+            <a
+              href={`https://sepolia.etherscan.io/address/${data.ownerAddress}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {shortAddress(data.ownerAddress)}
+            </a>
+          </p>
         </div>
       </div>
 
@@ -144,8 +170,18 @@ function VehicleHeroCard({ data }: { data: Historial }) {
 
 // ── Seal quality card ─────────────────────────────────────────────────────────
 
-function SealQualityCard({ sello }: { sello: SelloCalidad }) {
+function SourcePill({ data }: { data: Historial }) {
+  return (
+    <span className={`pv-source-pill pv-source-pill--${data.source}`}>
+      {data.sourceLabel}
+    </span>
+  )
+}
+
+function SealQualityCard({ data }: { data: Historial }) {
+  const { sello } = data
   const info = getSealUi(sello.estado)
+  const sourceDetail = getReadSourceDetail(data)
 
   return (
     <div className={`sqc ${info.cls}`}>
@@ -161,8 +197,11 @@ function SealQualityCard({ sello }: { sello: SelloCalidad }) {
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
-        Registro inmutable verificado on-chain · Ethereum Sepolia · ERC-721
+        {sourceDetail}
       </p>
+      {data.fallbackReason ? (
+        <p className="sqc-fallback">Fallback activado: {data.fallbackReason}</p>
+      ) : null}
     </div>
   )
 }
@@ -230,41 +269,134 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
   )
 }
 
+function QrIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <path d="M14 14h2v2h-2z" />
+      <path d="M20 14h1v1h-1z" />
+      <path d="M14 20h2v1h-2z" />
+      <path d="M20 17h1v4h-1z" />
+      <path d="M17 20h4v1h-4z" />
+    </svg>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PublicView() {
-  const [vin, setVin]         = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
-  const [data, setData]       = useState<Historial | null>(null)
-  const { getVehiculoPorVin, getHistorial } = useCarPass()
+type PublicViewProps = {
+  consultaSignal?: number
+  connected?: boolean
+  role?: Role | null
+  detecting?: boolean
+  wrongNetwork?: boolean
+  onGoToPanel?: () => void
+}
+
+export function PublicView({
+  consultaSignal = 0,
+  connected = false,
+  role = null,
+  detecting = false,
+  wrongNetwork = false,
+  onGoToPanel,
+}: PublicViewProps) {
+  const [vin, setVin] = useState('')
+  const [qrOpen, setQrOpen] = useState(false)
+  const [qrReceiveMode, setQrReceiveMode] = useState(false)
+  const [relayVin, setRelayVin] = useState<string | null>(null)
+  const [companionSession, setCompanionSession] = useState(
+    () => isMobileDevice() && isCompanionScanMode(),
+  )
+  const [catalogFilters, setCatalogFilters] = useState<DemoCatalogFilterState>({
+    seal: 'all',
+    km: 'all',
+  })
+  const lookup = usePublicVehicleLookup()
+  const { data, error, loading, loadingVin } = lookup
+  const showPhoneCompanion = connected && !wrongNetwork && prefersPhoneCompanion()
+
+  useEffect(() => {
+    const urlVin = getVinFromLocation()
+    if (!urlVin) return
+    setVin(urlVin)
+    clearVinFromUrl()
+    void lookup.search(urlVin)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobileDevice() || !isCompanionScanMode()) return
+    setCompanionSession(true)
+    setQrOpen(true)
+  }, [])
+
+  useEffect(() => {
+    setVin('')
+    setRelayVin(null)
+    setCompanionSession(false)
+    setCatalogFilters({ seal: 'all', km: 'all' })
+    lookup.reset()
+  }, [consultaSignal])
+
+  useEffect(() => {
+    if (!data) return
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [data?.info.vin])
+
+  const vinFilteredDemos = useMemo(() => filterDemoVehicles(vin), [vin])
+  const filteredDemos = useMemo(
+    () => applyDemoCatalogFilters(vinFilteredDemos, catalogFilters),
+    [vinFilteredDemos, catalogFilters],
+  )
+  const showCatalogFilters = DEMO_VEHICLES.length > DEMO_CATALOG_FILTER_THRESHOLD
+  const vinMatchDemo = useMemo(
+    () => DEMO_VEHICLES.find((vehicle) => vehicle.vin === vin),
+    [vin],
+  )
 
   async function buscar(vinToSearch = vin) {
     if (!isValidVin(vinToSearch)) return
-    setLoading(true)
-    setError('')
-    setData(null)
-    try {
-      const { tokenId, info } = await getVehiculoPorVin(vinToSearch)
-      if (!info.vin) { setError('No se encontró ningún vehículo con ese VIN.'); return }
-      const historial = await getHistorial(tokenId)
-      setData({ tokenId, info, ...historial })
-    } catch {
-      setError('No se pudo consultar el contrato. Verificá tu conexión.')
-    } finally {
-      setLoading(false)
-    }
+    await lookup.search(vinToSearch)
   }
 
   function selectDemo(demoVin: string) {
     setVin(demoVin)
-    setError('')
-    buscar(demoVin)
+    void buscar(demoVin)
   }
 
   function reset() {
-    setData(null)
-    setError('')
+    lookup.reset()
+    setVin('')
+    setRelayVin(null)
+  }
+
+  function openLocalScanner() {
+    setQrReceiveMode(false)
+    setQrOpen(true)
+  }
+
+  function openReceiveScanner() {
+    setQrReceiveMode(true)
+    setQrOpen(true)
+  }
+
+  function closeQrScanner() {
+    setQrOpen(false)
+    setQrReceiveMode(false)
+  }
+
+  function handleQrDetected(detectedVin: string) {
+    if (isMobileDevice() && companionSession) {
+      setRelayVin(detectedVin)
+      clearCompanionFromUrl()
+      setQrOpen(false)
+      setQrReceiveMode(false)
+      return
+    }
+    setVin(detectedVin)
+    void buscar(detectedVin)
   }
 
   const timeline = data ? buildTimeline(data.services, data.siniestros, data.vtv) : []
@@ -274,97 +406,199 @@ export function PublicView() {
   if (!data) {
     return (
       <div className="public-view pv-search-state">
-        <div className="pv-center">
-          <CarPassLogo />
-          <h1 className="pv-title">Verificá un vehículo</h1>
-          <p className="pv-subtitle">
-            Ingresá el VIN para ver el historial completo y el sello de calidad.
-          </p>
+        <div className="pv-hero-bg" aria-hidden />
+        <div className="pv-layout">
+          <header className="pv-hero">
+            <p className="pv-eyebrow">Pasaporte vehicular verificable</p>
+            <h1 className="pv-title">Consulta el historial y sello de calidad</h1>
+            <p className="pv-subtitle">
+              Busca por VIN o explora los casos demo cargados en Sepolia. Sin wallet, sin friccion.
+            </p>
+          </header>
 
-          <div className="pv-input-group">
-            <input
-              className="pv-vin-input"
-              maxLength={17}
-              placeholder="1HGEM21503L000000"
-              value={vin}
-              onChange={(e) => { setVin(normalizeVin(e.target.value)); setError('') }}
-              onKeyDown={(e) => e.key === 'Enter' && buscar()}
-              autoComplete="off"
-              spellCheck={false}
+          {connected ? (
+            <ConnectedWalletStrip
+              role={role}
+              detecting={detecting}
+              wrongNetwork={wrongNetwork}
+              onGoToPanel={onGoToPanel}
+              onScanQr={openLocalScanner}
+              showPhoneCompanion={showPhoneCompanion}
+              onReceiveFromPhone={showPhoneCompanion ? openReceiveScanner : undefined}
             />
-            <span className="pv-vin-counter">{vin.length}/17 caracteres</span>
-          </div>
+          ) : null}
 
-          <button
-            className="pv-btn-consult"
-            disabled={!isValidVin(vin) || loading}
-            onClick={() => buscar()}
-          >
-            <SearchIcon />
-            {loading ? 'Consultando...' : 'Consultar'}
-          </button>
+          {showPhoneCompanion && !relayVin ? (
+            <PhoneCompanionCard onReceiveFromPhone={openReceiveScanner} />
+          ) : null}
 
-          {error && <p className="pv-error">{error}</p>}
+          {relayVin ? (
+            <VinRelayDisplay
+              vin={relayVin}
+              onSearchHere={() => {
+                setVin(relayVin)
+                void buscar(relayVin)
+                setRelayVin(null)
+              }}
+              onScanAnother={() => {
+                setRelayVin(null)
+                setCompanionSession(true)
+                setQrReceiveMode(false)
+                setQrOpen(true)
+              }}
+            />
+          ) : null}
 
-          <div className="pv-demo-panel">
-            <div className="pv-demos-head">
-              <span className="pv-demos-label">Demo</span>
-              <p>Elegi un caso para mostrar sello, motivo e historial.</p>
-            </div>
-            <div className="pv-demo-grid">
-              {DEMO_VEHICLES.map((d) => (
-                <button key={d.vin} className="pv-demo-card" onClick={() => selectDemo(d.vin)}>
-                  <span className={`pv-chip-dot ${getSealUi(d.seal).cls}`} />
-                  <span className="pv-demo-main">
-                    <strong>{d.label}</strong>
-                    <code>{d.vin}</code>
-                  </span>
-                  <span className="pv-demo-meta">
-                    <b>{getSealUi(d.seal).label}</b>
-                    <small>{d.reason}</small>
-                  </span>
+          <PublicContractBar connected={connected} />
+
+          <section className="pv-search-panel" aria-label="Busqueda por VIN">
+            <div className={`vin-search-bar ${connected ? 'vin-search-bar--with-qr' : ''}`}>
+              <span className="vin-search-bar__icon" aria-hidden>
+                <SearchIcon />
+              </span>
+              <input
+                className="vin-search-bar__input"
+                maxLength={17}
+                placeholder="Ingresa el VIN de 17 caracteres"
+                value={vin}
+                onChange={(e) => {
+                  setVin(normalizeVin(e.target.value))
+                  lookup.reset()
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && buscar()}
+                autoComplete="off"
+                spellCheck={false}
+                aria-label="Numero VIN"
+              />
+              {connected && !wrongNetwork ? (
+                <button
+                  type="button"
+                  className="vin-search-bar__qr"
+                  onClick={openLocalScanner}
+                  title="Escanear QR de VIN"
+                  aria-label="Escanear QR de VIN"
+                >
+                  <QrIcon />
                 </button>
-              ))}
+              ) : null}
+              <button
+                type="button"
+                className="vin-search-bar__btn"
+                disabled={!isValidVin(vin) || loading}
+                onClick={() => buscar()}
+              >
+                {loading ? '...' : 'Buscar'}
+              </button>
             </div>
-          </div>
 
-          <div className="pv-demos">
-            <span className="pv-demos-label">VINS DE DEMOSTRACIÓN</span>
-            <div className="pv-chips">
-              {DEMO_VEHICLES.map((d) => (
-                <button key={d.vin} className="pv-chip" onClick={() => selectDemo(d.vin)}>
-                  <span className={`pv-chip-dot ${getSealUi(d.seal).cls}`} />
-                  {d.label} - {getSealUi(d.seal).label}
-                </button>
-              ))}
+            <div className="pv-search-meta">
+              <span className={`pv-vin-counter ${isValidVin(vin) ? 'ready' : ''}`}>
+                {vin.length}/17 caracteres
+              </span>
+              {vinMatchDemo ? (
+                <span className="pv-vin-hint">
+                  Coincide con {vinMatchDemo.marca} {vinMatchDemo.modelo} demo
+                </span>
+              ) : null}
             </div>
-          </div>
+
+            {error ? <p className="pv-error">{error}</p> : null}
+          </section>
+
+          {loading ? (
+            <SearchLoadingSkeleton />
+          ) : (
+            <section className="pv-catalog" aria-label="Vehiculos de demostracion">
+              <div className="pv-catalog-head">
+                <div>
+                  <h2 className="pv-catalog-title">Flota demo on-chain</h2>
+                  <p className="pv-catalog-sub">
+                    Cada tarjeta muestra marca, kilometraje, sello esperado y VIN. Toca para cargar el vehiculo.
+                  </p>
+                </div>
+                <span className="pv-catalog-count">
+                  {filteredDemos.length}
+                  {showCatalogFilters && filteredDemos.length !== vinFilteredDemos.length
+                    ? ` / ${vinFilteredDemos.length}`
+                    : ''}{' '}
+                  vehiculos
+                </span>
+              </div>
+
+              {showCatalogFilters ? (
+                <DemoCatalogFilters
+                  vehicles={vinFilteredDemos}
+                  filters={catalogFilters}
+                  resultCount={filteredDemos.length}
+                  onChange={setCatalogFilters}
+                />
+              ) : null}
+
+              {filteredDemos.length === 0 ? (
+                <div className="pv-catalog-empty">
+                  {showCatalogFilters && vinFilteredDemos.length > 0
+                    ? 'No hay vehiculos con esos filtros. Proba otro sello o rango de km.'
+                    : 'No hay coincidencias para ese filtro. Proba con otro VIN o marca.'}
+                </div>
+              ) : (
+                <div className="pv-vehicle-grid">
+                  {filteredDemos.map((vehicle) => (
+                    <DemoVehicleCard
+                      key={vehicle.vin}
+                      vehicle={vehicle}
+                      active={vin === vehicle.vin}
+                      loading={loading && loadingVin === vehicle.vin}
+                      onSelect={selectDemo}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
+
+        <VinQrScanner
+          open={qrOpen}
+          onClose={closeQrScanner}
+          onDetected={handleQrDetected}
+          receiveMode={qrReceiveMode}
+        />
       </div>
     )
   }
-
   // ── Results state ───────────────────────────────────────────────────────────
 
   return (
     <div className="public-view pv-results-state">
       <div className="pv-results-topbar">
-        <button className="pv-back-btn" onClick={reset} title="Volver">
-          <BackIcon />
-        </button>
-        <span className="pv-results-vin">{data.info.vin}</span>
-        <button
-          className="pv-share-btn"
-          onClick={() => navigator.clipboard?.writeText(data.info.vin)}
-          title="Copiar VIN"
-        >
-          <ShareIcon />
-        </button>
+        <div className="pv-results-shell">
+          <div className="pv-results-topbar-row">
+            <button className="pv-back-btn" onClick={reset} title="Volver">
+              <BackIcon />
+            </button>
+            <span className="pv-results-vin">{data.info.vin}</span>
+            <SourcePill data={data} />
+            <button
+              className="pv-share-btn"
+              onClick={() => navigator.clipboard?.writeText(data.info.vin)}
+              title="Copiar VIN"
+            >
+              <ShareIcon />
+            </button>
+          </div>
+        </div>
       </div>
 
+      <div className="pv-results-shell">
       <div className="pv-content">
         <VehicleHeroCard data={data} />
-        <SealQualityCard sello={data.sello} />
+        <SealQualityCard data={data} />
+
+        {connected && onGoToPanel ? (
+          <button type="button" className="pv-connected-banner__btn pv-connected-banner__btn--inline" onClick={onGoToPanel}>
+            Operar este vehiculo (panel por rol)
+          </button>
+        ) : null}
 
         <h3 className="pv-section-title">Historial de eventos</h3>
 
@@ -390,6 +624,7 @@ export function PublicView() {
           <SearchIcon />
           Consultar otro vehículo
         </button>
+      </div>
       </div>
     </div>
   )

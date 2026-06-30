@@ -4,8 +4,17 @@ import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
 import { formatKm } from '../domain/carpass/formatters'
 import { isValidMileage, isValidVin } from '../domain/carpass/validators'
+import { OperativeShell } from '../components/OperativeShell'
 
-export function TallerView({ address }: { address: string }) {
+export function TallerView({
+  address,
+  wrongNetwork = false,
+  embedded = false,
+}: {
+  address: string
+  wrongNetwork?: boolean
+  embedded?: boolean
+}) {
   const { busy, message, agregarService } = useCarPass()
   const lookup = useVehicleLookup({ loadMileage: true })
 
@@ -30,14 +39,7 @@ export function TallerView({ address }: { address: string }) {
     }
   }
 
-  return (
-    <div className="view-container">
-      <div className="view-header">
-        <div className="role-badge taller">Taller</div>
-        <h2>Carga de service</h2>
-        <p className="view-desc">Registra el mantenimiento de un vehiculo. El kilometraje debe ser mayor al ultimo registrado.</p>
-      </div>
-
+  const panels = (
       <div className="panels-grid single">
         <section className="panel">
           <h3>Identificar vehiculo</h3>
@@ -137,8 +139,27 @@ export function TallerView({ address }: { address: string }) {
           </section>
         )}
       </div>
+  )
 
-      {message && <div className="status-bar">{message}</div>}
-    </div>
+  if (embedded) {
+    return (
+      <>
+        {panels}
+        {message ? <div className="status-bar">{message}</div> : null}
+      </>
+    )
+  }
+
+  return (
+    <OperativeShell
+      role="mecanico"
+      title="Carga de service"
+      description="Registrá el mantenimiento de un vehículo. El kilometraje debe ser mayor al último registrado."
+      address={address}
+      wrongNetwork={wrongNetwork}
+      footer={message ? <div className="status-bar">{message}</div> : null}
+    >
+      {panels}
+    </OperativeShell>
   )
 }

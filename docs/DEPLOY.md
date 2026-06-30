@@ -21,6 +21,7 @@ npm run deploy:check
 npm run deploy:sepolia
 npm run export:frontend
 npm run seed:sepolia
+npm run sync:public-snapshot
 ```
 
 El deploy escribe `deployments/sepolia/CarPass.json` con address, chain id,
@@ -33,6 +34,17 @@ hash de transaccion y bloque. El export copia la address y ABI al frontend en:
 
 `npm run seed:sepolia` es idempotente para la demo: si los VINs o hitos ya
 existen, los saltea en vez de duplicarlos o fallar por kilometraje.
+
+Para defensa online, despues del seed correr:
+
+```bash
+npm run defense:prepare
+```
+
+Ese comando verifica readiness, revisa el deployment actual y exporta
+`frontend/src/data/publicVehicleSnapshot.json`. La DApp consulta Sepolia live
+primero; si el RPC falla, usa ese snapshot y marca la fuente como
+`Snapshot Sepolia`.
 
 VINs esperados:
 
@@ -50,5 +62,7 @@ VINs esperados:
 - `deploy:check` falla por balance: fondear el deployer con Sepolia ETH.
 - Frontend apunta a otra address: correr `npm run export:frontend` o revisar
   `VITE_CARPASS_CONTRACT_ADDRESS` en `frontend/.env`.
+- Snapshot desactualizado: correr `npm run sync:public-snapshot` o el flujo
+  completo `npm run defense:prepare`.
 - Seed falla por permisos: verificar que el deployer tenga admin y que el seed
   pueda otorgarse roles demo.

@@ -12,9 +12,13 @@
     "deploy:check": "node scripts/check-deploy-readiness.mjs",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "export:frontend": "node scripts/export-frontend-artifacts.mjs",
+    "sync:public-snapshot": "node scripts/sync-public-snapshot.mjs",
+    "defense:prepare": "npm run deploy:check && npm run verify:deployment && npm run sync:public-snapshot",
     "seed:sepolia": "hardhat run scripts/seed.ts --network sepolia",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
     "node": "hardhat node",
     "test:contracts": "hardhat run test/CarPass.defense.ts",
+    "dev": "npm --prefix frontend run dev",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:preview": "npm --prefix frontend run preview"

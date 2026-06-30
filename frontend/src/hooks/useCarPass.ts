@@ -4,6 +4,7 @@ import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
 import { parseContractError } from '../domain/carpass/errors'
 import type { Role } from '../domain/carpass/roles'
+import { getPublicProvider } from '../lib/publicProvider'
 
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
@@ -71,7 +72,7 @@ async function getSignerContract() {
 
 async function getReadContract() {
   if (!hasContractAddress) throw new Error('Contrato no configurado')
-  return new Contract(CONTRACT_ADDRESS, ABI, getProvider())
+  return new Contract(CONTRACT_ADDRESS, ABI, getPublicProvider())
 }
 
 export async function detectRole(address: string): Promise<Role> {
@@ -234,6 +235,11 @@ export function useCarPass() {
     return Number(await c.ultimoKilometrajeRegistrado(tokenId))
   }
 
+  async function getPropietario(tokenId: bigint): Promise<string> {
+    const c = await getReadContract()
+    return (await c.ownerOf(tokenId)) as string
+  }
+
   return {
     busy,
     message,
@@ -246,5 +252,6 @@ export function useCarPass() {
     getVehiculoPorVin,
     getHistorial,
     getUltimoKm,
+    getPropietario,
   }
 }

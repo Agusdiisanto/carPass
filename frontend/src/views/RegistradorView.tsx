@@ -3,8 +3,17 @@ import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
+import { OperativeShell } from '../components/OperativeShell'
 
-export function RegistradorView({ address }: { address: string }) {
+export function RegistradorView({
+  address,
+  wrongNetwork = false,
+  embedded = false,
+}: {
+  address: string
+  wrongNetwork?: boolean
+  embedded?: boolean
+}) {
   const { busy, message, registrarVehiculo } = useCarPass()
 
   const [vin, setVin] = useState('8AJBA3CD4E1234567')
@@ -21,14 +30,7 @@ export function RegistradorView({ address }: { address: string }) {
     await registrarVehiculo(info, propietario || address)
   }
 
-  return (
-    <div className="view-container">
-      <div className="view-header">
-        <div className="role-badge registrador">Concesionaria</div>
-        <h2>Panel de concesionaria</h2>
-        <p className="view-desc">Registrá vehículos nuevos. Cada pasaporte se emite con kilometraje inicial 0 km.</p>
-      </div>
-
+  const panels = (
       <div className="panels-grid single">
         <section className="panel">
           <h3>Registrar vehiculo</h3>
@@ -70,8 +72,27 @@ export function RegistradorView({ address }: { address: string }) {
           </button>
         </section>
       </div>
+  )
 
-      {message && <div className="status-bar">{message}</div>}
-    </div>
+  if (embedded) {
+    return (
+      <>
+        {panels}
+        {message ? <div className="status-bar">{message}</div> : null}
+      </>
+    )
+  }
+
+  return (
+    <OperativeShell
+      role="registrador"
+      title="Panel de concesionaria"
+      description="Registrá vehículos nuevos. Cada pasaporte se emite con kilometraje inicial 0 km."
+      address={address}
+      wrongNetwork={wrongNetwork}
+      footer={message ? <div className="status-bar">{message}</div> : null}
+    >
+      {panels}
+    </OperativeShell>
   )
 }

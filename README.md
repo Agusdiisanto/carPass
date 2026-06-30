@@ -58,6 +58,8 @@ npm run deploy:check
 npm run deploy:sepolia
 npm run export:frontend
 npm run seed:sepolia
+npm run sync:public-snapshot
+npm run defense:prepare
 npm run frontend:dev
 ```
 
@@ -69,6 +71,7 @@ Flujo recomendado de deploy:
 4. `npm run export:frontend`
 5. Copiar o mantener `VITE_CARPASS_CONTRACT_ADDRESS` solo si se necesita override local.
 6. `npm run seed:sepolia` para datos demo.
+7. `npm run defense:prepare` para verificar el deployment y sincronizar el snapshot publico.
 
 Guia detallada: `docs/DEPLOY.md`.
 
