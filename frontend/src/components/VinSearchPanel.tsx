@@ -1,4 +1,3 @@
-import type { DemoVehicle } from '../domain/carpass/demoVehicles'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVin } from '../domain/carpass/validators'
 
@@ -6,14 +5,10 @@ type VinSearchPanelProps = {
   vin: string
   loading: boolean
   error: string
-  scanEnabled: boolean
-  scanFirst?: boolean
-  vinMatchDemo?: DemoVehicle
+  scanEnabled?: boolean
   onVinChange: (vin: string) => void
   onSearch: () => void
-  onScan: () => void
-  onConnectWallet?: () => void
-  showWalletLink?: boolean
+  onScan?: () => void
 }
 
 function SearchIcon() {
@@ -25,9 +20,9 @@ function SearchIcon() {
   )
 }
 
-function QrIcon({ size = 16 }: { size?: number }) {
+function QrIcon() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <rect x="3" y="3" width="7" height="7" />
       <rect x="14" y="3" width="7" height="7" />
       <rect x="3" y="14" width="7" height="7" />
@@ -44,68 +39,36 @@ export function VinSearchPanel({
   vin,
   loading,
   error,
-  scanEnabled,
-  scanFirst = false,
-  vinMatchDemo,
+  scanEnabled = false,
   onVinChange,
   onSearch,
   onScan,
-  onConnectWallet,
-  showWalletLink = false,
 }: VinSearchPanelProps) {
   return (
-    <section className={`pv-search-panel${scanFirst ? ' pv-search-panel--scan-first' : ''}`} aria-label="Busqueda por VIN">
-      {scanFirst && scanEnabled ? (
-        <button type="button" className="vin-scan-hero" onClick={onScan}>
-          <span className="vin-scan-hero__icon" aria-hidden>
-            <QrIcon size={28} />
-          </span>
-          <span className="vin-scan-hero__copy">
-            <strong>Escanear QR del auto</strong>
-            <span>El pasaporte CarPass trae el VIN — consultá sin tipear</span>
-          </span>
-          <span className="vin-scan-hero__cta">Abrir cámara</span>
-        </button>
-      ) : null}
-
-      {scanFirst && scanEnabled ? (
-        <div className="vin-search-divider" aria-hidden>
-          <span>o ingresá el VIN</span>
-        </div>
-      ) : null}
-
-      {!scanFirst && scanEnabled ? (
-        <div className="pv-search-panel__lead">
-          <p className="pv-search-panel__lead-title">Consultá por VIN o escaneá el QR del pasaporte</p>
-          <button type="button" className="pv-search-panel__scan-chip" onClick={onScan}>
-            <QrIcon />
-            Escanear QR
-          </button>
-        </div>
-      ) : null}
-
-      <div className={`vin-search-bar ${scanEnabled ? 'vin-search-bar--with-qr' : ''}`}>
+    <section className="pv-search-panel" aria-label="Busqueda por VIN o QR">
+      <div className={`vin-search-bar${scanEnabled ? ' vin-search-bar--with-qr' : ''}`}>
         <span className="vin-search-bar__icon" aria-hidden>
           <SearchIcon />
         </span>
         <input
           className="vin-search-bar__input"
           maxLength={17}
-          placeholder="VIN de 17 caracteres"
+          placeholder={scanEnabled ? 'VIN o escaneá QR' : 'Ingresá el VIN (17 caracteres)'}
           value={vin}
           onChange={(e) => onVinChange(normalizeVin(e.target.value))}
           onKeyDown={(e) => e.key === 'Enter' && onSearch()}
           autoComplete="off"
+          autoFocus
           spellCheck={false}
           aria-label="Numero VIN"
         />
-        {scanEnabled && !scanFirst ? (
+        {scanEnabled && onScan ? (
           <button
             type="button"
             className="vin-search-bar__qr"
             onClick={onScan}
-            title="Escanear QR de VIN"
-            aria-label="Escanear QR de VIN"
+            title="Escanear QR del pasaporte"
+            aria-label="Escanear QR del pasaporte"
           >
             <QrIcon />
           </button>
@@ -120,27 +83,13 @@ export function VinSearchPanel({
         </button>
       </div>
 
-      <div className="pv-search-meta">
-        <span className={`pv-vin-counter ${isValidVin(vin) ? 'ready' : ''}`}>
-          {vin.length}/17 caracteres
+      {vin.length > 0 ? (
+        <span className={`pv-vin-counter ${isValidVin(vin) ? 'ready' : ''}`} aria-live="polite">
+          {vin.length}/17
         </span>
-        {vinMatchDemo ? (
-          <span className="pv-vin-hint">
-            Coincide con {vinMatchDemo.marca} {vinMatchDemo.modelo} demo
-          </span>
-        ) : null}
-      </div>
+      ) : null}
 
       {error ? <p className="pv-error">{error}</p> : null}
-
-      {showWalletLink && onConnectWallet ? (
-        <p className="pv-search-wallet-link">
-          ¿Querés firmar operaciones?{' '}
-          <button type="button" onClick={onConnectWallet}>
-            Conectá tu wallet
-          </button>
-        </p>
-      ) : null}
     </section>
   )
 }

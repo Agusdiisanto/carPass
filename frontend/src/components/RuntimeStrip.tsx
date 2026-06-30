@@ -16,6 +16,15 @@ type RuntimeStripProps = {
 const EXPLORER_CONTRACT = `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`
 const EXPLORER_SEPOLIA = 'https://sepolia.etherscan.io/'
 
+function WalletIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M19 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
+      <path d="M16 11h.01" />
+    </svg>
+  )
+}
+
 function ContractIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -61,6 +70,7 @@ function DockLink({ icon, label, href, status }: DockLinkProps) {
 export function RuntimeStrip({
   connected,
   wrongNetwork,
+  address,
 }: RuntimeStripProps) {
   if (!hasContractAddress) return null
 
@@ -69,6 +79,7 @@ export function RuntimeStrip({
     mode === 'operativo' ? 'Operativo' : mode === 'warn' ? 'Red incorrecta' : 'Consulta publica'
 
   const networkStatus: Status = connected ? (wrongNetwork ? 'warn' : 'ok') : 'ok'
+  const walletExplorer = address ? `https://sepolia.etherscan.io/address/${address}` : ''
 
   return (
     <section className="runtime-dock" aria-label="Estado on-chain CarPass">
@@ -79,6 +90,14 @@ export function RuntimeStrip({
         </div>
 
         <div className="runtime-dock__tools">
+          {connected && walletExplorer ? (
+            <DockLink
+              icon={<WalletIcon />}
+              label="Ver tu wallet en Etherscan"
+              href={walletExplorer}
+              status={wrongNetwork ? 'warn' : 'ok'}
+            />
+          ) : null}
           <DockLink
             icon={<ContractIcon />}
             label="Ver contrato en Etherscan"

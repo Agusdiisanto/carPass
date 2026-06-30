@@ -22,7 +22,6 @@ import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
 import { BrandLogo } from '../components/BrandLogo'
 import { VehiclePassportFlipHero } from '../components/VehiclePassportFlipHero'
 import { VehiclePartsStatusDiagram } from '../components/VehiclePartsStatusDiagram'
-import { PublicContractBar } from '../components/PublicContractBar'
 import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
 import { VinSearchPanel } from '../components/VinSearchPanel'
@@ -96,6 +95,21 @@ function ShareIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+  )
+}
+
+function QrIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <path d="M14 14h2v2h-2z" />
+      <path d="M20 14h1v1h-1z" />
+      <path d="M14 20h2v1h-2z" />
+      <path d="M20 17h1v4h-1z" />
+      <path d="M17 20h4v1h-4z" />
     </svg>
   )
 }
@@ -353,7 +367,7 @@ export function PublicView({
   openVinRef.current = data?.info.vin ?? null
   const isMobile = isMobileDevice()
   const showPhoneCompanion = connected && !wrongNetwork && prefersPhoneCompanion()
-  const canScanFromSearch = isMobile || canUseCameraScan() || (connected && !wrongNetwork)
+  const canScanFromSearch = isMobile || canUseCameraScan()
   const companionOperative = Boolean(role && role !== 'none')
 
   useEffect(() => {
@@ -408,10 +422,6 @@ export function PublicView({
     [vinFilteredDemos, catalogFilters],
   )
   const showCatalogFilters = DEMO_VEHICLES.length > DEMO_CATALOG_FILTER_THRESHOLD
-  const vinMatchDemo = useMemo(
-    () => DEMO_VEHICLES.find((vehicle) => vehicle.vin === vin),
-    [vin],
-  )
 
   async function buscar(vinToSearch = vin) {
     if (!isValidVin(vinToSearch)) return
@@ -490,14 +500,8 @@ export function PublicView({
       <div className="public-view pv-search-state">
         <div className="pv-hero-bg" aria-hidden />
         <div className="pv-layout">
-          <header className="pv-hero">
-            <p className="pv-eyebrow">Pasaporte vehicular verificable</p>
-            <h1 className="pv-title">Consulta el historial y sello de calidad</h1>
-            <p className="pv-subtitle">
-              {isMobile
-                ? 'Escaneá el QR del pasaporte o buscá por VIN. Sin wallet para consultar.'
-                : 'Busca por VIN o explora los casos demo cargados en Sepolia. Sin wallet, sin friccion.'}
-            </p>
+          <header className="pv-hero pv-hero--compact">
+            <h1 className="pv-title">Consulta por VIN o QR</h1>
           </header>
 
           {!relayVin ? (
@@ -506,25 +510,60 @@ export function PublicView({
               loading={loading}
               error={error}
               scanEnabled={canScanFromSearch}
-              scanFirst={isMobile}
-              vinMatchDemo={vinMatchDemo}
               onVinChange={(value) => {
                 setVin(value)
                 lookup.reset()
               }}
               onSearch={() => buscar()}
               onScan={openLocalScanner}
-              onConnectWallet={onConnectWallet}
-              showWalletLink={isMobile && !walletLinked}
             />
           ) : null}
 
-          <MisVehiculosHomeCard
-            walletLinked={walletLinked}
-            wrongNetwork={wrongNetwork}
-            onConnectWallet={onConnectWallet}
-            onGoToMisAutos={onGoToMisAutos}
-          />
+          {!relayVin && (loading ? (
+            <SearchLoadingSkeleton />
+          ) : (
+            <section className="pv-catalog pv-catalog--compact" aria-label="Vehiculos de demostracion">
+              <h2 className="pv-catalog-title">Ejemplos demo</h2>
+
+              {showCatalogFilters ? (
+                <DemoCatalogFilters
+                  vehicles={vinFilteredDemos}
+                  filters={catalogFilters}
+                  resultCount={filteredDemos.length}
+                  onChange={setCatalogFilters}
+                />
+              ) : null}
+
+              {filteredDemos.length === 0 ? (
+                <div className="pv-catalog-empty">
+                  {showCatalogFilters && vinFilteredDemos.length > 0
+                    ? 'No hay vehiculos con esos filtros. Proba otro sello o rango de km.'
+                    : 'No hay coincidencias para ese filtro. Proba con otro VIN o marca.'}
+                </div>
+              ) : (
+                <div className="pv-vehicle-grid">
+                  {filteredDemos.map((vehicle) => (
+                    <DemoVehicleCard
+                      key={vehicle.vin}
+                      vehicle={vehicle}
+                      active={vin === vehicle.vin}
+                      loading={loading && loadingVin === vehicle.vin}
+                      onSelect={selectDemo}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+
+          {!walletLinked ? (
+            <MisVehiculosHomeCard
+              walletLinked={walletLinked}
+              wrongNetwork={wrongNetwork}
+              onConnectWallet={onConnectWallet}
+              onGoToMisAutos={onGoToMisAutos}
+            />
+          ) : null}
 
           {isMobile && getRememberedWalletHint() ? (
             <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />
@@ -571,59 +610,6 @@ export function PublicView({
               }
             />
           ) : null}
-
-          <PublicContractBar connected={connected} />
-
-          {loading ? (
-            <SearchLoadingSkeleton />
-          ) : (
-            <section className="pv-catalog" aria-label="Vehiculos de demostracion">
-              <div className="pv-catalog-head">
-                <div>
-                  <h2 className="pv-catalog-title">Flota demo on-chain</h2>
-                  <p className="pv-catalog-sub">
-                    Cada tarjeta muestra marca, kilometraje, sello esperado y VIN. Toca para cargar el vehiculo.
-                  </p>
-                </div>
-                <span className="pv-catalog-count">
-                  {filteredDemos.length}
-                  {showCatalogFilters && filteredDemos.length !== vinFilteredDemos.length
-                    ? ` / ${vinFilteredDemos.length}`
-                    : ''}{' '}
-                  vehiculos
-                </span>
-              </div>
-
-              {showCatalogFilters ? (
-                <DemoCatalogFilters
-                  vehicles={vinFilteredDemos}
-                  filters={catalogFilters}
-                  resultCount={filteredDemos.length}
-                  onChange={setCatalogFilters}
-                />
-              ) : null}
-
-              {filteredDemos.length === 0 ? (
-                <div className="pv-catalog-empty">
-                  {showCatalogFilters && vinFilteredDemos.length > 0
-                    ? 'No hay vehiculos con esos filtros. Proba otro sello o rango de km.'
-                    : 'No hay coincidencias para ese filtro. Proba con otro VIN o marca.'}
-                </div>
-              ) : (
-                <div className="pv-vehicle-grid">
-                  {filteredDemos.map((vehicle) => (
-                    <DemoVehicleCard
-                      key={vehicle.vin}
-                      vehicle={vehicle}
-                      active={vin === vehicle.vin}
-                      loading={loading && loadingVin === vehicle.vin}
-                      onSelect={selectDemo}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
         </div>
 
         <VinQrScanner
@@ -654,6 +640,17 @@ export function PublicView({
             >
               <ShareIcon />
             </button>
+            {canScanFromSearch ? (
+              <button
+                type="button"
+                className="pv-share-btn pv-share-btn--qr"
+                onClick={openLocalScanner}
+                title="Escanear otro QR"
+                aria-label="Escanear QR de otro vehículo"
+              >
+                <QrIcon />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -729,6 +726,13 @@ export function PublicView({
         </button>
       </div>
       </div>
+
+      <VinQrScanner
+        open={qrOpen}
+        onClose={closeQrScanner}
+        onDetected={handleQrDetected}
+        receiveMode={qrReceiveMode}
+      />
     </div>
   )
 }

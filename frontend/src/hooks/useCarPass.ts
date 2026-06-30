@@ -13,12 +13,18 @@ import {
 } from '../lib/vehicleChainRefresh'
 import { getPublicProvider } from '../lib/publicProvider'
 import {
+  recordChainActivity,
+  updateChainActivity,
+  type ChainActivityKind,
+} from '../lib/chainActivity'
+import {
   describeFleetReadError,
   queryTransferEventsForToken,
   queryTransferEventsToAddress,
 } from '../lib/fleetRead'
 
 import { getActiveEthereum, type EthereumProvider } from '../lib/ethereumProvider'
+import { ensureSepoliaWalletReady } from '../lib/sepoliaGate'
 
 function resolveContractAddress() {
   const envAddress = import.meta.env.VITE_CARPASS_CONTRACT_ADDRESS
@@ -85,6 +91,7 @@ function getProvider() {
 
 async function getSignerContract() {
   if (!hasContractAddress) throw new Error('Contrato no configurado')
+  await ensureSepoliaWalletReady()
   const signer = await getProvider().getSigner()
   return new Contract(CONTRACT_ADDRESS, ABI, signer)
 }
@@ -214,19 +221,98 @@ export async function getTransferenciasVehiculo(tokenId: bigint): Promise<Transf
     .sort((a, b) => b.blockNumber - a.blockNumber)
 }
 
+export type CarPassLastOp = {
+  kind: ChainActivityKind | null
+  txHash: string | null
+  blockNumber: number | null
+  failed: boolean
+}
+
+type RunMeta = {
+  kind: ChainActivityKind
+  method?: string
+  title?: string
+  detail?: string
+  counterparty?: string
+  vin?: string
+}
+
+type RunActionResult = {
+  summary: string
+  txHash?: string
+  blockNumber?: number
+}
+
+async function getConnectedAddress(): Promise<string> {
+  const ready = await ensureSepoliaWalletReady()
+  return ready.address
+}
+
 export function useCarPass() {
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
+  const [lastOp, setLastOp] = useState<CarPassLastOp>({
+    kind: null,
+    txHash: null,
+    blockNumber: null,
+    failed: false,
+  })
 
-  async function run(label: string, action: () => Promise<string>) {
+  async function run(label: string, meta: RunMeta, action: () => Promise<RunActionResult>) {
+    let activityId = ''
     try {
       setBusy(label)
       setMessage(`${label}...`)
+      setLastOp({ kind: meta.kind, txHash: null, blockNumber: null, failed: false })
+
+      const walletAddress = await getConnectedAddress()
+      activityId = recordChainActivity({
+        walletAddress,
+        kind: meta.kind,
+        status: 'pending',
+        title: meta.title ?? label,
+        detail: meta.detail,
+        method: meta.method,
+        counterparty: meta.counterparty ?? CONTRACT_ADDRESS,
+        vin: meta.vin,
+      })
+
       const result = await action()
-      setMessage(result)
+
+      updateChainActivity(activityId, {
+        status: 'confirmed',
+        txHash: result.txHash,
+        blockNumber: result.blockNumber,
+      })
+      setLastOp({
+        kind: meta.kind,
+        txHash: result.txHash ?? null,
+        blockNumber: result.blockNumber ?? null,
+        failed: false,
+      })
+      setMessage(result.summary)
       return true
     } catch (error) {
-      setMessage(parseContractError(error))
+      const errMsg = parseContractError(error)
+      if (activityId) {
+        updateChainActivity(activityId, { status: 'failed', detail: errMsg })
+      } else {
+        try {
+          const walletAddress = await getConnectedAddress()
+          recordChainActivity({
+            walletAddress,
+            kind: 'tx_failed',
+            status: 'failed',
+            title: meta.title ?? label,
+            detail: errMsg,
+            method: meta.method,
+          })
+        } catch {
+          // wallet no disponible
+        }
+      }
+      setLastOp({ kind: meta.kind, txHash: null, blockNumber: null, failed: true })
+      setMessage(errMsg)
       return false
     } finally {
       setBusy('')
@@ -234,12 +320,27 @@ export function useCarPass() {
   }
 
   async function registrarVehiculo(info: VehiculoInfo, propietario: string) {
-    const ok = await run('Registrando vehiculo', async () => {
-      const c = await getSignerContract()
-      const tx = await c.registrarVehiculo(info, propietario)
-      await tx.wait()
-      return 'Vehiculo registrado correctamente'
-    })
+    const ok = await run(
+      'Registrando vehiculo',
+      {
+        kind: 'mint_vehicle',
+        method: 'registrarVehiculo',
+        title: 'Alta de vehículo (NFT)',
+        detail: `VIN ${info.vin}`,
+        vin: normalizeVin(info.vin),
+        counterparty: CONTRACT_ADDRESS,
+      },
+      async () => {
+        const c = await getSignerContract()
+        const tx = await c.registrarVehiculo(info, propietario)
+        const receipt = await tx.wait()
+        return {
+          summary: 'Vehiculo registrado correctamente',
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
     if (ok) notifyVehicleChainUpdate(normalizeVin(info.vin), 'mint')
     return ok
   }
@@ -250,18 +351,31 @@ export function useCarPass() {
     tipo: string,
     descripcion: string,
   ) {
-    const ok = await run('Cargando service', async () => {
-      const c = await getSignerContract()
-      const tx = await c.agregarService(tokenId, {
-        timestamp: 0,
-        tipoServicio: tipo,
-        kilometraje: km,
-        taller: '0x0000000000000000000000000000000000000000',
-        descripcion,
-      })
-      await tx.wait()
-      return 'Service registrado en la blockchain'
-    })
+    const ok = await run(
+      'Cargando service',
+      {
+        kind: 'service',
+        method: 'agregarService',
+        title: 'Service registrado',
+        detail: `${km.toLocaleString('es-AR')} km · ${tipo}`,
+      },
+      async () => {
+        const c = await getSignerContract()
+        const tx = await c.agregarService(tokenId, {
+          timestamp: 0,
+          tipoServicio: tipo,
+          kilometraje: km,
+          taller: '0x0000000000000000000000000000000000000000',
+          descripcion,
+        })
+        const receipt = await tx.wait()
+        return {
+          summary: 'Service registrado en la blockchain',
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
     if (ok) void emitVehicleChainUpdateFromToken(tokenId, 'service')
     return ok
   }
@@ -273,19 +387,32 @@ export function useCarPass() {
     reparado: boolean,
     costo: number,
   ) {
-    const ok = await run('Registrando siniestro', async () => {
-      const c = await getSignerContract()
-      const tx = await c.agregarSiniestro(tokenId, {
-        timestamp: 0,
-        gravedad,
-        descripcion,
-        reparado,
-        costoEstimado: costo,
-        declarante: '0x0000000000000000000000000000000000000000',
-      })
-      await tx.wait()
-      return 'Siniestro registrado en la blockchain'
-    })
+    const ok = await run(
+      'Registrando siniestro',
+      {
+        kind: 'siniestro',
+        method: 'agregarSiniestro',
+        title: 'Siniestro registrado',
+        detail: descripcion.slice(0, 80) || undefined,
+      },
+      async () => {
+        const c = await getSignerContract()
+        const tx = await c.agregarSiniestro(tokenId, {
+          timestamp: 0,
+          gravedad,
+          descripcion,
+          reparado,
+          costoEstimado: costo,
+          declarante: '0x0000000000000000000000000000000000000000',
+        })
+        const receipt = await tx.wait()
+        return {
+          summary: 'Siniestro registrado en la blockchain',
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
     if (ok) void emitVehicleChainUpdateFromToken(tokenId, 'siniestro')
     return ok
   }
@@ -295,48 +422,103 @@ export function useCarPass() {
     resultado: number,
     vencimientoTs: number,
   ) {
-    const ok = await run('Registrando VTV', async () => {
-      const c = await getSignerContract()
-      const tx = await c.agregarVTV(tokenId, {
-        timestamp: 0,
-        resultado,
-        vencimiento: vencimientoTs,
-        planta: '0x0000000000000000000000000000000000000000',
-      })
-      await tx.wait()
-      return 'VTV registrada en la blockchain'
-    })
+    const ok = await run(
+      'Registrando VTV',
+      {
+        kind: 'vtv',
+        method: 'agregarVTV',
+        title: 'VTV registrada',
+      },
+      async () => {
+        const c = await getSignerContract()
+        const tx = await c.agregarVTV(tokenId, {
+          timestamp: 0,
+          resultado,
+          vencimiento: vencimientoTs,
+          planta: '0x0000000000000000000000000000000000000000',
+        })
+        const receipt = await tx.wait()
+        return {
+          summary: 'VTV registrada en la blockchain',
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
     if (ok) void emitVehicleChainUpdateFromToken(tokenId, 'vtv')
     return ok
   }
 
   async function grantRole(roleName: string, account: string) {
-    return run('Asignando rol', async () => {
-      const c = await getSignerContract()
-      const role = await (c as Contract)[roleName]()
-      const tx = await c.grantRole(role, account)
-      await tx.wait()
-      return `Rol asignado a ${account.slice(0, 8)}...`
-    })
+    return run(
+      'Asignando rol',
+      {
+        kind: 'grant_role',
+        method: 'grantRole',
+        title: 'Rol asignado',
+        detail: roleName,
+        counterparty: account,
+      },
+      async () => {
+        const c = await getSignerContract()
+        const role = await (c as Contract)[roleName]()
+        const tx = await c.grantRole(role, account)
+        const receipt = await tx.wait()
+        return {
+          summary: `Rol asignado a ${account.slice(0, 8)}...`,
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
   }
 
   async function revokeRole(roleName: string, account: string) {
-    return run('Revocando rol', async () => {
-      const c = await getSignerContract()
-      const role = await (c as Contract)[roleName]()
-      const tx = await c.revokeRole(role, account)
-      await tx.wait()
-      return `Rol revocado de ${account.slice(0, 8)}...`
-    })
+    return run(
+      'Revocando rol',
+      {
+        kind: 'revoke_role',
+        method: 'revokeRole',
+        title: 'Rol revocado',
+        detail: roleName,
+        counterparty: account,
+      },
+      async () => {
+        const c = await getSignerContract()
+        const role = await (c as Contract)[roleName]()
+        const tx = await c.revokeRole(role, account)
+        const receipt = await tx.wait()
+        return {
+          summary: `Rol revocado de ${account.slice(0, 8)}...`,
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
   }
 
   async function transferirVehiculo(from: string, to: string, tokenId: bigint, vin?: string) {
-    const ok = await run('Transfiriendo vehiculo', async () => {
-      const c = await getSignerContract()
-      const tx = await c.transferFrom(from, to, tokenId)
-      await tx.wait()
-      return `Vehiculo transferido a ${to.slice(0, 8)}...`
-    })
+    const ok = await run(
+      'Transfiriendo vehiculo',
+      {
+        kind: 'transfer_nft',
+        method: 'transferFrom',
+        title: 'Transferencia de NFT',
+        detail: vin ? `VIN ${normalizeVin(vin)}` : `Token #${String(tokenId)}`,
+        counterparty: to,
+        vin: vin ? normalizeVin(vin) : undefined,
+      },
+      async () => {
+        const c = await getSignerContract()
+        const tx = await c.transferFrom(from, to, tokenId)
+        const receipt = await tx.wait()
+        return {
+          summary: `Vehiculo transferido a ${to.slice(0, 8)}...`,
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+    )
     if (ok) {
       const resolvedVin = vin ? normalizeVin(vin) : await resolveVinByTokenId(tokenId)
       if (resolvedVin && isValidVin(resolvedVin)) {
@@ -349,6 +531,7 @@ export function useCarPass() {
   return {
     busy,
     message,
+    lastOp,
     registrarVehiculo,
     agregarService,
     agregarSiniestro,

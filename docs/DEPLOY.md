@@ -32,7 +32,7 @@ hash de transaccion y bloque. El export copia la address y ABI al frontend en:
 
 ## VehicleParts (autopartes grabadas)
 
-`VehicleParts` (EPIC-20) es un contrato independiente que se vincula al
+`VehicleParts` (EPIC-22) es un contrato independiente que se vincula al
 `CarPass` ya desplegado por direccion inmutable. No requiere redeploy de
 `CarPass`:
 

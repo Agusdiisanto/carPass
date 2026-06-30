@@ -6,6 +6,7 @@ import { generateNumerosGrabado, generateVin } from '../domain/carpass/idGenerat
 import { isValidVehicleInfo, isValidWalletAddress } from '../domain/carpass/validators'
 import { OperativeShell } from '../components/OperativeShell'
 import { VehiclePassportQr } from '../components/VehiclePassportQr'
+import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 
 export function RegistradorView({
   address,
@@ -16,7 +17,7 @@ export function RegistradorView({
   wrongNetwork?: boolean
   embedded?: boolean
 }) {
-  const { busy, message, registrarVehiculo, getVehiculoPorVin } = useCarPass()
+  const { busy, message, lastOp, registrarVehiculo, getVehiculoPorVin } = useCarPass()
   const { busy: partesBusy, message: partesMessage, registrarPartes } = useVehicleParts()
 
   const [vin, setVin] = useState(generateVin)
@@ -125,7 +126,7 @@ export function RegistradorView({
     return (
       <>
         {panels}
-        {message ? <div className="status-bar">{message}</div> : null}
+        <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
       </>
     )
   }
@@ -137,7 +138,7 @@ export function RegistradorView({
       description="Registrá vehículos nuevos. Cada pasaporte se emite con kilometraje inicial 0 km."
       address={address}
       wrongNetwork={wrongNetwork}
-      footer={message ? <div className="status-bar">{message}</div> : null}
+      footer={<CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />}
     >
       {panels}
     </OperativeShell>

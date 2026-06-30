@@ -3,10 +3,12 @@ import { normalizeVin, safeUpperCase } from '../domain/carpass/formatters'
 import { isValidWalletAddress } from '../domain/carpass/validators'
 import type { MiVehiculo } from '../hooks/useMisVehiculos'
 import type { TransferenciaVehiculo } from '../hooks/useCarPass'
-import { useCarPass } from '../hooks/useCarPass'
+import { CONTRACT_ADDRESS, useCarPass } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 import { BrandLogo } from './BrandLogo'
+import { CarPassOperationNotice } from './CarPassOperationNotice'
 import { useVehicleMedia } from '../hooks/useVehicleMedia'
+import { subscribeFleetTransferUpdates } from '../lib/fleetRead'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -35,7 +37,7 @@ export function TransferDominioSheet({
   onClose,
   onTransferred,
 }: TransferDominioSheetProps) {
-  const { busy, message, getPropietario, getTransferenciasVehiculo, transferirVehiculo } = useCarPass()
+  const { busy, message, lastOp, getPropietario, getTransferenciasVehiculo, transferirVehiculo } = useCarPass()
   const [owner, setOwner] = useState<string | null>(null)
   const [loadingOwner, setLoadingOwner] = useState(true)
   const [ownerError, setOwnerError] = useState('')
@@ -88,6 +90,15 @@ export function TransferDominioSheet({
   useEffect(() => {
     void loadOwner()
   }, [loadOwner])
+
+  useEffect(() => {
+    return subscribeFleetTransferUpdates(CONTRACT_ADDRESS, walletAddress, (updates) => {
+      const touchesCurrentVehicle = updates.some((update) => update.tokenId === vehicle.tokenId)
+      if (!touchesCurrentVehicle) return
+      void loadOwner()
+      onTransferred?.()
+    })
+  }, [loadOwner, onTransferred, vehicle.tokenId, walletAddress])
 
   async function handleTransferir() {
     if (!owner || !walletEsPropietaria) return
@@ -264,7 +275,7 @@ export function TransferDominioSheet({
           </>
         )}
 
-        {message && step !== 'done' ? <div className="status-bar">{message}</div> : null}
+        {step !== 'done' ? <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} /> : null}
       </aside>
     </div>
   )

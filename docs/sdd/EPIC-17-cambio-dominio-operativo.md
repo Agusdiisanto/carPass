@@ -11,6 +11,7 @@ CarPass ya permite transferir el pasaporte vehicular NFT entre wallets, pero la 
 - Mejorar la vista de propietario para operar por listado, VIN manual o QR.
 - Mostrar titular actual y trazabilidad basica de transferencias.
 - Integrar el flujo con la infraestructura notebook-celular ya definida en EPIC-15: el VIN detectado por QR puede precargar la operacion.
+- Sincronizar automaticamente el garaje cuando un NFT se transfiere dentro o fuera de la aplicacion.
 
 No incluye verificacion registral externa, documentacion legal, backend propio ni almacenamiento off-chain.
 
@@ -49,6 +50,8 @@ Fuente de historial de altas y cambios de propietario.
 - Mensaje de resultado de transaccion.
 - Actualizacion visual del titular actual.
 - Historial basico de eventos `Transfer` del vehiculo.
+- Actualizacion automatica de "Mis vehiculos" cuando una transferencia externa cambia el titular.
+- Remocion visual del vehiculo si `ownerOf(tokenId)` deja de coincidir con la wallet conectada.
 
 ## Errores esperados
 
@@ -67,6 +70,8 @@ Fuente de historial de altas y cambios de propietario.
 - El propietario ingresa wallet compradora valida, confirma y MetaMask ejecuta `transferFrom`.
 - Si el VIN pertenece a otra wallet, la pantalla muestra el titular y bloquea la transferencia.
 - Si el usuario esta en red incorrecta, la pantalla permite revisar informacion pero no escribir.
+- Si el usuario transfiere el NFT desde MetaMask u otra wallet fuera de CarPass, el garaje detecta el evento `Transfer`, vuelve a consultar `ownerOf` y deja de mostrar el vehiculo si ya no pertenece a la wallet conectada.
+- Si una transferencia externa ocurre mientras el modal de transferencia esta abierto, el modal revalida titularidad y pasa a modo solo lectura si la wallet ya no es propietaria.
 
 ## Impacto en frontend y ABI
 
@@ -74,6 +79,8 @@ Fuente de historial de altas y cambios de propietario.
 - No requiere exportar artifacts nuevos.
 - El frontend agrega funciones de lectura de historial `Transfer` y UX de dominio sobre `PropietarioView`.
 - La infraestructura EPIC-15 sigue siendo la ruta para operar con celular sin backend.
+- La sincronizacion externa no cambia ABI: usa `Transfer` y `ownerOf`.
+- La fuente de verdad de pertenencia nunca es el estado local; siempre se decide por `ownerOf(tokenId)`.
 
 ## Comandos de verificacion
 

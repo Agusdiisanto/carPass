@@ -37,7 +37,7 @@ export function MisAutosView({
   onViewPassport,
   onTransfer,
 }: MisAutosViewProps) {
-  const { vehiculos, cargando, error, reload } = useMisVehiculos(address)
+  const { vehiculos, cargando, sincronizando, error, reload } = useMisVehiculos(address)
   const [transferTarget, setTransferTarget] = useState<MiVehiculo | null>(null)
   const [pendingVin, setPendingVin] = useState<string | null>(transferVin)
   const [vinLookup, setVinLookup] = useState('')
@@ -121,7 +121,7 @@ export function MisAutosView({
             </p>
           </div>
           <button type="button" className="btn-ghost" disabled={cargando} onClick={() => void reload()}>
-            Actualizar
+            {sincronizando ? 'Sincronizando...' : 'Actualizar'}
           </button>
         </div>
       ) : (
@@ -139,11 +139,17 @@ export function MisAutosView({
               <span className="mis-autos-stat__label">En tu wallet</span>
             </div>
             <button type="button" className="btn-ghost" disabled={cargando} onClick={() => void reload()}>
-              {cargando ? 'Sincronizando...' : 'Actualizar'}
+              {cargando || sincronizando ? 'Sincronizando...' : 'Actualizar'}
             </button>
           </div>
         </header>
       )}
+
+      {sincronizando && !cargando ? (
+        <div className="mis-autos-banner">
+          Actualizando titularidad desde Sepolia...
+        </div>
+      ) : null}
 
       {wrongNetwork ? (
         <div className="mis-autos-banner mis-autos-banner--warn">
@@ -225,7 +231,7 @@ export function MisAutosView({
           wrongNetwork={wrongNetwork}
           onClose={closeTransfer}
           onTransferred={() => {
-            void reload()
+            void reload({ silent: true })
           }}
         />
       ) : null}

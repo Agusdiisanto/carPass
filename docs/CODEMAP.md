@@ -13,7 +13,7 @@ Mapa rapido para leer y defender CarPass.
 - `contracts/core/CarPassHistory.sol`: carga y lectura de services, siniestros y VTV.
 - `contracts/core/CarPassSeal.sol`: calculo y cache opcional del sello de calidad.
 - `contracts/core/CarPassTransfers.sol`: restriccion owner-only para transferencias.
-- `contracts/VehicleParts.sol`: NFT de autopartes grabadas (EPIC-20), vinculado a `CarPass` por direccion inmutable; reutiliza `REGISTRADOR_ROLE`/`MECANICO_ROLE` via `hasRole` cross-contract.
+- `contracts/VehicleParts.sol`: NFT de autopartes grabadas (EPIC-22), vinculado a `CarPass` por direccion inmutable; reutiliza `REGISTRADOR_ROLE`/`MECANICO_ROLE` via `hasRole` cross-contract.
 - Responsabilidades: VIN unico, roles, services, siniestros, VTV, transferencias owner-only, revocacion trazable y sello de calidad.
 - Invariantes clave:
   - `tokenId` se deriva de `keccak256(vin)`.

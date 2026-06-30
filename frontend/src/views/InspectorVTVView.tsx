@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
 import { OperativeShell } from '../components/OperativeShell'
+import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
@@ -26,7 +27,7 @@ export function InspectorVTVView({
   wrongNetwork?: boolean
   embedded?: boolean
 }) {
-  const { busy, message, agregarVTV } = useCarPass()
+  const { busy, message, lastOp, agregarVTV } = useCarPass()
   const lookup = useVehicleLookup()
 
   const [resultado, setResultado] = useState(0)
@@ -96,7 +97,7 @@ export function InspectorVTVView({
     return (
       <>
         {panels}
-        {message ? <div className="status-bar">{message}</div> : null}
+        <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
       </>
     )
   }
@@ -108,7 +109,7 @@ export function InspectorVTVView({
       description="Escaneá el QR en la línea de inspección y certificá sin escribir el VIN."
       address={address}
       wrongNetwork={wrongNetwork}
-      footer={message ? <div className="status-bar">{message}</div> : null}
+      footer={<CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />}
     >
       {panels}
     </OperativeShell>

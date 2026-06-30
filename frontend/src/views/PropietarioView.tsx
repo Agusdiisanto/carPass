@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { VinQrScanner } from '../components/VinQrScanner'
+import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
 import { useCarPass } from '../hooks/useCarPass'
@@ -28,6 +29,7 @@ export function PropietarioView({
   const {
     busy,
     message,
+    lastOp,
     getMisVehiculos,
     getVehiculoPorVin,
     getPropietario,
@@ -422,7 +424,7 @@ export function PropietarioView({
     return (
       <>
         {panels}
-        {message ? <div className="status-bar">{message}</div> : null}
+        <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
       </>
     )
   }
@@ -455,7 +457,7 @@ export function PropietarioView({
       </header>
 
       {panels}
-      {message ? <div className="status-bar">{message}</div> : null}
+      <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
     </div>
   )
 }

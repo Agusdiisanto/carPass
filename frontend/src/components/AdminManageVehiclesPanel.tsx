@@ -4,13 +4,14 @@ import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
+import { CarPassOperationNotice } from './CarPassOperationNotice'
 
 type AdminManageVehiclesPanelProps = {
   address: string
 }
 
 export function AdminManageVehiclesPanel({ address }: AdminManageVehiclesPanelProps) {
-  const { busy, message, registrarVehiculo } = useCarPass()
+  const { busy, message, lastOp, registrarVehiculo } = useCarPass()
 
   const [vin, setVin] = useState('8AJBA3CD4E1234567')
   const [marca, setMarca] = useState('Toyota')
@@ -91,7 +92,7 @@ export function AdminManageVehiclesPanel({ address }: AdminManageVehiclesPanelPr
           ) : null}
         </section>
       </div>
-      {message ? <div className="status-bar">{message}</div> : null}
+      <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
     </>
   )
 }
