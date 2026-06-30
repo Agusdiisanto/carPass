@@ -36,6 +36,10 @@ export function parseContractError(error: unknown): string {
 
   if (error instanceof Error) {
     const msg = error.message.split('\n')[0]
+    if (msg.includes('Conecta MetaMask')) return msg
+    if (msg.includes('cancelad')) return msg
+    if (msg.includes('Sepolia')) return msg
+    if (msg.includes('cuenta activa')) return msg
     if (msg.includes('user rejected')) return 'Transaccion cancelada por el usuario'
     if (msg.includes('insufficient funds')) return 'Fondos insuficientes para pagar el gas'
     if (msg.includes('execution reverted')) return 'El contrato rechazo la operacion'

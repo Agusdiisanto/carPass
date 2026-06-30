@@ -11,24 +11,17 @@ import {
   type WalletConnectionMode,
 } from '../lib/ethereumProvider'
 import {
+  EXPECTED_SEPOLIA_CHAIN_ID,
+  ensureSepoliaWalletReady,
+  parseWalletChainId,
+  switchActiveProviderToSepolia,
+} from '../lib/sepoliaGate'
+import {
   connectViaMetaMaskConnect,
   disconnectMetaMaskConnect,
   ensureConnectProvider,
   switchConnectToSepolia,
 } from '../lib/metamaskConnect'
-
-function getSepoliaChainHex(): string {
-  const chainId = import.meta.env.VITE_SEPOLIA_CHAIN_ID ?? '11155111'
-  return `0x${Number(chainId).toString(16)}`
-}
-
-const SEPOLIA_CHAIN_CONFIG = {
-  chainId: getSepoliaChainHex(),
-  chainName: 'Sepolia',
-  nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
-  blockExplorerUrls: ['https://sepolia.etherscan.io'],
-}
 
 export type WalletState = {
   address: string
@@ -36,14 +29,9 @@ export type WalletState = {
   connected: boolean
 }
 
-export const expectedChainId = import.meta.env.VITE_SEPOLIA_CHAIN_ID ?? '11155111'
+export const expectedChainId = EXPECTED_SEPOLIA_CHAIN_ID
 
 const WALLET_DISCONNECTED_KEY = 'carpass_wallet_manual_disconnect'
-
-function parseChainId(raw: unknown): string {
-  if (typeof raw !== 'string') return ''
-  return Number.parseInt(raw, 16).toString()
-}
 
 export function shortAddress(address: string) {
   return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''
@@ -89,7 +77,7 @@ function bindProviderListeners(
 
 async function readWalletState(eth: EthereumProvider): Promise<{ address: string; chainId: string }> {
   const accounts = (await eth.request({ method: 'eth_accounts' })) as string[]
-  const chain = parseChainId(await eth.request({ method: 'eth_chainId' }))
+  const chain = parseWalletChainId(await eth.request({ method: 'eth_chainId' }))
   return { address: accounts[0] ?? '', chainId: chain }
 }
 
@@ -113,7 +101,7 @@ export function useWallet() {
     }
 
     const handleChainChanged = (rawChainId: unknown) => {
-      setChainId(parseChainId(rawChainId))
+      setChainId(parseWalletChainId(rawChainId))
     }
 
     async function bootstrapProvider() {
@@ -178,34 +166,32 @@ export function useWallet() {
     if (!eth) return false
 
     try {
-      await eth.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: getSepoliaChainHex() }],
-      })
+      setConnectError('')
+      const ok = await switchActiveProviderToSepolia(eth)
+      const chain = parseWalletChainId(await eth.request({ method: 'eth_chainId' }))
+      setChainId(chain)
+      return ok && chain === expectedChainId
     } catch (error) {
-      const code = typeof error === 'object' && error !== null && 'code' in error ? (error as { code: number }).code : null
-      if (code !== 4902) throw error
-      await eth.request({
-        method: 'wallet_addEthereumChain',
-        params: [SEPOLIA_CHAIN_CONFIG],
-      })
+      const message = error instanceof Error ? error.message : 'No se pudo cambiar a Sepolia'
+      setConnectError(message)
+      return false
     }
-
-    const chain = parseChainId(await eth.request({ method: 'eth_chainId' }))
-    setChainId(chain)
-    return chain === expectedChainId
   }
 
   async function switchToSepoliaWithConnect(): Promise<boolean> {
     if (getInjectedEthereum()) return switchToSepolia()
     try {
+      setConnectError('')
       await switchConnectToSepolia()
       const eth = getActiveEthereum()
       if (!eth) return false
-      const chain = parseChainId(await eth.request({ method: 'eth_chainId' }))
+      const ok = await switchActiveProviderToSepolia(eth)
+      const chain = parseWalletChainId(await eth.request({ method: 'eth_chainId' }))
       setChainId(chain)
-      return chain === expectedChainId
-    } catch {
+      return ok && chain === expectedChainId
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo cambiar a Sepolia'
+      setConnectError(message)
       return false
     }
   }
@@ -222,11 +208,16 @@ export function useWallet() {
     setProviderReady(Boolean(injected))
 
     if (injected) {
-      const accounts = (await injected.request({ method: 'eth_requestAccounts' })) as string[]
-      const chain = parseChainId(await injected.request({ method: 'eth_chainId' }))
-      setAddress(accounts[0] ?? '')
-      setChainId(chain)
-      return true
+      try {
+        const state = await ensureSepoliaWalletReady(injected)
+        setAddress(state.address)
+        setChainId(state.chainId)
+        return true
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'No se pudo preparar MetaMask en Sepolia'
+        setConnectError(message)
+        return false
+      }
     }
 
     if (mode === 'mobile-deeplink') {
@@ -240,11 +231,13 @@ export function useWallet() {
           onDisplayUri: setPairingUri,
           forceRequest: true,
         })
-        setAddress(result.address)
-        setChainId(result.chainId)
+        const eth = getActiveEthereum()
+        const state = eth ? await ensureSepoliaWalletReady(eth) : result
+        setAddress(state.address)
+        setChainId(state.chainId)
         setPairingUri('')
         setProviderReady(true)
-        return Boolean(result.address)
+        return Boolean(state.address)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'No se pudo conectar con MetaMask mobile'
         setConnectError(message)

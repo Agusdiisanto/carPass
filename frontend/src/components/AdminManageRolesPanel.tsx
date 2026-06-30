@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 import { isValidWalletAddress } from '../domain/carpass/validators'
+import { CarPassOperationNotice } from './CarPassOperationNotice'
 
 const ROLES = [
   { label: 'Administrador', fn: 'DEFAULT_ADMIN_ROLE', desc: 'Control total del contrato' },
@@ -16,7 +17,7 @@ type AdminManageRolesPanelProps = {
 }
 
 export function AdminManageRolesPanel({ address }: AdminManageRolesPanelProps) {
-  const { busy, message, grantRole, revokeRole } = useCarPass()
+  const { busy, message, lastOp, grantRole, revokeRole } = useCarPass()
   const [roleTarget, setRoleTarget] = useState('')
   const [selectedRole, setSelectedRole] = useState(ROLES[0].fn)
   const roleTargetValido = isValidWalletAddress(roleTarget)
@@ -81,7 +82,7 @@ export function AdminManageRolesPanel({ address }: AdminManageRolesPanelProps) {
           </div>
         </section>
       </div>
-      {message ? <div className="status-bar">{message}</div> : null}
+      <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
     </>
   )
 }

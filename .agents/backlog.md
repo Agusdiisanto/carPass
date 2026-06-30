@@ -364,6 +364,22 @@ Pendiente recomendado:
 - Sumar tests puntuales de VIN invalido, km igual, autoria VTV/siniestro y VTV rechazada.
 - Definir address final Sepolia y cerrar EPIC-08.
 
+## EPIC-20 · Feed de actividad on-chain
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-20-chain-activity-feed.md`.
+
+Implementado:
+
+- Store `frontend/src/lib/chainActivity.ts` con persistencia por wallet en `sessionStorage`.
+- Hidratación de mints y transfers desde logs del contrato CarPass.
+- Feed colapsable `ChainActivityFeed` con links a Etherscan (wallet + contrato).
+- Notificaciones operativas `OperationNotice` / `CarPassOperationNotice` con tx hash y bloque.
+- Integración en `useCarPass.run()` para registrar cada transacción confirmada o fallida.
+- Registro de conexión/desconexión de wallet y aviso de red incorrecta en `App.tsx`.
+- Link a wallet en `RuntimeStrip` cuando hay sesión activa.
+
 ## Regla de Trabajo
 
 Antes de implementar cambios nuevos:

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
 import { OperativeShell } from '../components/OperativeShell'
+import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
@@ -20,7 +21,7 @@ export function AseguradoraView({
   wrongNetwork?: boolean
   embedded?: boolean
 }) {
-  const { busy, message, agregarSiniestro } = useCarPass()
+  const { busy, message, lastOp, agregarSiniestro } = useCarPass()
   const lookup = useVehicleLookup()
 
   const [gravedad, setGravedad] = useState(0)
@@ -103,7 +104,7 @@ export function AseguradoraView({
     return (
       <>
         {panels}
-        {message ? <div className="status-bar">{message}</div> : null}
+        <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
       </>
     )
   }
@@ -115,7 +116,7 @@ export function AseguradoraView({
       description="Escaneá el QR del pasaporte y declará el siniestro en segundos."
       address={address}
       wrongNetwork={wrongNetwork}
-      footer={message ? <div className="status-bar">{message}</div> : null}
+      footer={<CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />}
     >
       {panels}
     </OperativeShell>

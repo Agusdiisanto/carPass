@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { useWallet, expectedChainId } from './hooks/useWallet'
 import { detectRole, hasContractAddress } from './hooks/useCarPass'
@@ -12,12 +12,19 @@ import { MisAutosView } from './views/MisAutosView'
 import { PublicView } from './views/PublicView'
 import { MobileWalletHint } from './components/MobileWalletHint'
 import { RuntimeStrip } from './components/RuntimeStrip'
+import { ChainActivityFeed } from './components/ChainActivityFeed'
 import { RoleDetectingState } from './components/RoleDetectingState'
 import { AppNavRail, type AppNavSection } from './components/AppNavRail'
 import { Topbar } from './components/Topbar'
 import { isMobileDevice } from './lib/deviceProfile'
 import { clearOperativeSessionFromUrl, getAppSessionFromUrl, syncAppSessionUrl } from './lib/appSessionUrl'
 import { setPendingOperativeVin } from './lib/operativeVinBridge'
+import {
+  hydrateCarPassActivities,
+  recordChainActivity,
+  setActiveWalletAddress,
+} from './lib/chainActivity'
+import { shortAddress } from './hooks/useWallet'
 
 const PANEL_OPEN_KEY = 'carpass_wallet_panel_open'
 
@@ -65,6 +72,8 @@ export default function App() {
   const [misAutosTransferVin, setMisAutosTransferVin] = useState<string | null>(null)
   const [consultaSignal, setConsultaSignal] = useState(0)
   const [panelRestored, setPanelRestored] = useState(false)
+  const prevAddressRef = useRef('')
+  const prevWrongNetworkRef = useRef(false)
   const shouldShowWalletHint =
     !walletLinked &&
     !restoring &&
@@ -153,6 +162,55 @@ export default function App() {
       // MetaMask cancelado, no disponible o redirigiendo a la app mobile.
     }
   }
+
+  useEffect(() => {
+    if (!address) {
+      if (prevAddressRef.current) {
+        recordChainActivity({
+          walletAddress: prevAddressRef.current,
+          kind: 'wallet_disconnect',
+          status: 'confirmed',
+          title: 'Wallet desconectada',
+        })
+      }
+      setActiveWalletAddress('')
+      prevAddressRef.current = ''
+      return
+    }
+
+    const changed = prevAddressRef.current.toLowerCase() !== address.toLowerCase()
+    setActiveWalletAddress(address)
+
+    if (changed && walletLinked) {
+      recordChainActivity({
+        walletAddress: address,
+        kind: 'wallet_connect',
+        status: 'confirmed',
+        title: 'Wallet conectada',
+        detail: shortAddress(address),
+      })
+      void hydrateCarPassActivities(address)
+    }
+
+    prevAddressRef.current = address
+  }, [address, walletLinked])
+
+  useEffect(() => {
+    if (!address || !walletLinked) {
+      prevWrongNetworkRef.current = wrongNetwork
+      return
+    }
+    if (wrongNetwork && !prevWrongNetworkRef.current) {
+      recordChainActivity({
+        walletAddress: address,
+        kind: 'network_warn',
+        status: 'confirmed',
+        title: 'Red incorrecta',
+        detail: 'Cambiá a Sepolia para operar con CarPass',
+      })
+    }
+    prevWrongNetworkRef.current = wrongNetwork
+  }, [address, walletLinked, wrongNetwork])
 
   useEffect(() => {
     const session = getAppSessionFromUrl()
@@ -370,6 +428,7 @@ export default function App() {
               <p className="network-switch-banner__text">
                 Tu wallet está conectada pero en otra red. CarPass opera en Sepolia ({expectedChainId}).
               </p>
+              {connectError ? <p className="network-switch-banner__error">{connectError}</p> : null}
             </div>
             <button type="button" className="network-switch-banner__btn" onClick={() => void switchToSepolia()}>
               Cambiar a Sepolia
@@ -400,6 +459,10 @@ export default function App() {
         role={role}
         detecting={detecting}
       />
+
+      {walletLinked && address ? (
+        <ChainActivityFeed walletAddress={address} wrongNetwork={wrongNetwork} />
+      ) : null}
 
       {!hasContractAddress && (
         <div className="config-warning">

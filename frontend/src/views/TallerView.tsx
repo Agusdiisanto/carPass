@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
 import { OperativeShell } from '../components/OperativeShell'
+import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { formatKm } from '../domain/carpass/formatters'
 import { isValidMileage } from '../domain/carpass/validators'
 import { useCarPass } from '../hooks/useCarPass'
@@ -16,7 +17,7 @@ export function TallerView({
   wrongNetwork?: boolean
   embedded?: boolean
 }) {
-  const { busy, message, agregarService } = useCarPass()
+  const { busy, message, lastOp, agregarService } = useCarPass()
   const lookup = useVehicleLookup({ loadMileage: true })
 
   const [km, setKm] = useState(0)
@@ -122,7 +123,7 @@ export function TallerView({
     return (
       <>
         {panels}
-        {message ? <div className="status-bar">{message}</div> : null}
+        <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
       </>
     )
   }
@@ -134,7 +135,7 @@ export function TallerView({
       description="Escaneá el QR del vehículo y registrá el mantenimiento sin tipear el VIN."
       address={address}
       wrongNetwork={wrongNetwork}
-      footer={message ? <div className="status-bar">{message}</div> : null}
+      footer={<CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />}
     >
       {panels}
     </OperativeShell>

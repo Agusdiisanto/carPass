@@ -1,32 +1,47 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getMisVehiculosSafe, type VehiculoInfo } from './useCarPass'
+import { CONTRACT_ADDRESS, getMisVehiculosSafe, type VehiculoInfo } from './useCarPass'
 import { subscribeVehicleChainUpdates } from '../lib/vehicleChainRefresh'
+import { subscribeFleetTransferUpdates } from '../lib/fleetRead'
 
 export type MiVehiculo = { tokenId: bigint; info: VehiculoInfo }
 
 export function useMisVehiculos(address: string) {
   const [vehiculos, setVehiculos] = useState<MiVehiculo[]>([])
   const [cargando, setCargando] = useState(true)
+  const [sincronizando, setSincronizando] = useState(false)
   const [error, setError] = useState('')
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (options?: { silent?: boolean }) => {
     if (!address) {
       setVehiculos([])
       setCargando(false)
+      setSincronizando(false)
       setError('')
       return
     }
 
-    setCargando(true)
+    const silent = options?.silent === true
+    if (silent) setSincronizando(true)
+    else setCargando(true)
+
     try {
       const { vehiculos: list, error: readError } = await getMisVehiculosSafe(address)
+      if (silent && readError) {
+        setError(readError)
+        return
+      }
       setVehiculos(list)
       setError(readError)
     } catch {
-      setVehiculos([])
-      setError('No se pudo leer tu flota on-chain. Verificá MetaMask en Sepolia.')
+      if (!silent) setVehiculos([])
+      setError(
+        silent
+          ? 'No se pudo sincronizar la titularidad on-chain.'
+          : 'No se pudo leer tu flota on-chain. Verifica MetaMask en Sepolia.',
+      )
     } finally {
-      setCargando(false)
+      if (silent) setSincronizando(false)
+      else setCargando(false)
     }
   }, [address])
 
@@ -36,9 +51,15 @@ export function useMisVehiculos(address: string) {
 
   useEffect(() => {
     return subscribeVehicleChainUpdates(() => {
-      void reload()
+      void reload({ silent: true })
     })
   }, [reload])
 
-  return { vehiculos, cargando, error, reload }
+  useEffect(() => {
+    return subscribeFleetTransferUpdates(CONTRACT_ADDRESS, address, () => {
+      void reload({ silent: true })
+    })
+  }, [address, reload])
+
+  return { vehiculos, cargando, sincronizando, error, reload }
 }

@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, type Provider } from 'ethers'
+import { BrowserProvider, Contract, isAddress, type Provider } from 'ethers'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { getActiveEthereum } from './ethereumProvider'
 import { getPublicProvider } from './publicProvider'
@@ -14,6 +14,7 @@ function resolveLogFromBlock(): number {
 }
 
 const LOG_FROM_BLOCK = resolveLogFromBlock()
+const TRANSFER_SYNC_POLL_MS = 18_000
 
 function getLogProviders(): Provider[] {
   const providers: Provider[] = []
@@ -32,6 +33,127 @@ function parseTransferTokenIds(events: unknown[]): bigint[] {
       ),
     ),
   ]
+}
+
+type TransferLog = {
+  args: {
+    from: string
+    to: string
+    tokenId: bigint
+  }
+  blockNumber: number
+  transactionHash: string
+}
+
+export type FleetTransferUpdate = {
+  direction: 'incoming' | 'outgoing'
+  tokenId: bigint
+  from: string
+  to: string
+  blockNumber: number
+  txHash: string
+}
+
+function normalizeTransferLog(event: unknown): FleetTransferUpdate | null {
+  const parsed = event as Partial<TransferLog>
+  if (!parsed.args || typeof parsed.blockNumber !== 'number') return null
+  return {
+    direction: 'incoming',
+    tokenId: parsed.args.tokenId,
+    from: parsed.args.from,
+    to: parsed.args.to,
+    blockNumber: parsed.blockNumber,
+    txHash: parsed.transactionHash ?? '',
+  }
+}
+
+function uniqueTransferUpdates(events: unknown[], ownerAddress: string): FleetTransferUpdate[] {
+  const owner = ownerAddress.toLowerCase()
+  const seen = new Set<string>()
+  const updates: FleetTransferUpdate[] = []
+
+  for (const event of events) {
+    const update = normalizeTransferLog(event)
+    if (!update) continue
+
+    const key = `${update.txHash}:${update.blockNumber}:${String(update.tokenId)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    updates.push({
+      ...update,
+      direction: update.to.toLowerCase() === owner ? 'incoming' : 'outgoing',
+    })
+  }
+
+  return updates
+}
+
+export function subscribeFleetTransferUpdates(
+  contractAddress: string,
+  ownerAddress: string,
+  onUpdate: (updates: FleetTransferUpdate[]) => void,
+): () => void {
+  if (typeof window === 'undefined') return () => {}
+  if (!isAddress(contractAddress) || !isAddress(ownerAddress)) return () => {}
+
+  const provider = getPublicProvider()
+  const contract = new Contract(contractAddress, ABI, provider)
+  const incomingFilter = contract.filters.Transfer(null, ownerAddress)
+  const outgoingFilter = contract.filters.Transfer(ownerAddress, null)
+
+  let cancelled = false
+  let checking = false
+  let lastSeenBlock: number | null = null
+
+  async function checkNewTransfers() {
+    if (cancelled || checking) return
+    checking = true
+
+    try {
+      const latestBlock = await provider.getBlockNumber()
+      if (lastSeenBlock === null) {
+        lastSeenBlock = latestBlock
+        return
+      }
+
+      if (latestBlock <= lastSeenBlock) return
+
+      const fromBlock = lastSeenBlock + 1
+      const [incoming, outgoing] = await Promise.all([
+        contract.queryFilter(incomingFilter, fromBlock, latestBlock),
+        contract.queryFilter(outgoingFilter, fromBlock, latestBlock),
+      ])
+
+      lastSeenBlock = latestBlock
+
+      const updates = uniqueTransferUpdates([...incoming, ...outgoing], ownerAddress)
+      if (updates.length > 0 && !cancelled) onUpdate(updates)
+    } catch {
+      // La siguiente vuelta de polling vuelve a intentar con el mismo rango.
+    } finally {
+      checking = false
+    }
+  }
+
+  const intervalId = window.setInterval(() => {
+    void checkNewTransfers()
+  }, TRANSFER_SYNC_POLL_MS)
+
+  const handleFocus = () => {
+    void checkNewTransfers()
+  }
+
+  window.addEventListener('focus', handleFocus)
+  document.addEventListener('visibilitychange', handleFocus)
+  void checkNewTransfers()
+
+  return () => {
+    cancelled = true
+    window.clearInterval(intervalId)
+    window.removeEventListener('focus', handleFocus)
+    document.removeEventListener('visibilitychange', handleFocus)
+  }
 }
 
 export async function queryTransferEventsToAddress(
