@@ -5,14 +5,16 @@ type QrCodeImageProps = {
   value: string
   size?: number
   label?: string
+  onDataUrl?: (dataUrl: string) => void
 }
 
-export function QrCodeImage({ value, size = 200, label = 'Codigo QR' }: QrCodeImageProps) {
+export function QrCodeImage({ value, size = 200, label = 'Codigo QR', onDataUrl }: QrCodeImageProps) {
   const [src, setSrc] = useState('')
 
   useEffect(() => {
     if (!value) {
       setSrc('')
+      onDataUrl?.('')
       return
     }
 
@@ -23,15 +25,19 @@ export function QrCodeImage({ value, size = 200, label = 'Codigo QR' }: QrCodeIm
       color: { dark: '#042f2e', light: '#ffffff' },
     })
       .then((dataUrl) => {
-        if (!cancelled) setSrc(dataUrl)
+        if (cancelled) return
+        setSrc(dataUrl)
+        onDataUrl?.(dataUrl)
       })
       .catch(() => {
-        if (!cancelled) setSrc('')
+        if (cancelled) return
+        setSrc('')
+        onDataUrl?.('')
       })
     return () => {
       cancelled = true
     }
-  }, [value, size])
+  }, [value, size, onDataUrl])
 
   if (!src) {
     return <div className="qr-code-image qr-code-image--loading" style={{ width: size, height: size }} aria-hidden />

@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
+import { OperativeShell } from '../components/OperativeShell'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
-import { isValidVin } from '../domain/carpass/validators'
-import { OperativeShell } from '../components/OperativeShell'
 
 const RESULTADO_OPTIONS = [
   { value: 0, label: 'Aprobado' },
@@ -43,72 +43,53 @@ export function InspectorVTVView({
   }
 
   const panels = (
-      <div className="panels-grid single">
-        <section className="panel">
-          <h3>Identificar vehiculo</h3>
+    <div className="operative-flow operative-flow--inspector">
+      <VehicleIdentifyPanel lookup={lookup} accent="inspector" />
 
-          <div className="search-inline">
-            <label className="field" style={{ flex: 1 }}>
-              VIN del vehiculo
-              <input
-                maxLength={17}
-                placeholder="17 caracteres"
-                value={lookup.vin}
-                onChange={(e) => lookup.setVin(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && lookup.search()}
-              />
-            </label>
-            <button
-              className="btn-secondary search-btn"
-              disabled={!isValidVin(lookup.vin) || lookup.loading}
-              onClick={() => lookup.search()}
-            >
-              {lookup.loading ? 'Buscando...' : 'Buscar'}
-            </button>
+      {lookup.found ? (
+        <section className="panel panel--operative">
+          <div className="panel-step">
+            <span className="panel-step__num">2</span>
+            <div>
+              <h3>Resultado de la inspección</h3>
+              <p className="panel-desc">Registrá el outcome y la fecha de vencimiento de la VTV.</p>
+            </div>
           </div>
 
-          {lookup.error && <p className="error-msg">{lookup.error}</p>}
-          {lookup.found && <div className="km-info-banner">Vehiculo encontrado. Completa el resultado de la inspeccion.</div>}
+          <label className="field">
+            Resultado
+            <select className="select-input" value={resultado} onChange={(e) => setResultado(Number(e.target.value))}>
+              {RESULTADO_OPTIONS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            Fecha de vencimiento
+            <input
+              min={new Date().toISOString().split('T')[0]}
+              type="date"
+              value={vencimiento}
+              onChange={(e) => setVencimiento(e.target.value)}
+            />
+          </label>
+
+          <div className="wallet-info">
+            <span>Firmando como</span>
+            <code>{shortAddress(address)}</code>
+          </div>
+
+          <button
+            className="btn-primary full-width"
+            disabled={Boolean(busy)}
+            onClick={handleVTV}
+          >
+            {busy === 'Registrando VTV' ? 'Registrando...' : 'Registrar revisión VTV'}
+          </button>
         </section>
-
-        {lookup.found && (
-          <section className="panel">
-            <h3>Resultado de la inspeccion</h3>
-
-            <label className="field">
-              Resultado
-              <select className="select-input" value={resultado} onChange={(e) => setResultado(Number(e.target.value))}>
-                {RESULTADO_OPTIONS.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="field">
-              Fecha de vencimiento
-              <input
-                min={new Date().toISOString().split('T')[0]}
-                type="date"
-                value={vencimiento}
-                onChange={(e) => setVencimiento(e.target.value)}
-              />
-            </label>
-
-            <div className="wallet-info">
-              <span>Firmando como</span>
-              <code>{shortAddress(address)}</code>
-            </div>
-
-            <button
-              className="btn-primary full-width"
-              disabled={Boolean(busy)}
-              onClick={handleVTV}
-            >
-              {busy === 'Registrando VTV' ? 'Registrando...' : 'Registrar revision VTV'}
-            </button>
-          </section>
-        )}
-      </div>
+      ) : null}
+    </div>
   )
 
   if (embedded) {
@@ -124,7 +105,7 @@ export function InspectorVTVView({
     <OperativeShell
       role="inspector"
       title="Registro de revisión VTV"
-      description="Certificá el resultado de la inspección técnica vehicular."
+      description="Escaneá el QR en la línea de inspección y certificá sin escribir el VIN."
       address={address}
       wrongNetwork={wrongNetwork}
       footer={message ? <div className="status-bar">{message}</div> : null}

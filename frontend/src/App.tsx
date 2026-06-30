@@ -14,15 +14,36 @@ import { RuntimeStrip } from './components/RuntimeStrip'
 import { RoleDetectingState } from './components/RoleDetectingState'
 import { Topbar } from './components/Topbar'
 
+const PANEL_OPEN_KEY = 'carpass_wallet_panel_open'
+
+function readPanelOpenPreference(): boolean {
+  try {
+    return localStorage.getItem(PANEL_OPEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function savePanelOpenPreference(open: boolean) {
+  try {
+    if (open) localStorage.setItem(PANEL_OPEN_KEY, '1')
+    else localStorage.removeItem(PANEL_OPEN_KEY)
+  } catch {
+    // localStorage no disponible.
+  }
+}
+
 export default function App() {
-  const { address, chainId, connected, wrongNetwork, connect, disconnect } = useWallet()
+  const { address, chainId, connected, wrongNetwork, restoring, connect, disconnect } = useWallet()
   const [role, setRole] = useState<Role | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [showPublic, setShowPublic] = useState(true)
   const [consultaSignal, setConsultaSignal] = useState(0)
+  const [panelRestored, setPanelRestored] = useState(false)
 
   function goToConsulta() {
     setShowPublic(true)
+    savePanelOpenPreference(false)
     setConsultaSignal((value) => value + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -30,6 +51,7 @@ export default function App() {
   function goToPanel() {
     if (!connected) return
     setShowPublic(false)
+    savePanelOpenPreference(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -40,6 +62,12 @@ export default function App() {
       // MetaMask cancelado o no disponible.
     }
   }
+
+  useEffect(() => {
+    if (restoring || panelRestored || !connected) return
+    if (readPanelOpenPreference()) setShowPublic(false)
+    setPanelRestored(true)
+  }, [connected, restoring, panelRestored])
 
   useEffect(() => {
     if (!connected || !hasContractAddress) {
@@ -122,7 +150,7 @@ export default function App() {
         </div>
       )}
 
-      <main>{renderView()}</main>
+      <main className={role === 'admin' && !showPublic ? 'main--admin' : undefined}>{renderView()}</main>
     </div>
   )
 }

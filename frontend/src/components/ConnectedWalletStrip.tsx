@@ -99,13 +99,14 @@ export function ConnectedWalletStrip({
   }
 
   const badgeClass = ROLE_BADGE_CLASS[role]
-  const caps = ROLE_CAPABILITIES[role].slice(0, 2)
+  const caps = ROLE_CAPABILITIES[role].slice(0, role === 'admin' ? 3 : 2)
+  const panelLabel = role === 'admin' ? 'Ir a administración' : 'Ir a operar'
 
   return (
     <div className={`wallet-strip wallet-strip--role wallet-strip--${badgeClass}`}>
       <div className="wallet-strip__head">
         <div>
-          <p className="wallet-strip__eyebrow">Modo operativo</p>
+          <p className="wallet-strip__eyebrow">{role === 'admin' ? 'Acceso administrador' : 'Modo operativo'}</p>
           <p className="wallet-strip__title">
             Rol: <span className={`wallet-strip__role ${badgeClass}`}>{ROLE_LABELS[role]}</span>
           </p>
@@ -114,22 +115,22 @@ export function ConnectedWalletStrip({
       </div>
       <p className="wallet-strip__text">{caps.join(' · ')}</p>
       <div className="wallet-strip__actions">
+        {onGoToPanel ? (
+          <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={onGoToPanel}>
+            <PanelIcon />
+            {panelLabel}
+          </button>
+        ) : null}
         {showPhoneCompanion && onReceiveFromPhone ? (
           <button type="button" className="wallet-strip__btn wallet-strip__btn--ghost" onClick={onReceiveFromPhone}>
             <PhoneLinkIcon />
             Recibir del celular
           </button>
         ) : null}
-        <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={onScanQr}>
+        <button type="button" className="wallet-strip__btn wallet-strip__btn--ghost" onClick={onScanQr}>
           <QrIcon />
           {showPhoneCompanion ? 'Escanear con camara' : 'Escanear QR de VIN'}
         </button>
-        {onGoToPanel ? (
-          <button type="button" className="wallet-strip__btn wallet-strip__btn--ghost" onClick={onGoToPanel}>
-            <PanelIcon />
-            Ir a operar
-          </button>
-        ) : null}
       </div>
     </div>
   )

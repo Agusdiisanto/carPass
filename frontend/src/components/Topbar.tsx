@@ -214,6 +214,7 @@ function TopbarNavItems({
   variant?: 'desktop' | 'dock'
 }) {
   const consultaLabel = variant === 'dock' ? 'Consultar' : 'Consulta'
+  const operarLabel = role === 'admin' ? 'Administrar' : 'Operar'
 
   return (
     <>
@@ -226,7 +227,7 @@ function TopbarNavItems({
       {walletLinked ? (
         <NavButton
           active={panelActive}
-          label="Operar"
+          label={operarLabel}
           onClick={onShowPanel}
           icon={<PanelNavIcon />}
           disabled={!connected}
@@ -234,8 +235,8 @@ function TopbarNavItems({
             wrongNetwork
               ? 'Cambia a Sepolia en MetaMask para operar'
               : panelActive
-                ? 'Panel operativo'
-                : 'Ir al panel operativo'
+                ? role === 'admin' ? 'Panel de administración' : 'Panel operativo'
+                : role === 'admin' ? 'Ir al panel de administración' : 'Ir al panel operativo'
           }
           chip={
             operarChip ??

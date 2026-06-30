@@ -26,6 +26,7 @@ import { PublicContractBar } from '../components/PublicContractBar'
 import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
 import { VinRelayDisplay } from '../components/VinRelayDisplay'
+import { VehiclePassportQr } from '../components/VehiclePassportQr'
 import type { Role } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 import { usePublicVehicleLookup } from '../hooks/usePublicVehicleLookup'
@@ -37,6 +38,7 @@ import {
   getVinFromLocation,
   isCompanionScanMode,
 } from '../lib/companionUrl'
+import { setPendingOperativeVin } from '../lib/operativeVinBridge'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type TimelineEvent =
@@ -372,6 +374,12 @@ export function PublicView({
     setRelayVin(null)
   }
 
+  function handleGoToPanel() {
+    const vinToCarry = data?.info.vin || (isValidVin(vin) ? vin : '')
+    if (vinToCarry) setPendingOperativeVin(vinToCarry)
+    onGoToPanel?.()
+  }
+
   function openLocalScanner() {
     setQrReceiveMode(false)
     setQrOpen(true)
@@ -388,6 +396,9 @@ export function PublicView({
   }
 
   function handleQrDetected(detectedVin: string) {
+    if (role && role !== 'none') {
+      setPendingOperativeVin(detectedVin)
+    }
     if (isMobileDevice() && companionSession) {
       setRelayVin(detectedVin)
       clearCompanionFromUrl()
@@ -421,7 +432,7 @@ export function PublicView({
               role={role}
               detecting={detecting}
               wrongNetwork={wrongNetwork}
-              onGoToPanel={onGoToPanel}
+              onGoToPanel={handleGoToPanel}
               onScanQr={openLocalScanner}
               showPhoneCompanion={showPhoneCompanion}
               onReceiveFromPhone={showPhoneCompanion ? openReceiveScanner : undefined}
@@ -591,12 +602,24 @@ export function PublicView({
 
       <div className="pv-results-shell">
       <div className="pv-content">
-        <VehicleHeroCard data={data} />
+        <div className="pv-passport-layout">
+          <VehicleHeroCard data={data} />
+          <VehiclePassportQr
+            vin={data.info.vin}
+            marca={data.info.marca}
+            modelo={data.info.modelo}
+            anio={data.info.anio}
+            color={data.info.color}
+            connected={connected}
+            role={role}
+            onGoToPanel={connected ? handleGoToPanel : undefined}
+          />
+        </div>
         <SealQualityCard data={data} />
 
-        {connected && onGoToPanel ? (
-          <button type="button" className="pv-connected-banner__btn pv-connected-banner__btn--inline" onClick={onGoToPanel}>
-            Operar este vehiculo (panel por rol)
+        {connected && onGoToPanel && (!role || role === 'none') ? (
+          <button type="button" className="pv-connected-banner__btn pv-connected-banner__btn--inline" onClick={handleGoToPanel}>
+            Operar este vehículo (panel por rol)
           </button>
         ) : null}
 

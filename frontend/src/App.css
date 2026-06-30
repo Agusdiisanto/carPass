@@ -16,6 +16,10 @@ main {
   padding: 32px 0 64px;
 }
 
+main.main--admin {
+  width: min(1240px, calc(100% - 24px));
+}
+
 /* ── Topbar (premium) ── */
 
 .topbar {
@@ -884,37 +888,310 @@ a.runtime-dock-item:focus-visible {
 .role-badge.aseguradora, .role-badge-nav.aseguradora { background: rgba(250,204,21,0.15);  color: #facc15; border: 1px solid rgba(250,204,21,0.3); }
 .role-badge.inspector,   .role-badge-nav.inspector   { background: rgba(251,146,60,0.15);  color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
 
-/* ── Admin view switcher ── */
+/* ── Admin layout ── */
 
-.admin-view-switcher {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px;
-  background: rgba(255,255,255,0.03);
+.admin-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
 }
 
-.admin-view-tab {
-  min-height: 36px;
+.admin-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-nav--rail {
+  display: none;
+}
+
+.admin-nav--sidebar {
+  position: sticky;
+  top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 14px;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.admin-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-nav__group-title {
+  margin: 0;
+  padding: 0 8px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.admin-nav__group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
   background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
+  color: #cbd5e1;
+  text-align: left;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.admin-view-tab:hover,
-.admin-view-tab.active {
-  border-color: rgba(45,212,191,0.35);
-  background: rgba(45,212,191,0.1);
+.admin-nav__item:hover,
+.admin-nav__item.active {
+  border-color: rgba(45, 212, 191, 0.28);
+  background: rgba(45, 212, 191, 0.08);
+  color: #f8fafc;
+}
+
+.admin-nav__item.active {
+  box-shadow: inset 3px 0 0 #2dd4bf;
+}
+
+.admin-nav__item--registrador.active { border-color: rgba(96, 165, 250, 0.35); background: rgba(96, 165, 250, 0.1); box-shadow: inset 3px 0 0 #60a5fa; }
+.admin-nav__item--taller.active { border-color: rgba(45, 212, 191, 0.35); background: rgba(45, 212, 191, 0.1); box-shadow: inset 3px 0 0 #2dd4bf; }
+.admin-nav__item--aseguradora.active { border-color: rgba(250, 204, 21, 0.35); background: rgba(250, 204, 21, 0.1); box-shadow: inset 3px 0 0 #facc15; }
+.admin-nav__item--inspector.active { border-color: rgba(251, 146, 60, 0.35); background: rgba(251, 146, 60, 0.1); box-shadow: inset 3px 0 0 #fb923c; }
+
+.admin-nav__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.admin-nav__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-nav__label {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-nav__hint {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.admin-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-hub__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(15, 23, 42, 0.35));
+}
+
+.admin-hub__title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.admin-hub__text {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-hub__group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-hub__group-label {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+}
+
+.admin-hub__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-hub__grid--operative {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-hub__card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 132px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.admin-hub__card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.admin-hub__card--core {
+  border-color: rgba(139, 92, 246, 0.24);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.admin-hub__card--core:hover {
+  border-color: rgba(139, 92, 246, 0.45);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.admin-hub__card--registrador { border-color: rgba(96, 165, 250, 0.24); }
+.admin-hub__card--taller { border-color: rgba(45, 212, 191, 0.24); }
+.admin-hub__card--aseguradora { border-color: rgba(250, 204, 21, 0.24); }
+.admin-hub__card--inspector { border-color: rgba(251, 146, 60, 0.24); }
+
+.admin-hub__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-hub__card-title {
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.admin-hub__card-cta {
   color: #2dd4bf;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-hub__card-desc {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-hub__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-hub__tag,
+.admin-hub__pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-hub__tag {
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+}
+
+.admin-hub__pill--admin { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+.admin-hub__pill--registrador { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.admin-hub__pill--taller { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; }
+.admin-hub__pill--aseguradora { background: rgba(250, 204, 21, 0.15); color: #facc15; }
+.admin-hub__pill--inspector { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+
+.admin-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-section-header--admin { border-color: rgba(139, 92, 246, 0.24); }
+.admin-section-header--registrador { border-color: rgba(96, 165, 250, 0.24); }
+.admin-section-header--taller { border-color: rgba(45, 212, 191, 0.24); }
+.admin-section-header--aseguradora { border-color: rgba(250, 204, 21, 0.24); }
+.admin-section-header--inspector { border-color: rgba(251, 146, 60, 0.24); }
+
+.admin-section-header__back {
+  align-self: flex-start;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-section-header__back:hover {
+  color: #2dd4bf;
+}
+
+.admin-section-header__title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.admin-section-header__desc {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .admin-role-note {
@@ -925,6 +1202,15 @@ a.runtime-dock-item:focus-visible {
   color: #facc15;
   font-size: 13px;
   font-weight: 600;
+}
+
+/* legacy tabs — kept for reference if reused elsewhere */
+.admin-view-switcher {
+  display: none;
+}
+
+.admin-view-tab {
+  display: none;
 }
 
 /* ── Panels ── */
@@ -1176,6 +1462,292 @@ button:disabled {
   color: #60a5fa;
   background: rgba(96,165,250,0.08);
   font-size: 13px;
+}
+
+/* ── Operative vehicle identify (QR-first) ── */
+
+.operative-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.op-identify {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.op-identify--taller { border-color: rgba(45, 212, 191, 0.24); background: linear-gradient(160deg, rgba(45, 212, 191, 0.08), rgba(15, 23, 42, 0.4)); }
+.op-identify--aseguradora { border-color: rgba(250, 204, 21, 0.24); background: linear-gradient(160deg, rgba(250, 204, 21, 0.08), rgba(15, 23, 42, 0.4)); }
+.op-identify--inspector { border-color: rgba(251, 146, 60, 0.24); background: linear-gradient(160deg, rgba(251, 146, 60, 0.08), rgba(15, 23, 42, 0.4)); }
+
+.op-identify--found {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.op-identify__scan-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.op-identify__eyebrow {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+}
+
+.op-identify__title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.op-identify__hint {
+  margin: 0 0 4px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.op-identify__scan-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  margin-top: 4px;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 12px;
+  padding: 0 18px;
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0.08));
+  color: #5eead4;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.op-identify--aseguradora .op-identify__scan-btn {
+  border-color: rgba(250, 204, 21, 0.35);
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.22), rgba(250, 204, 21, 0.08));
+  color: #fde047;
+}
+
+.op-identify--inspector .op-identify__scan-btn {
+  border-color: rgba(251, 146, 60, 0.35);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.22), rgba(251, 146, 60, 0.08));
+  color: #fdba74;
+}
+
+.op-identify__scan-btn:hover {
+  transform: translateY(-1px);
+}
+
+.op-identify__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.op-identify__divider::before,
+.op-identify__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.op-identify__manual {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.op-identify__search {
+  width: 100%;
+}
+
+.op-identify__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.op-identify__counter {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.op-identify__counter.ready {
+  color: #2dd4bf;
+}
+
+.op-identify__meta-hint {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.op-identify__error {
+  margin: 0;
+}
+
+.op-vehicle-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.op-vehicle-card--taller { border-color: rgba(45, 212, 191, 0.3); background: rgba(45, 212, 191, 0.06); }
+.op-vehicle-card--aseguradora { border-color: rgba(250, 204, 21, 0.3); background: rgba(250, 204, 21, 0.06); }
+.op-vehicle-card--inspector { border-color: rgba(251, 146, 60, 0.3); background: rgba(251, 146, 60, 0.06); }
+
+.op-vehicle-card__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.op-vehicle-card__eyebrow {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.op-vehicle-card__title {
+  margin: 4px 0 0;
+  color: #f8fafc;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.op-vehicle-card__meta {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.op-vehicle-card__vin {
+  display: inline-block;
+  margin-top: 8px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+
+.op-vehicle-card__km {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.op-vehicle-card__km strong {
+  color: #60a5fa;
+}
+
+.op-vehicle-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.op-vehicle-card__rescan,
+.op-vehicle-card__change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.op-vehicle-card__rescan {
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  background: rgba(45, 212, 191, 0.1);
+  color: #2dd4bf;
+}
+
+.op-vehicle-card__change {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #94a3b8;
+}
+
+.panel--operative {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.panel-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.panel-step__num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.operative-flow--taller .panel-step__num { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; }
+.operative-flow--aseguradora .panel-step__num { background: rgba(250, 204, 21, 0.15); color: #facc15; }
+.operative-flow--inspector .panel-step__num { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+
+.panel-step h3 {
+  margin: 0;
+}
+
+.panel-step .panel-desc {
+  margin: 4px 0 0;
 }
 
 /* ── Status / wallet info ── */
@@ -2537,6 +3109,183 @@ main:has(.public-view) {
   scroll-margin-top: 120px;
 }
 
+.pv-passport-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.pv-passport-layout .vh-card {
+  min-width: 0;
+}
+
+.passport-qr {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(45, 212, 191, 0.1), rgba(17, 24, 32, 0.95));
+  overflow: hidden;
+}
+
+.passport-qr__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 0%, rgba(45, 212, 191, 0.18), transparent 50%);
+  pointer-events: none;
+}
+
+.passport-qr__head,
+.passport-qr__body,
+.passport-qr__meta {
+  position: relative;
+}
+
+.passport-qr__eyebrow {
+  margin: 0;
+  color: #2dd4bf;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.passport-qr__title {
+  margin: 6px 0 0;
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.passport-qr__subtitle {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.passport-qr__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.passport-qr__qr-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.passport-qr__qr-ring {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed rgba(45, 212, 191, 0.35);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.passport-qr__vin {
+  display: block;
+  width: fit-content;
+  margin: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #5eead4;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.passport-qr__hint {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.passport-qr__warn {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(251, 146, 60, 0.1);
+  color: #fdba74;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.passport-qr__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.passport-qr__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.passport-qr__btn:hover:not(:disabled) {
+  border-color: rgba(45, 212, 191, 0.3);
+  color: #f8fafc;
+}
+
+.passport-qr__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.passport-qr__panel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0.08));
+  color: #5eead4;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.passport-qr__btn--accent {
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.12);
+  color: #5eead4;
+}
+
+.passport-qr__panel-btn:hover {
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.3), rgba(45, 212, 191, 0.12));
+}
+
 .pv-results-state .vehicle-media-hero {
   min-height: 200px;
 }
@@ -3248,6 +3997,15 @@ main:has(.public-view) {
 .op-shell--aseguradora { border-color: rgba(250, 204, 21, 0.28); background-color: rgba(250, 204, 21, 0.04); }
 .op-shell--inspector { border-color: rgba(251, 146, 60, 0.28); background-color: rgba(251, 146, 60, 0.04); }
 
+.op-shell--compact {
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.op-shell--compact .op-shell__title {
+  font-size: 18px;
+}
+
 .op-shell__row {
   display: flex;
   flex-wrap: wrap;
@@ -3885,6 +4643,27 @@ main:has(.public-view) {
     grid-column: 3;
   }
 
+  .pv-passport-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-qr__body {
+    align-items: center;
+    text-align: center;
+  }
+
+  .passport-qr__meta {
+    width: 100%;
+  }
+
+  .passport-qr__vin {
+    margin-inline: auto;
+  }
+
+  .passport-qr__actions {
+    justify-content: center;
+  }
+
   .pv-vehicle-grid {
     grid-template-columns: 1fr;
   }
@@ -3911,6 +4690,71 @@ main:has(.public-view) {
   main {
     width: calc(100% - 24px);
     padding-top: 20px;
+  }
+
+  main.main--admin {
+    width: calc(100% - 16px);
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-nav--sidebar {
+    display: none;
+  }
+
+  .admin-nav--rail {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    scrollbar-width: none;
+  }
+
+  .admin-nav--rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-nav__item--rail {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 88px;
+    min-height: 72px;
+    padding: 10px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    text-align: center;
+  }
+
+  .admin-nav__item--rail .admin-nav__copy {
+    align-items: center;
+  }
+
+  .admin-nav__item--rail .admin-nav__label {
+    font-size: 11px;
+  }
+
+  .admin-hub__grid,
+  .admin-hub__grid--operative {
+    grid-template-columns: 1fr;
+  }
+
+  .op-vehicle-card {
+    grid-template-columns: 1fr;
+  }
+
+  .op-vehicle-card__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .op-identify__scan-btn {
+    width: 100%;
   }
 
   .panels-grid,
@@ -4327,6 +5171,349 @@ main:has(.public-view) {
   }
 
   .phone-companion__steps li {
+    justify-content: center;
+  }
+}
+
+/* ── Sticker A6 imprimible ── */
+
+.sticker-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px 16px;
+  background: rgba(2, 6, 12, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.sticker-modal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 520px);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: #0f1720;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.sticker-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sticker-modal-head h3 {
+  margin: 4px 0 0;
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.sticker-modal-eyebrow {
+  margin: 0;
+  color: #2dd4bf;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sticker-modal-desc {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sticker-modal-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.sticker-modal-preview {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.sticker-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.sticker-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sticker-modal-btn--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #94a3b8;
+}
+
+.sticker-modal-btn--primary {
+  border: none;
+  background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+  color: #042f2e;
+}
+
+.sticker-print-root {
+  display: none;
+}
+
+.sticker-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 105mm);
+  min-height: 148mm;
+  padding: 10mm 8mm;
+  border: 1px solid #d1d5db;
+  border-radius: 4mm;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.sticker-sheet__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.sticker-sheet__brand {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.sticker-sheet__brand-car {
+  color: #0f172a;
+}
+
+.sticker-sheet__brand-pass {
+  color: #0d9488;
+}
+
+.sticker-sheet__tagline {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sticker-sheet__vehicle {
+  width: 100%;
+  text-align: center;
+}
+
+.sticker-sheet__model {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.sticker-sheet__detail {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sticker-sheet__qr-wrap {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 2px solid #0f172a;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sticker-sheet__vin-block {
+  width: 100%;
+  text-align: center;
+}
+
+.sticker-sheet__vin-label {
+  margin: 0;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sticker-sheet__vin {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  word-break: break-all;
+}
+
+.sticker-sheet__foot {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.sticker-sheet__foot p {
+  margin: 0;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sticker-sheet__foot-sub {
+  margin-top: 2px !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+
+.sticker-sheet__crop-marks {
+  position: absolute;
+  inset: 2mm;
+  pointer-events: none;
+}
+
+.sticker-sheet__crop-marks span {
+  position: absolute;
+  width: 8mm;
+  height: 8mm;
+  border-color: #cbd5e1;
+  border-style: solid;
+  border-width: 0;
+}
+
+.sticker-sheet__crop-marks span:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.sticker-sheet__crop-marks span:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.sticker-sheet__crop-marks span:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.sticker-sheet__crop-marks span:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+@media print {
+  @page {
+    size: A6 portrait;
+    margin: 0;
+  }
+
+  body.print-sticker-active .app-shell {
+    display: none !important;
+  }
+
+  body.print-sticker-active .sticker-modal-backdrop {
+    position: static;
+    display: block;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  body.print-sticker-active .sticker-modal-panel {
+    display: none !important;
+  }
+
+  body.print-sticker-active .sticker-print-root {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  body.print-sticker-active .sticker-sheet {
+    width: 105mm;
+    height: 148mm;
+    min-height: 148mm;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.print-sticker-active .sticker-sheet__crop-marks {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .sticker-modal-panel {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 14px;
+  }
+
+  .sticker-modal-actions {
+    flex-direction: column;
+  }
+
+  .sticker-modal-btn {
+    width: 100%;
     justify-content: center;
   }
 }

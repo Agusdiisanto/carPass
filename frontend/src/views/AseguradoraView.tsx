@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
+import { OperativeShell } from '../components/OperativeShell'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
-import { isValidVin } from '../domain/carpass/validators'
-import { OperativeShell } from '../components/OperativeShell'
 
 const GRAVEDAD_OPTIONS = [
   { value: 0, label: 'Leve' },
@@ -39,83 +39,64 @@ export function AseguradoraView({
   }
 
   const panels = (
-      <div className="panels-grid single">
-        <section className="panel">
-          <h3>Identificar vehiculo</h3>
+    <div className="operative-flow operative-flow--aseguradora">
+      <VehicleIdentifyPanel lookup={lookup} accent="aseguradora" />
 
-          <div className="search-inline">
-            <label className="field" style={{ flex: 1 }}>
-              VIN del vehiculo
-              <input
-                maxLength={17}
-                placeholder="17 caracteres"
-                value={lookup.vin}
-                onChange={(e) => lookup.setVin(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && lookup.search()}
-              />
-            </label>
-            <button
-              className="btn-secondary search-btn"
-              disabled={!isValidVin(lookup.vin) || lookup.loading}
-              onClick={() => lookup.search()}
-            >
-              {lookup.loading ? 'Buscando...' : 'Buscar'}
-            </button>
+      {lookup.found ? (
+        <section className="panel panel--operative">
+          <div className="panel-step">
+            <span className="panel-step__num">2</span>
+            <div>
+              <h3>Datos del siniestro</h3>
+              <p className="panel-desc">Completá la declaración para dejar constancia on-chain.</p>
+            </div>
           </div>
 
-          {lookup.error && <p className="error-msg">{lookup.error}</p>}
-          {lookup.found && <div className="km-info-banner">Vehiculo encontrado. Completa los datos del siniestro.</div>}
+          <label className="field">
+            Gravedad
+            <select className="select-input" value={gravedad} onChange={(e) => setGravedad(Number(e.target.value))}>
+              {GRAVEDAD_OPTIONS.map((g) => (
+                <option key={g.value} value={g.value}>{g.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            Descripción
+            <textarea
+              className="textarea-input"
+              placeholder="Describí el siniestro en detalle..."
+              rows={4}
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+            />
+          </label>
+
+          <label className="field">
+            Costo estimado de reparación (en wei)
+            <input min="0" type="number" value={costo} onChange={(e) => setCosto(Number(e.target.value))} />
+          </label>
+
+          <label className="field checkbox-field">
+            <input checked={reparado} type="checkbox" onChange={(e) => setReparado(e.target.checked)} />
+            El vehículo ya fue reparado
+          </label>
+
+          <div className="wallet-info">
+            <span>Firmando como</span>
+            <code>{shortAddress(address)}</code>
+          </div>
+
+          <button
+            className="btn-primary full-width"
+            disabled={!desc || Boolean(busy)}
+            onClick={handleSiniestro}
+          >
+            {busy === 'Registrando siniestro' ? 'Registrando...' : 'Declarar siniestro'}
+          </button>
         </section>
-
-        {lookup.found && (
-          <section className="panel">
-            <h3>Datos del siniestro</h3>
-
-            <label className="field">
-              Gravedad
-              <select className="select-input" value={gravedad} onChange={(e) => setGravedad(Number(e.target.value))}>
-                {GRAVEDAD_OPTIONS.map((g) => (
-                  <option key={g.value} value={g.value}>{g.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="field">
-              Descripcion
-              <textarea
-                className="textarea-input"
-                placeholder="Describi el siniestro en detalle..."
-                rows={4}
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-            </label>
-
-            <label className="field">
-              Costo estimado de reparacion (en wei)
-              <input min="0" type="number" value={costo} onChange={(e) => setCosto(Number(e.target.value))} />
-            </label>
-
-            <label className="field checkbox-field">
-              <input checked={reparado} type="checkbox" onChange={(e) => setReparado(e.target.checked)} />
-              El vehiculo ya fue reparado
-            </label>
-
-            <div className="wallet-info">
-              <span>Firmando como</span>
-              <code>{shortAddress(address)}</code>
-            </div>
-
-            <button
-              className="btn-primary full-width"
-              disabled={!desc || Boolean(busy)}
-              onClick={handleSiniestro}
-            >
-              {busy === 'Registrando siniestro' ? 'Registrando...' : 'Declarar siniestro'}
-            </button>
-          </section>
-        )}
-      </div>
+      ) : null}
+    </div>
   )
 
   if (embedded) {
@@ -131,7 +112,7 @@ export function AseguradoraView({
     <OperativeShell
       role="aseguradora"
       title="Registro de siniestros"
-      description="Declaratoria de accidentes y daños sobre vehículos asegurados."
+      description="Escaneá el QR del pasaporte y declará el siniestro en segundos."
       address={address}
       wrongNetwork={wrongNetwork}
       footer={message ? <div className="status-bar">{message}</div> : null}

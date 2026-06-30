@@ -14,6 +14,7 @@ type OperativeShellProps = {
   description?: string
   address: string
   wrongNetwork?: boolean
+  compact?: boolean
   children: ReactNode
   footer?: ReactNode
 }
@@ -24,6 +25,7 @@ export function OperativeShell({
   description,
   address,
   wrongNetwork = false,
+  compact = false,
   children,
   footer,
 }: OperativeShellProps) {
@@ -33,7 +35,7 @@ export function OperativeShell({
 
   return (
     <div className="view-container">
-      <header className={`op-shell op-shell--${badgeClass}`}>
+      <header className={`op-shell op-shell--${badgeClass} ${compact ? 'op-shell--compact' : ''}`}>
         <div className="op-shell__row">
           <span className={`role-badge ${badgeClass}`}>{ROLE_LABELS[role]}</span>
           <span className="op-shell__session">
@@ -47,13 +49,15 @@ export function OperativeShell({
         ) : null}
 
         <h2 className="op-shell__title">{title}</h2>
-        <p className="op-shell__desc">{copy}</p>
+        {!compact ? <p className="op-shell__desc">{copy}</p> : null}
 
-        <ul className="op-shell__caps" aria-label="Capacidades del rol">
-          {capabilities.map((cap) => (
-            <li key={cap}>{cap}</li>
-          ))}
-        </ul>
+        {!compact ? (
+          <ul className="op-shell__caps" aria-label="Capacidades del rol">
+            {capabilities.map((cap) => (
+              <li key={cap}>{cap}</li>
+            ))}
+          </ul>
+        ) : null}
       </header>
 
       {children}

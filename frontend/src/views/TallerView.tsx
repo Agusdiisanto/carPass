@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
+import { OperativeShell } from '../components/OperativeShell'
+import { formatKm } from '../domain/carpass/formatters'
+import { isValidMileage } from '../domain/carpass/validators'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
-import { formatKm } from '../domain/carpass/formatters'
-import { isValidMileage, isValidVin } from '../domain/carpass/validators'
-import { OperativeShell } from '../components/OperativeShell'
 
 export function TallerView({
   address,
@@ -24,11 +25,6 @@ export function TallerView({
 
   const kmValido = isValidMileage(km, lookup.lastKm)
 
-  async function buscarVehiculo() {
-    const result = await lookup.search()
-    if (result) setKm(result.lastKm + 1000)
-  }
-
   async function handleService() {
     if (!lookup.tokenId) return
     const ok = await agregarService(lookup.tokenId, km, tipo, desc || 'Service registrado')
@@ -40,105 +36,86 @@ export function TallerView({
   }
 
   const panels = (
-      <div className="panels-grid single">
-        <section className="panel">
-          <h3>Identificar vehiculo</h3>
+    <div className="operative-flow operative-flow--taller">
+      <VehicleIdentifyPanel
+        lookup={lookup}
+        accent="taller"
+        showMileage
+        onIdentified={(result) => setKm(result.lastKm + 1000)}
+      />
 
-          <div className="search-inline">
-            <label className="field" style={{ flex: 1 }}>
-              VIN del vehiculo
-              <input
-                maxLength={17}
-                placeholder="17 caracteres"
-                value={lookup.vin}
-                onChange={(e) => lookup.setVin(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && buscarVehiculo()}
-              />
-            </label>
-            <button
-              className="btn-secondary search-btn"
-              disabled={!isValidVin(lookup.vin) || lookup.loading}
-              onClick={buscarVehiculo}
-            >
-              {lookup.loading ? 'Buscando...' : 'Buscar'}
-            </button>
+      {lookup.found ? (
+        <section className="panel panel--operative">
+          <div className="panel-step">
+            <span className="panel-step__num">2</span>
+            <div>
+              <h3>Datos del service</h3>
+              <p className="panel-desc">El kilometraje debe superar el último registrado on-chain.</p>
+            </div>
           </div>
 
-          {lookup.error && <p className="error-msg">{lookup.error}</p>}
+          <label className="field">
+            Tipo de service
+            <input value={tipo} onChange={(e) => setTipo(e.target.value)} />
+          </label>
 
-          {lookup.found && (
-            <div className="km-info-banner">
-              Ultimo kilometraje registrado: <strong>{formatKm(lookup.lastKm)}</strong>
-            </div>
-          )}
-        </section>
-
-        {lookup.found && (
-          <section className="panel">
-            <h3>Datos del service</h3>
-
-            <label className="field">
-              Tipo de service
-              <input value={tipo} onChange={(e) => setTipo(e.target.value)} />
-            </label>
-
-            <label className="field">
-              Kilometraje actual
-              <input
-                min="0"
-                step="500"
-                type="number"
-                value={km}
-                onChange={(e) => setKm(Number(e.target.value))}
-              />
-            </label>
-
+          <label className="field">
+            Kilometraje actual
             <input
-              aria-label="Kilometraje"
-              className="km-slider"
-              max="300000"
               min="0"
               step="500"
-              type="range"
+              type="number"
               value={km}
               onChange={(e) => setKm(Number(e.target.value))}
             />
+          </label>
 
-            <div className={`km-validation ${kmValido ? 'valid' : 'invalid'}`}>
-              <span className="km-icon">{kmValido ? 'OK' : 'X'}</span>
-              <span>
-                {kmValido
-                  ? `${formatKm(km)} - valido`
-                  : `${formatKm(km)} - debe superar ${formatKm(lookup.lastKm)}`}
-              </span>
-            </div>
+          <input
+            aria-label="Kilometraje"
+            className="km-slider"
+            max="300000"
+            min="0"
+            step="500"
+            type="range"
+            value={km}
+            onChange={(e) => setKm(Number(e.target.value))}
+          />
 
-            <label className="field">
-              Descripcion <span className="field-hint">opcional</span>
-              <textarea
-                className="textarea-input"
-                placeholder="Trabajos realizados..."
-                rows={3}
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-            </label>
+          <div className={`km-validation ${kmValido ? 'valid' : 'invalid'}`}>
+            <span className="km-icon">{kmValido ? 'OK' : 'X'}</span>
+            <span>
+              {kmValido
+                ? `${formatKm(km)} - válido`
+                : `${formatKm(km)} - debe superar ${formatKm(lookup.lastKm)}`}
+            </span>
+          </div>
 
-            <div className="wallet-info">
-              <span>Firmando como</span>
-              <code>{shortAddress(address)}</code>
-            </div>
+          <label className="field">
+            Descripción <span className="field-hint">opcional</span>
+            <textarea
+              className="textarea-input"
+              placeholder="Trabajos realizados..."
+              rows={3}
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+            />
+          </label>
 
-            <button
-              className="btn-primary full-width"
-              disabled={!kmValido || Boolean(busy)}
-              onClick={handleService}
-            >
-              {busy === 'Cargando service' ? 'Registrando...' : 'Registrar service'}
-            </button>
-          </section>
-        )}
-      </div>
+          <div className="wallet-info">
+            <span>Firmando como</span>
+            <code>{shortAddress(address)}</code>
+          </div>
+
+          <button
+            className="btn-primary full-width"
+            disabled={!kmValido || Boolean(busy)}
+            onClick={handleService}
+          >
+            {busy === 'Cargando service' ? 'Registrando...' : 'Registrar service'}
+          </button>
+        </section>
+      ) : null}
+    </div>
   )
 
   if (embedded) {
@@ -154,7 +131,7 @@ export function TallerView({
     <OperativeShell
       role="mecanico"
       title="Carga de service"
-      description="Registrá el mantenimiento de un vehículo. El kilometraje debe ser mayor al último registrado."
+      description="Escaneá el QR del vehículo y registrá el mantenimiento sin tipear el VIN."
       address={address}
       wrongNetwork={wrongNetwork}
       footer={message ? <div className="status-bar">{message}</div> : null}
