@@ -20,13 +20,14 @@ El administrador necesita revisar y operar las pantallas de cada rol sin descone
 
 - Si la wallet detectada tiene rol `admin`, la DApp renderiza `AdminView`.
 - Dentro de `AdminView`, el usuario puede elegir que panel ver.
+- Al elegir un rol operativo, la DApp muestra la vista completa de ese rol, con su encabezado, badge y capacidades reales.
 - La vista seleccionada usa la misma wallet conectada para firmar.
 - Si el admin no tiene el rol on-chain requerido para una operacion, el contrato debe seguir rechazando la transaccion con `AccessControlUnauthorizedAccount`.
 - El panel de administracion sigue exponiendo gestion de roles para que el admin pueda otorgarse o revocarse roles si corresponde.
 
 ## Impacto en frontend
 
-- `frontend/src/views/AdminView.tsx` importa y renderiza las vistas de rol existentes.
+- `frontend/src/views/AdminView.tsx` importa y renderiza las vistas de rol existentes como pantallas completas para demo.
 - `frontend/src/App.css` agrega estilos para el selector de vista.
 
 ## Criterios de aceptacion

@@ -75,6 +75,31 @@ Flujo recomendado de deploy:
 
 Guia detallada: `docs/DEPLOY.md`.
 
+## Deploy frontend en Vercel
+
+El proyecto incluye `vercel.json` para deployar desde la raiz del repo y publicar la DApp de `frontend/`.
+
+Variables recomendadas en Vercel:
+
+```bash
+VITE_SEPOLIA_CHAIN_ID=11155111
+VITE_CARPASS_CONTRACT_ADDRESS=0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D
+VITE_CARPASS_PUBLIC_READ_TIMEOUT_MS=4500
+VITE_SEPOLIA_RPC_URL=
+VITE_PUBLIC_APP_URL=
+```
+
+`VITE_SEPOLIA_RPC_URL` es opcional porque la app tiene fallback publico. `VITE_PUBLIC_APP_URL` tambien es opcional en produccion; sirve si desde `localhost` se quiere generar el QR companion apuntando al deploy publico.
+
+No configurar secretos en Vercel para el frontend: `DEPLOYER_PRIVATE_KEY`, `SEPOLIA_RPC_URL` sin prefijo `VITE_` y `ETHERSCAN_API_KEY` son solo para scripts locales de contrato.
+
+Deploy con CLI:
+
+```bash
+npx vercel
+npx vercel --prod
+```
+
 ## Restriccion del usuario
 
 No agregar, adjuntar ni proponer tests salvo pedido explicito del usuario o trabajo directo sobre EPIC-07. Los agentes tampoco deben ejecutar validaciones a nivel frontend, incluyendo `npm run frontend:build`, lint, e2e, Playwright o audits del paquete `frontend`, salvo que el usuario lo pida explicitamente en ese turno.
