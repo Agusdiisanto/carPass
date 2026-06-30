@@ -30,6 +30,31 @@ hash de transaccion y bloque. El export copia la address y ABI al frontend en:
 - `frontend/src/contracts/carpassAbi.ts`
 - `frontend/src/contracts/carpassDeployment.ts`
 
+## VehicleParts (autopartes grabadas)
+
+`VehicleParts` (EPIC-20) es un contrato independiente que se vincula al
+`CarPass` ya desplegado por direccion inmutable. No requiere redeploy de
+`CarPass`:
+
+```bash
+npm run deploy:vehicleparts:sepolia
+npm run export:frontend
+```
+
+El deploy escribe `deployments/sepolia/VehicleParts.json` (address, chain id,
+`carPassAddress` enlazado, hash de transaccion y bloque). El export copia ABI
+y address al frontend en:
+
+- `frontend/src/contracts/vehiclePartsAbi.ts`
+- `frontend/src/contracts/vehiclePartsDeployment.ts`
+
+`VehicleParts` reusa `REGISTRADOR_ROLE` y `MECANICO_ROLE` de `CarPass` via
+`hasRole` cross-contract: no hace falta otorgar roles nuevos, solo los mismos
+que ya administra `CarPass`.
+
+Deployment actual: `0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15`, enlazado a
+`CarPass` `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D`.
+
 ## Datos demo
 
 `npm run seed:sepolia` es idempotente para la demo: si los VINs o hitos ya
