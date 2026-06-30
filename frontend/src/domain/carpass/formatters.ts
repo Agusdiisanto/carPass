@@ -6,6 +6,14 @@ export function coerceString(value: unknown, fallback = ''): string {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value)
   }
+  if (Array.isArray(value)) {
+    return coerceString(value[0], fallback)
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    if (typeof record.text === 'string') return record.text
+    if (typeof record.value === 'string') return record.value
+  }
   return fallback
 }
 

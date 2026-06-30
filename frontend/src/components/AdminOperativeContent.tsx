@@ -1,8 +1,8 @@
 import type { AdminOperativeSectionKey } from '../domain/carpass/adminSections'
 import { AdminOperateHub } from './AdminOperateHub'
+import { PropietarioFleetPanel } from './PropietarioFleetPanel'
 import { AseguradoraView } from '../views/AseguradoraView'
 import { InspectorVTVView } from '../views/InspectorVTVView'
-import { PropietarioView } from '../views/PropietarioView'
 import { RegistradorView } from '../views/RegistradorView'
 import { TallerView } from '../views/TallerView'
 
@@ -12,6 +12,8 @@ type AdminOperativeContentProps = {
   wrongNetwork: boolean
   onOpen: (key: AdminOperativeSectionKey) => void
   onReceiveFromPhone: () => void
+  onViewPassport?: (vin: string) => void
+  onGoToMisAutos?: () => void
 }
 
 export function AdminOperativeContent({
@@ -20,6 +22,8 @@ export function AdminOperativeContent({
   wrongNetwork,
   onOpen,
   onReceiveFromPhone,
+  onViewPassport = () => {},
+  onGoToMisAutos,
 }: AdminOperativeContentProps) {
   if (section === 'inicio') {
     return (
@@ -28,12 +32,20 @@ export function AdminOperativeContent({
         walletAddress={address}
         onOpen={onOpen}
         onReceiveFromPhone={onReceiveFromPhone}
+        onGoToMisAutos={onGoToMisAutos}
       />
     )
   }
 
   if (section === 'propietario') {
-    return <PropietarioView address={address} wrongNetwork={wrongNetwork} />
+    return (
+      <PropietarioFleetPanel
+        address={address}
+        wrongNetwork={wrongNetwork}
+        onViewPassport={onViewPassport}
+        onGoToMisAutos={onGoToMisAutos}
+      />
+    )
   }
   if (section === 'registrador') {
     return <RegistradorView address={address} wrongNetwork={wrongNetwork} />

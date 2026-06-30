@@ -10,6 +10,18 @@ type AdminOperateHubProps = {
   walletAddress: string
   onOpen: (key: AdminOperativeSectionKey) => void
   onReceiveFromPhone: () => void
+  onGoToMisAutos?: () => void
+}
+
+function GarageIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M5 17h14" />
+      <path d="M6 11h12l1-4H5z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
+    </svg>
+  )
 }
 
 export function AdminOperateHub({
@@ -17,18 +29,33 @@ export function AdminOperateHub({
   walletAddress,
   onOpen,
   onReceiveFromPhone,
+  onGoToMisAutos,
 }: AdminOperateHubProps) {
-  const roleSections = ADMIN_OPERATIVE_SECTIONS.filter((section) => section.key !== 'inicio')
+  const roleSections = ADMIN_OPERATIVE_SECTIONS.filter(
+    (section) => section.key !== 'inicio' && section.key !== 'propietario',
+  )
 
   return (
     <div className="admin-hub admin-hub--operate">
       <section className="admin-hub__intro admin-hub__intro--operate">
         <h3 className="admin-hub__title">Operar por rol</h3>
         <p className="admin-hub__text">
-          Elegí el rol del ecosistema. Cada opción abre el mismo flujo que vería esa wallet en producción.
-          Si la transacción falla por permisos, asigná el rol desde Administración.
+          Elegí el rol del ecosistema. Para tu flota NFT usá Mis vehículos en la barra superior o el acceso directo de abajo.
         </p>
       </section>
+
+      {onGoToMisAutos ? (
+        <button type="button" className="admin-hub__garaje-cta" onClick={onGoToMisAutos}>
+          <span className="admin-hub__garaje-icon" aria-hidden>
+            <GarageIcon />
+          </span>
+          <span className="admin-hub__garaje-copy">
+            <strong>Ir a Mis vehículos</strong>
+            <span>Flota NFT, pasaporte público y transferencias en pantalla completa.</span>
+          </span>
+          <span className="admin-hub__garaje-arrow" aria-hidden>→</span>
+        </button>
+      ) : null}
 
       {!wrongNetwork ? (
         <PhoneCompanionCard

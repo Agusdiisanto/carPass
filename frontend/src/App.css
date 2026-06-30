@@ -1993,6 +1993,64 @@ a.runtime-dock-item:focus-visible {
   line-height: 1.5;
 }
 
+.admin-hub__garaje-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.14), rgba(15, 23, 42, 0.45));
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.admin-hub__garaje-cta:hover {
+  border-color: rgba(45, 212, 191, 0.55);
+  transform: translateY(-1px);
+}
+
+.admin-hub__garaje-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(45, 212, 191, 0.18);
+  color: #2dd4bf;
+  flex-shrink: 0;
+}
+
+.admin-hub__garaje-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-hub__garaje-copy strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.admin-hub__garaje-copy span {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-hub__garaje-arrow {
+  color: #2dd4bf;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 .admin-hub__group {
   display: flex;
   flex-direction: column;
@@ -6112,6 +6170,10 @@ main:has(.public-view) {
     display: none;
   }
 
+  .app-nav-rail-wrap {
+    display: none;
+  }
+
   .topbar-dock {
     display: inline-flex;
   }
@@ -7493,4 +7555,910 @@ main:has(.public-view) {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* ── Mis vehículos home card ── */
+
+.mis-vehiculos-home {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 8px;
+  padding: 20px 22px;
+  border: 1px solid rgba(45, 212, 191, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.08), rgba(15, 23, 42, 0.72));
+}
+
+.mis-vehiculos-home__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  color: #5eead4;
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.25);
+}
+
+.mis-vehiculos-home__body {
+  min-width: 0;
+}
+
+.mis-vehiculos-home__eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.mis-vehiculos-home__title {
+  margin: 0 0 6px;
+  font-size: 1.125rem;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.mis-vehiculos-home__text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.mis-vehiculos-home__actions {
+  flex-shrink: 0;
+}
+
+.mis-vehiculos-home__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.mis-vehiculos-home__btn--primary {
+  color: #042f2e;
+  background: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.6);
+}
+
+.mis-vehiculos-home__btn--primary:hover {
+  background: #5eead4;
+}
+
+@media (max-width: 760px) {
+  .mis-vehiculos-home {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .mis-vehiculos-home__actions {
+    width: 100%;
+  }
+
+  .mis-vehiculos-home__btn {
+    width: 100%;
+  }
+}
+
+/* ── App nav rail (desktop) ── */
+
+.app-nav-rail-wrap {
+  position: sticky;
+  top: 56px;
+  z-index: 24;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(8, 12, 18, 0.88);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+.app-nav-rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 8px 0;
+}
+
+.app-nav-rail__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.app-nav-rail__item:hover:not(.active) {
+  color: #e2e8f0;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.app-nav-rail__item.active {
+  color: #f8fafc;
+  background: rgba(45, 212, 191, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.28);
+  cursor: default;
+}
+
+.app-nav-rail__item--role.active.admin {
+  background: rgba(139, 92, 246, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.32);
+  color: #ddd6fe;
+}
+
+.app-nav-rail__item--role.active.registrador {
+  background: rgba(96, 165, 250, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.32);
+  color: #bfdbfe;
+}
+
+.app-nav-rail__item--role.active.taller {
+  background: rgba(45, 212, 191, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.32);
+  color: #99f6e4;
+}
+
+.app-nav-rail__item--role.active.aseguradora {
+  background: rgba(250, 204, 21, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.32);
+  color: #fef08a;
+}
+
+.app-nav-rail__item--role.active.inspector {
+  background: rgba(251, 146, 60, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(251, 146, 60, 0.32);
+  color: #fed7aa;
+}
+
+.app-nav-rail__icon {
+  display: inline-flex;
+  opacity: 0.9;
+}
+
+.app-nav-rail__label {
+  white-space: nowrap;
+}
+
+.app-nav-rail__context {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 0 0 8px;
+  font-size: 12px;
+}
+
+.app-nav-rail__context-label {
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.app-nav-rail__context-vin {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.app-nav-rail__context-link {
+  border: none;
+  padding: 0;
+  background: none;
+  color: #2dd4bf;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.app-nav-rail__context-link:hover {
+  color: #5eead4;
+}
+
+.operative-page-shell {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.propietario-fleet-panel__expand {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2dd4bf;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.propietario-fleet-panel__expand:hover {
+  color: #5eead4;
+}
+
+/* ── Mis autos ── */
+
+.mis-autos-view {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.mis-autos-list {
+  margin-top: 12px;
+}
+
+.mis-autos-list__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: default;
+}
+
+.mis-autos-list__item:hover {
+  border-color: rgba(45, 212, 191, 0.3);
+  background: rgba(45, 212, 191, 0.04);
+}
+
+.mis-autos-list__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mis-autos-list__token {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.mis-autos-list__actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 132px;
+}
+
+.mis-autos-list__actions .mis-auto-card__btn {
+  flex: none;
+  width: 100%;
+}
+
+.mis-autos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.mis-autos-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.mis-auto-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.mis-auto-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+
+.mis-auto-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mis-auto-card__brand {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin: 0 0 2px;
+}
+
+.mis-auto-card__model {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #f1f5f9;
+}
+
+.mis-auto-card__year {
+  font-size: 0.875rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.mis-auto-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mis-auto-card__chip {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.mis-auto-card__vin {
+  font-size: 0.78rem;
+  color: #7dd3fc;
+  letter-spacing: 0.04em;
+}
+
+.mis-auto-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mis-auto-card__btn {
+  flex: 1;
+  min-height: 38px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.mis-auto-card__btn--primary {
+  background: rgba(45, 212, 191, 0.16);
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+.mis-auto-card__btn--primary:hover {
+  background: rgba(45, 212, 191, 0.24);
+}
+
+.mis-auto-card__btn--ghost {
+  background: transparent;
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.mis-auto-card__btn--ghost:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.mis-auto-card__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mis-autos-empty {
+  margin-top: 16px;
+  padding: 24px 20px;
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.mis-autos-empty__title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.mis-autos-empty__text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.mis-autos-transfer {
+  margin-top: 16px;
+}
+
+.mis-autos-transfer__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 640px) {
+  .mis-autos-panel__head {
+    flex-direction: column;
+  }
+
+  .mis-autos-list__item {
+    flex-direction: column;
+  }
+
+  .mis-autos-list__actions {
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .mis-autos-list__actions .mis-auto-card__btn {
+    flex: 1;
+  }
+
+  .mis-auto-card__actions {
+    flex-direction: column;
+  }
+}
+
+/* ── Mis vehículos v2 ── */
+
+.mis-autos-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.08), rgba(15, 23, 42, 0.88));
+}
+
+.mis-autos-hero__eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.mis-autos-hero__title {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: var(--text-strong);
+}
+
+.mis-autos-hero__desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.mis-autos-hero__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.mis-autos-stat {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.mis-autos-stat__value {
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 800;
+  color: #5eead4;
+}
+
+.mis-autos-stat__label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.mis-autos-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+}
+
+.mis-autos-banner--warn {
+  border: 1px solid rgba(251, 146, 60, 0.28);
+  background: rgba(251, 146, 60, 0.08);
+  color: #fdba74;
+}
+
+.mis-autos-banner--error {
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+}
+
+.mis-autos-banner p {
+  margin: 0;
+}
+
+.mis-autos-fleet {
+  margin-top: 18px;
+}
+
+.mis-autos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.mis-auto-card--selected {
+  border-color: rgba(45, 212, 191, 0.55);
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
+}
+
+.mis-auto-card--skeleton {
+  min-height: 320px;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.16), rgba(148, 163, 184, 0.08));
+  background-size: 200% 100%;
+  animation: role-shimmer 1.6s ease-in-out infinite;
+}
+
+.transfer-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.transfer-sheet {
+  width: min(100%, 440px);
+  height: 100%;
+  overflow: auto;
+  padding: 22px 22px 28px;
+  background: #0f172a;
+  border-left: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: -24px 0 48px rgba(0, 0, 0, 0.35);
+}
+
+.transfer-sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.transfer-sheet__eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.transfer-sheet__title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-strong);
+}
+
+.transfer-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.transfer-sheet__hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.transfer-sheet__hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #1e293b;
+}
+
+.transfer-sheet__hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.15), rgba(15, 23, 42, 0.92));
+}
+
+.transfer-sheet__hero-body {
+  position: relative;
+  z-index: 1;
+  padding: 18px;
+}
+
+.transfer-sheet__brand {
+  margin: 8px 0 2px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.transfer-sheet__model {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #f8fafc;
+}
+
+.transfer-sheet__meta {
+  margin: 4px 0 8px;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}
+
+.transfer-sheet__vin {
+  font-size: 0.78rem;
+  color: #7dd3fc;
+}
+
+.transfer-sheet__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.transfer-sheet__pill {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.transfer-sheet__pill--ok {
+  color: #5eead4;
+  background: rgba(45, 212, 191, 0.12);
+}
+
+.transfer-sheet__pill--warn {
+  color: #fdba74;
+  background: rgba(251, 146, 60, 0.12);
+}
+
+.transfer-sheet__pill--loading {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.transfer-sheet__owner {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.transfer-sheet__form,
+.transfer-sheet__confirm,
+.transfer-sheet__done {
+  display: grid;
+  gap: 14px;
+}
+
+.transfer-sheet__confirm-text {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.transfer-sheet__confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.transfer-sheet__btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.transfer-sheet__btn--primary {
+  color: #042f2e;
+  background: #2dd4bf;
+}
+
+.transfer-sheet__btn--danger {
+  color: #fff;
+  background: #dc2626;
+  flex: 1;
+}
+
+.transfer-sheet__btn--ghost {
+  color: #cbd5e1;
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.transfer-sheet__done-title {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.transfer-sheet__done-text {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.transfer-sheet__history {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.transfer-sheet__history-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .mis-autos-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mis-autos-hero__meta {
+    align-items: stretch;
+  }
+
+  .mis-autos-vin-lookup__row {
+    flex-direction: column;
+  }
+
+  .transfer-sheet {
+    width: 100%;
+    border-left: 0;
+  }
+
+  .transfer-sheet-backdrop {
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  .transfer-sheet {
+    height: auto;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .transfer-sheet__confirm-actions {
+    flex-direction: column;
+  }
+}
+
+.mis-autos-view--compact {
+  gap: 14px;
+}
+
+.mis-autos-view--compact.view-container {
+  padding: 0;
+}
+
+.mis-autos-inline-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.mis-autos-inline-head__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.mis-autos-inline-head__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.mis-autos-vin-lookup {
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.mis-autos-vin-lookup__row {
+  display: flex;
+  gap: 10px;
+}
+
+.mis-autos-vin-lookup__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.mis-autos-vin-lookup__btn {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.14);
+  color: #5eead4;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mis-autos-vin-lookup__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

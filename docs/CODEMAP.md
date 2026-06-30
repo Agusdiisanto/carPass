@@ -4,7 +4,15 @@ Mapa rapido para leer y defender CarPass.
 
 ## Contrato
 
-- `contracts/CarPass.sol`: contrato principal ERC-721.
+- `contracts/CarPass.sol`: contrato principal ERC-721. Compone los modulos internos y conecta hooks ERC-721.
+- `contracts/core/CarPassTypes.sol`: enums y structs del dominio vehicular.
+- `contracts/core/CarPassErrors.sol`: custom errors del contrato.
+- `contracts/core/CarPassStorage.sol`: mappings compartidos y hooks abstractos hacia ERC-721.
+- `contracts/core/CarPassRoles.sol`: roles, revocacion trazable y consulta `estaRevocado`.
+- `contracts/core/CarPassVehicleRegistry.sol`: alta de vehiculos, VIN y consultas base.
+- `contracts/core/CarPassHistory.sol`: carga y lectura de services, siniestros y VTV.
+- `contracts/core/CarPassSeal.sol`: calculo y cache opcional del sello de calidad.
+- `contracts/core/CarPassTransfers.sol`: restriccion owner-only para transferencias.
 - Responsabilidades: VIN unico, roles, services, siniestros, VTV, transferencias owner-only, revocacion trazable y sello de calidad.
 - Invariantes clave:
   - `tokenId` se deriva de `keccak256(vin)`.

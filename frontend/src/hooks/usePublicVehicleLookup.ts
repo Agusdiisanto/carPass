@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { normalizeVin } from '../domain/carpass/formatters'
 import {
   createLiveVehicleRecord,
@@ -17,6 +17,7 @@ type LookupState = {
   error: string
   loading: boolean
   loadingVin: string
+  refreshing: boolean
 }
 
 function getTimeoutMs() {
@@ -46,101 +47,124 @@ export function usePublicVehicleLookup() {
     error: '',
     loading: false,
     loadingVin: '',
+    refreshing: false,
   })
 
-  function reset() {
+  const readLive = useCallback(
+    async (vin: string) => {
+      const { tokenId, info } = await getVehiculoPorVin(vin)
+      if (!info.vin) {
+        throw new Error('Vehiculo no encontrado en Sepolia')
+      }
+
+      const [historial, ownerAddress] = await Promise.all([
+        getHistorial(tokenId),
+        getPropietario(tokenId),
+      ])
+
+      return createLiveVehicleRecord({
+        tokenId,
+        info: normalizeVehiculoInfo(info),
+        services: historial.services,
+        siniestros: historial.siniestros,
+        vtv: historial.vtv,
+        sello: normalizeSelloCalidad(historial.sello),
+        ownerAddress,
+      })
+    },
+    [getHistorial, getPropietario, getVehiculoPorVin],
+  )
+
+  const fetchRecord = useCallback(
+    async (vin: string): Promise<{ record: PublicVehicleRecord | null; error: string }> => {
+      try {
+        const live = await withTimeout(readLive(vin), getTimeoutMs())
+        return { record: live, error: '' }
+      } catch (error) {
+        const fallbackReason = describeError(error)
+        const snapshot = getSnapshotVehicle(vin, fallbackReason)
+        if (snapshot) return { record: snapshot, error: '' }
+
+        const demo = getDemoVehicleRecord(vin, fallbackReason)
+        if (demo) return { record: demo, error: '' }
+
+        return {
+          record: null,
+          error: fallbackReason
+            ? `No se pudo resolver el VIN. Ultimo intento live: ${fallbackReason}.`
+            : 'No se encontro ningun vehiculo con ese VIN.',
+        }
+      }
+    },
+    [readLive],
+  )
+
+  const reset = useCallback(() => {
     setState({
       data: null,
       error: '',
       loading: false,
       loadingVin: '',
+      refreshing: false,
     })
-  }
+  }, [])
 
-  async function readLive(vin: string) {
-    const { tokenId, info } = await getVehiculoPorVin(vin)
-    if (!info.vin) {
-      throw new Error('Vehiculo no encontrado en Sepolia')
-    }
+  const search = useCallback(
+    async (vinToSearch: string): Promise<PublicVehicleRecord | null> => {
+      const vin = normalizeVin(vinToSearch)
+      if (!isValidVin(vin)) return null
 
-    const [historial, ownerAddress] = await Promise.all([
-      getHistorial(tokenId),
-      getPropietario(tokenId),
-    ])
-
-    return createLiveVehicleRecord({
-      tokenId,
-      info: normalizeVehiculoInfo(info),
-      services: historial.services,
-      siniestros: historial.siniestros,
-      vtv: historial.vtv,
-      sello: normalizeSelloCalidad(historial.sello),
-      ownerAddress,
-    })
-  }
-
-  async function search(vinToSearch: string): Promise<PublicVehicleRecord | null> {
-    const vin = normalizeVin(vinToSearch)
-    if (!isValidVin(vin)) return null
-
-    setState({
-      data: null,
-      error: '',
-      loading: true,
-      loadingVin: vin,
-    })
-
-    let fallbackReason: string | null = null
-
-    try {
-      const live = await withTimeout(readLive(vin), getTimeoutMs())
       setState({
-        data: live,
+        data: null,
         error: '',
+        loading: true,
+        loadingVin: vin,
+        refreshing: false,
+      })
+
+      const { record, error } = await fetchRecord(vin)
+      setState({
+        data: record,
+        error,
         loading: false,
         loadingVin: '',
+        refreshing: false,
       })
-      return live
-    } catch (error) {
-      fallbackReason = describeError(error)
-    }
+      return record
+    },
+    [fetchRecord],
+  )
 
-    const snapshot = getSnapshotVehicle(vin, fallbackReason)
-    if (snapshot) {
-      setState({
-        data: snapshot,
+  const refresh = useCallback(
+    async (vinToRefresh: string): Promise<PublicVehicleRecord | null> => {
+      const vin = normalizeVin(vinToRefresh)
+      if (!isValidVin(vin)) return null
+
+      setState((current) => ({
+        ...current,
+        loading: true,
+        loadingVin: vin,
+        refreshing: true,
         error: '',
+      }))
+
+      const { record, error } = await fetchRecord(vin)
+      setState((current) => ({
+        data: record ?? current.data,
+        error: record ? '' : error || current.error,
         loading: false,
         loadingVin: '',
-      })
-      return snapshot
-    }
-
-    const demo = getDemoVehicleRecord(vin, fallbackReason)
-    if (demo) {
-      setState({
-        data: demo,
-        error: '',
-        loading: false,
-        loadingVin: '',
-      })
-      return demo
-    }
-
-    setState({
-      data: null,
-      error: fallbackReason
-        ? `No se pudo resolver el VIN. Ultimo intento live: ${fallbackReason}.`
-        : 'No se encontro ningun vehiculo con ese VIN.',
-      loading: false,
-      loadingVin: '',
-    })
-    return null
-  }
+        refreshing: false,
+      }))
+      return record
+    },
+    [fetchRecord],
+  )
 
   return {
     ...state,
     search,
+    refresh,
     reset,
   }
 }

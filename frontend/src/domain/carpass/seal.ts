@@ -21,6 +21,8 @@ export function getSealChipLabel(state: number): string {
   return 'Obs.'
 }
 
-export function getSealUi(state: number): SealUi {
-  return SEAL_STATES[state as SealState] ?? SEAL_STATES[1]
+export function getSealUi(state: unknown): SealUi {
+  const normalized = Number(state)
+  const key = (Number.isFinite(normalized) ? normalized : 1) as SealState
+  return SEAL_STATES[key] ?? SEAL_STATES[1]
 }

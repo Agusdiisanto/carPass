@@ -8,6 +8,16 @@ function readField(source: Record<string, unknown>, key: string, index: number):
 
 /** Normaliza structs devueltos por ethers (bigint, tuplas, campos faltantes). */
 export function normalizeVehiculoInfo(raw: unknown): VehiculoInfo {
+  if (Array.isArray(raw)) {
+    return {
+      vin: coerceString(raw[0]),
+      marca: coerceString(raw[1]),
+      modelo: coerceString(raw[2]),
+      anio: coerceYear(raw[3]),
+      color: coerceString(raw[4]),
+    }
+  }
+
   const source = (raw ?? {}) as Record<string, unknown>
   return {
     vin: coerceString(readField(source, 'vin', 0)),

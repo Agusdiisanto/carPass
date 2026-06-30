@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { VinQrScanner } from '../components/VinQrScanner'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
@@ -7,6 +7,7 @@ import type { TransferenciaVehiculo, VehiculoInfo } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 import { clearVinFromUrl, getVinFromLocation } from '../lib/companionUrl'
 import { takePendingOperativeVin } from '../lib/operativeVinBridge'
+import { subscribeVehicleChainUpdates } from '../lib/vehicleChainRefresh'
 
 type MiVehiculo = { tokenId: bigint; info: VehiculoInfo }
 type VehiculoDominio = MiVehiculo & { owner: string }
@@ -17,10 +18,12 @@ export function PropietarioView({
   address,
   wrongNetwork = false,
   embedded = false,
+  transferOnly = false,
 }: {
   address: string
   wrongNetwork?: boolean
   embedded?: boolean
+  transferOnly?: boolean
 }) {
   const {
     busy,
@@ -45,6 +48,13 @@ export function PropietarioView({
   const [destinatario, setDestinatario] = useState('')
   const [confirmando, setConfirmando] = useState(false)
 
+  const selectedVinRef = useRef<string | null>(null)
+  selectedVinRef.current = seleccionado?.info.vin ?? null
+  const handlersRef = useRef({
+    reloadLista: async () => {},
+    buscarPorVin: async (_vin: string) => {},
+  })
+
   const destinatarioValido = isValidWalletAddress(destinatario)
   const destinatarioPropio = destinatario.toLowerCase() === address.toLowerCase()
   const walletEsPropietaria = seleccionado?.owner.toLowerCase() === address.toLowerCase()
@@ -57,13 +67,31 @@ export function PropietarioView({
       !busy,
   )
 
-  useEffect(() => {
+  async function reloadLista() {
     setCargando(true)
-    getMisVehiculos(address)
-      .then(setVehiculos)
-      .catch(() => setVehiculos([]))
-      .finally(() => setCargando(false))
+    try {
+      const list = await getMisVehiculos(address)
+      setVehiculos(list)
+    } catch {
+      setVehiculos([])
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  useEffect(() => {
+    void reloadLista()
   }, [address])
+
+  useEffect(() => {
+    return subscribeVehicleChainUpdates(({ vin }) => {
+      void handlersRef.current.reloadLista()
+      const openVin = selectedVinRef.current
+      if (openVin && normalizeVin(vin) === normalizeVin(openVin)) {
+        void handlersRef.current.buscarPorVin(openVin)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     if (bootstrapped) return
@@ -134,6 +162,8 @@ export function PropietarioView({
     }
   }
 
+  handlersRef.current = { reloadLista, buscarPorVin }
+
   function seleccionar(v: MiVehiculo) {
     setVinBusqueda(v.info.vin)
     void cargarDetalle(v)
@@ -156,7 +186,12 @@ export function PropietarioView({
   async function handleTransferir() {
     if (!seleccionado) return
 
-    const ok = await transferirVehiculo(address, destinatario, seleccionado.tokenId)
+    const ok = await transferirVehiculo(
+      address,
+      destinatario,
+      seleccionado.tokenId,
+      seleccionado.info.vin,
+    )
     if (!ok) return
 
     setVehiculos((prev) => prev.filter((v) => v.tokenId !== seleccionado.tokenId))
@@ -169,7 +204,8 @@ export function PropietarioView({
   }
 
   const panels = (
-    <div className="panels-grid">
+    <div className={`panels-grid ${transferOnly ? 'single' : ''}`}>
+      {!transferOnly ? (
       <section className="panel">
         <h3>
           Cambio de dominio
@@ -250,6 +286,16 @@ export function PropietarioView({
           </ul>
         )}
       </section>
+      ) : null}
+
+      {transferOnly && buscando && !seleccionado ? (
+        <section className="panel">
+          <div className="prop-loading">
+            <span className="op-shell__live-dot" aria-hidden />
+            Cargando vehículo para transferir...
+          </div>
+        </section>
+      ) : null}
 
       {seleccionado && (
         <section className="panel">

@@ -20,7 +20,17 @@ import {
 import { ROLE_BADGE_CLASS } from '../domain/carpass/roles'
 import { setPendingOperativeVin } from '../lib/operativeVinBridge'
 
-export function AdminView({ address, wrongNetwork = false }: { address: string; wrongNetwork?: boolean }) {
+export function AdminView({
+  address,
+  wrongNetwork = false,
+  onViewPassport,
+  onGoToMisAutos,
+}: {
+  address: string
+  wrongNetwork?: boolean
+  onViewPassport?: (vin: string) => void
+  onGoToMisAutos?: () => void
+}) {
   const [path, setPath] = useState<AdminPath>(readAdminPath)
   const [manageSection, setManageSection] = useState<AdminManageSectionKey>(readAdminManageSection)
   const [operativeSection, setOperativeSection] = useState<AdminOperativeSectionKey>(readAdminOperativeSection)
@@ -111,6 +121,8 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
                 wrongNetwork={wrongNetwork}
                 onOpen={openOperativeSection}
                 onReceiveFromPhone={() => setQrReceiveOpen(true)}
+                onViewPassport={onViewPassport}
+                onGoToMisAutos={onGoToMisAutos}
               />
             )}
           </div>

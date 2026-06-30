@@ -8,11 +8,12 @@ import { RegistradorView } from './views/RegistradorView'
 import { TallerView } from './views/TallerView'
 import { AseguradoraView } from './views/AseguradoraView'
 import { InspectorVTVView } from './views/InspectorVTVView'
-import { PropietarioView } from './views/PropietarioView'
+import { MisAutosView } from './views/MisAutosView'
 import { PublicView } from './views/PublicView'
 import { MobileWalletHint } from './components/MobileWalletHint'
 import { RuntimeStrip } from './components/RuntimeStrip'
 import { RoleDetectingState } from './components/RoleDetectingState'
+import { AppNavRail, type AppNavSection } from './components/AppNavRail'
 import { Topbar } from './components/Topbar'
 import { isMobileDevice } from './lib/deviceProfile'
 import { clearOperativeSessionFromUrl, getAppSessionFromUrl, syncAppSessionUrl } from './lib/appSessionUrl'
@@ -59,23 +60,88 @@ export default function App() {
   const [role, setRole] = useState<Role | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [showPublic, setShowPublic] = useState(true)
+  const [showMisAutos, setShowMisAutos] = useState(false)
+  const [pendingSearchVin, setPendingSearchVin] = useState<string | null>(null)
+  const [misAutosTransferVin, setMisAutosTransferVin] = useState<string | null>(null)
   const [consultaSignal, setConsultaSignal] = useState(0)
   const [panelRestored, setPanelRestored] = useState(false)
+  const shouldShowWalletHint =
+    !walletLinked &&
+    !restoring &&
+    connectionMode !== 'injected' &&
+    (connecting || Boolean(pairingUri) || Boolean(connectError))
 
-  function goToConsulta() {
+  function goToConsulta(options?: { vin?: string }) {
     setShowPublic(true)
+    setShowMisAutos(false)
+    setMisAutosTransferVin(null)
+    savePanelOpenPreference(false)
+    if (options?.vin) {
+      syncAppSessionUrl({ wantsPanel: false, vin: options.vin })
+      setPendingSearchVin(options.vin)
+    } else {
+      clearOperativeSessionFromUrl()
+      setPendingSearchVin(null)
+      setConsultaSignal((value) => value + 1)
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function goToMisAutos(options?: { transferVin?: string }) {
+    if (!walletLinked) return
+    setShowPublic(false)
+    setShowMisAutos(true)
     savePanelOpenPreference(false)
     clearOperativeSessionFromUrl()
-    setConsultaSignal((value) => value + 1)
+    if (options?.transferVin) {
+      setPendingOperativeVin(options.transferVin)
+      setMisAutosTransferVin(options.transferVin)
+    } else {
+      setMisAutosTransferVin(null)
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function dismissMisAutosTransfer() {
+    setMisAutosTransferVin(null)
+  }
+
+  function handleGoToPanel(vin?: string) {
+    if (vin) setPendingOperativeVin(vin)
+    if (role === 'none') {
+      goToMisAutos(vin ? { transferVin: vin } : undefined)
+      return
+    }
+    goToPanel(vin)
+  }
+
+  function handleGoToMisAutosWithVin(vin: string) {
+    setPendingOperativeVin(vin)
+    setMisAutosTransferVin(null)
+    goToMisAutos()
+  }
+
+  function goToPassport(vin: string) {
+    goToConsulta({ vin })
+  }
+
+  function goToTransfer(vin: string) {
+    if (!walletLinked) return
+    setPendingOperativeVin(vin)
+    goToMisAutos({ transferVin: vin })
   }
 
   function goToPanel(vin?: string) {
     if (!walletLinked) return
+    if (role === 'none') {
+      goToMisAutos(vin ? { transferVin: vin } : undefined)
+      return
+    }
     const sessionVin = vin ?? getAppSessionFromUrl().vin
     if (sessionVin) setPendingOperativeVin(sessionVin)
     syncAppSessionUrl({ wantsPanel: true, vin: sessionVin ?? null })
     setShowPublic(false)
+    setShowMisAutos(false)
     savePanelOpenPreference(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -107,6 +173,7 @@ export default function App() {
     if (wantsPanel) {
       if (session.vin) setPendingOperativeVin(session.vin)
       setShowPublic(false)
+      setShowMisAutos(false)
       savePanelOpenPreference(true)
       syncAppSessionUrl({ wantsPanel: true, vin: session.vin })
     }
@@ -119,18 +186,32 @@ export default function App() {
     const session = getAppSessionFromUrl()
     if (!session.wantsPanel || !session.vin) return
     if (!role || role === 'none') return
-    if (!showPublic) return
+    if (!showPublic && !showMisAutos) return
     setShowPublic(false)
+    setShowMisAutos(false)
     savePanelOpenPreference(true)
     setPendingOperativeVin(session.vin)
-  }, [walletLinked, detecting, restoring, role, showPublic])
+  }, [walletLinked, detecting, restoring, role, showPublic, showMisAutos])
+
+  useEffect(() => {
+    if (!walletLinked) {
+      setShowMisAutos(false)
+    }
+  }, [walletLinked])
 
   useEffect(() => {
     if (restoring || detecting || !walletLinked) return
     const session = getAppSessionFromUrl()
     if (!session.wantsPanel) return
     if (role !== 'none') return
-    setShowPublic(true)
+    if (session.vin) {
+      setPendingOperativeVin(session.vin)
+      setMisAutosTransferVin(session.vin)
+    }
+    setShowPublic(false)
+    setShowMisAutos(true)
+    savePanelOpenPreference(false)
+    syncAppSessionUrl({ wantsPanel: false, vin: session.vin })
   }, [walletLinked, detecting, restoring, role])
 
   useEffect(() => {
@@ -146,18 +227,54 @@ export default function App() {
       .finally(() => setDetecting(false))
   }, [address])
 
+  function resolveNavSection(): AppNavSection {
+    if (showMisAutos && walletLinked) return 'mis-autos'
+    if (walletLinked && !showPublic) return 'panel'
+    return 'consulta'
+  }
+
+  function resolveContextVin(): string | null {
+    if (misAutosTransferVin) return misAutosTransferVin
+    if (!showPublic && !showMisAutos) {
+      const session = getAppSessionFromUrl()
+      return session.vin
+    }
+    return null
+  }
+
+  function renderMisAutosView() {
+    return (
+      <MisAutosView
+        address={address}
+        wrongNetwork={wrongNetwork}
+        transferVin={misAutosTransferVin}
+        onTransferDismiss={dismissMisAutosTransfer}
+        onViewPassport={goToPassport}
+        onTransfer={goToTransfer}
+      />
+    )
+  }
+
   function renderView() {
+    if (showMisAutos && walletLinked) {
+      return renderMisAutosView()
+    }
+
     if (showPublic || !walletLinked) {
       return (
         <PublicView
           consultaSignal={consultaSignal}
+          pendingSearchVin={pendingSearchVin}
+          onPendingSearchVinHandled={() => setPendingSearchVin(null)}
           connected={connected}
           walletLinked={walletLinked}
           role={role}
           detecting={detecting}
           wrongNetwork={wrongNetwork}
           walletAddress={address}
-          onGoToPanel={goToPanel}
+          onGoToPanel={handleGoToPanel}
+          onGoToMisAutos={goToMisAutos}
+          onGoToMisAutosWithVin={handleGoToMisAutosWithVin}
           onConnectWallet={handleConnect}
           onSwitchNetwork={() => { void switchToSepolia() }}
         />
@@ -170,29 +287,48 @@ export default function App() {
       return (
         <PublicView
           consultaSignal={consultaSignal}
+          pendingSearchVin={pendingSearchVin}
+          onPendingSearchVinHandled={() => setPendingSearchVin(null)}
           connected={connected}
           walletLinked={walletLinked}
           role={role}
           detecting={detecting}
           wrongNetwork={wrongNetwork}
           walletAddress={address}
-          onGoToPanel={goToPanel}
+          onGoToPanel={handleGoToPanel}
+          onGoToMisAutos={goToMisAutos}
+          onGoToMisAutosWithVin={handleGoToMisAutosWithVin}
           onConnectWallet={handleConnect}
           onSwitchNetwork={() => { void switchToSepolia() }}
         />
       )
     }
 
-    if (role === 'admin') return <AdminView address={address} wrongNetwork={wrongNetwork} />
-    if (role === 'registrador') return <RegistradorView address={address} wrongNetwork={wrongNetwork} />
-    if (role === 'mecanico') return <TallerView address={address} wrongNetwork={wrongNetwork} />
-    if (role === 'aseguradora') return <AseguradoraView address={address} wrongNetwork={wrongNetwork} />
-    if (role === 'inspector') return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} />
-    return <PropietarioView address={address} wrongNetwork={wrongNetwork} />
+    if (role === 'admin') return (
+      <AdminView
+        address={address}
+        wrongNetwork={wrongNetwork}
+        onViewPassport={goToPassport}
+        onGoToMisAutos={goToMisAutos}
+      />
+    )
+    if (role === 'registrador') {
+      return <RegistradorView address={address} wrongNetwork={wrongNetwork} />
+    }
+    if (role === 'mecanico') {
+      return <TallerView address={address} wrongNetwork={wrongNetwork} />
+    }
+    if (role === 'aseguradora') {
+      return <AseguradoraView address={address} wrongNetwork={wrongNetwork} />
+    }
+    if (role === 'inspector') {
+      return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} />
+    }
+    return renderMisAutosView()
   }
 
   return (
-    <div className={`app-shell${showPublic ? ' app-shell--public' : ''}`}>
+    <div className={`app-shell${showPublic ? ' app-shell--public' : ''}${showMisAutos ? ' app-shell--mis-autos' : ''}`}>
       <Topbar
         connected={connected}
         walletLinked={walletLinked}
@@ -201,16 +337,18 @@ export default function App() {
         role={role}
         detecting={detecting}
         showPublic={showPublic}
+        showMisAutos={showMisAutos}
         onGoHome={goToConsulta}
         onShowPublic={goToConsulta}
-        onShowPanel={goToPanel}
+        onShowMisAutos={goToMisAutos}
+        onShowPanel={handleGoToPanel}
         onConnect={handleConnect}
         needsMobileWallet={needsMobileWallet}
         connectionMode={connectionMode}
         onDisconnect={disconnect}
       />
 
-      {!walletLinked && !restoring && connectionMode !== 'injected' && !(isMobileDevice() && showPublic) ? (
+      {shouldShowWalletHint && !(isMobileDevice() && showPublic) ? (
         <div className="wallet-hint-shell">
           <MobileWalletHint
             mode={connectionMode}
@@ -240,6 +378,20 @@ export default function App() {
         </div>
       ) : null}
 
+      {walletLinked && panelRestored && !restoring ? (
+        <AppNavRail
+          active={resolveNavSection()}
+          role={role}
+          walletLinked={walletLinked}
+          detecting={detecting}
+          contextVin={resolveContextVin()}
+          onConsulta={goToConsulta}
+          onMisAutos={goToMisAutos}
+          onPanel={handleGoToPanel}
+          onViewContextVin={goToPassport}
+        />
+      ) : null}
+
       <RuntimeStrip
         connected={connected}
         wrongNetwork={wrongNetwork}
@@ -255,7 +407,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={role === 'admin' && !showPublic ? 'main--admin' : undefined}>{renderView()}</main>
+      <main className={role === 'admin' && !showPublic && !showMisAutos ? 'main--admin' : undefined}>{renderView()}</main>
     </div>
   )
 }

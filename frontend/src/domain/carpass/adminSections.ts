@@ -75,13 +75,13 @@ export const ADMIN_OPERATIVE_SECTIONS: AdminSection[] = [
   },
   {
     key: 'propietario',
-    label: 'Cambio de dominio',
-    shortLabel: 'Dominio',
-    description: 'Listado on-chain, búsqueda por VIN/QR y transferencia de dominio CarPass.',
+    label: 'Mis vehículos',
+    shortLabel: 'Garaje',
+    description: 'Flota NFT de tu wallet, consulta de pasaporte y transferencia de dominio CarPass.',
     group: 'operative',
     path: 'operate',
     accentClass: 'none',
-    capabilities: ['Listado automático', 'VIN/QR', 'Transferencia NFT'],
+    capabilities: ['Flota on-chain', 'Pasaporte público', 'Transferencia NFT'],
   },
   {
     key: 'registrador',

@@ -120,12 +120,20 @@ export function getReadSourceDetail(record: PublicVehicleRecord) {
 export function createLiveVehicleRecord(
   data: Omit<PublicVehicleRecord, 'source' | 'sourceLabel' | 'syncedAt' | 'fallbackReason'>,
 ): PublicVehicleRecord {
-  return {
+  return normalizePublicVehicleRecord({
     ...data,
     source: 'live',
     sourceLabel: getReadSourceLabel('live'),
     syncedAt: null,
     fallbackReason: null,
+  })
+}
+
+export function normalizePublicVehicleRecord(record: PublicVehicleRecord): PublicVehicleRecord {
+  return {
+    ...record,
+    info: normalizeVehiculoInfo(record.info),
+    sello: normalizeSelloCalidad(record.sello),
   }
 }
 
@@ -133,7 +141,7 @@ export function getSnapshotVehicle(vin: string, fallbackReason: string | null): 
   const vehicle = snapshot.vehicles[vin]
   if (!vehicle) return null
 
-  return {
+  return normalizePublicVehicleRecord({
     source: 'snapshot',
     sourceLabel: getReadSourceLabel('snapshot'),
     syncedAt: snapshot.syncedAt,
@@ -163,7 +171,7 @@ export function getSnapshotVehicle(vin: string, fallbackReason: string | null): 
     })),
     sello: normalizeSelloCalidad(vehicle.sello),
     ownerAddress: vehicle.ownerAddress,
-  }
+  })
 }
 
 export function getDemoVehicleRecord(vin: string, fallbackReason: string | null): PublicVehicleRecord | null {
@@ -199,26 +207,26 @@ export function getDemoVehicleRecord(vin: string, fallbackReason: string | null)
     declarante: ZERO_ADDRESS,
   }))
 
-  return {
+  return normalizePublicVehicleRecord({
     source: 'demo',
     sourceLabel: getReadSourceLabel('demo'),
     syncedAt: null,
     fallbackReason,
     tokenId: BigInt(DEMO_VEHICLES.findIndex((item) => item.vin === vin) + 1),
-    info: {
+    info: normalizeVehiculoInfo({
       vin: vehicle.vin,
       marca: vehicle.marca,
       modelo: vehicle.modelo,
       anio: vehicle.anio,
       color: vehicle.color,
-    },
+    }),
     services,
     siniestros,
     vtv,
-    sello: {
+    sello: normalizeSelloCalidad({
       estado: vehicle.seal,
       motivo: vehicle.reason,
-    },
+    }),
     ownerAddress: ZERO_ADDRESS,
-  }
+  })
 }

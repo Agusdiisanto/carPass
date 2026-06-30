@@ -326,7 +326,7 @@ export const CARPASS_ABI = [
       },
       {
         "indexed": false,
-        "internalType": "enum CarPass.SelloEstado",
+        "internalType": "enum CarPassTypes.SelloEstado",
         "name": "nuevoEstado",
         "type": "uint8"
       }
@@ -376,7 +376,7 @@ export const CARPASS_ABI = [
       },
       {
         "indexed": false,
-        "internalType": "enum CarPass.SiniestroGravedad",
+        "internalType": "enum CarPassTypes.SiniestroGravedad",
         "name": "gravedad",
         "type": "uint8"
       }
@@ -426,7 +426,7 @@ export const CARPASS_ABI = [
       },
       {
         "indexed": false,
-        "internalType": "enum CarPass.VTVResultado",
+        "internalType": "enum CarPassTypes.VTVResultado",
         "name": "resultado",
         "type": "uint8"
       }
@@ -590,7 +590,7 @@ export const CARPASS_ABI = [
             "type": "string"
           }
         ],
-        "internalType": "struct CarPass.RegistroService",
+        "internalType": "struct CarPassTypes.RegistroService",
         "name": "registro",
         "type": "tuple"
       }
@@ -615,7 +615,7 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPass.SiniestroGravedad",
+            "internalType": "enum CarPassTypes.SiniestroGravedad",
             "name": "gravedad",
             "type": "uint8"
           },
@@ -640,7 +640,7 @@ export const CARPASS_ABI = [
             "type": "address"
           }
         ],
-        "internalType": "struct CarPass.RegistroSiniestro",
+        "internalType": "struct CarPassTypes.RegistroSiniestro",
         "name": "registro",
         "type": "tuple"
       }
@@ -665,7 +665,7 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPass.VTVResultado",
+            "internalType": "enum CarPassTypes.VTVResultado",
             "name": "resultado",
             "type": "uint8"
           },
@@ -680,7 +680,7 @@ export const CARPASS_ABI = [
             "type": "address"
           }
         ],
-        "internalType": "struct CarPass.RegistroVTV",
+        "internalType": "struct CarPassTypes.RegistroVTV",
         "name": "registro",
         "type": "tuple"
       }
@@ -816,7 +816,7 @@ export const CARPASS_ABI = [
             "type": "string"
           }
         ],
-        "internalType": "struct CarPass.RegistroService[]",
+        "internalType": "struct CarPassTypes.RegistroService[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -842,7 +842,7 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPass.SiniestroGravedad",
+            "internalType": "enum CarPassTypes.SiniestroGravedad",
             "name": "gravedad",
             "type": "uint8"
           },
@@ -867,7 +867,7 @@ export const CARPASS_ABI = [
             "type": "address"
           }
         ],
-        "internalType": "struct CarPass.RegistroSiniestro[]",
+        "internalType": "struct CarPassTypes.RegistroSiniestro[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -893,7 +893,7 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPass.VTVResultado",
+            "internalType": "enum CarPassTypes.VTVResultado",
             "name": "resultado",
             "type": "uint8"
           },
@@ -908,7 +908,7 @@ export const CARPASS_ABI = [
             "type": "address"
           }
         ],
-        "internalType": "struct CarPass.RegistroVTV[]",
+        "internalType": "struct CarPassTypes.RegistroVTV[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -946,7 +946,7 @@ export const CARPASS_ABI = [
     "name": "getSelloCalidad",
     "outputs": [
       {
-        "internalType": "enum CarPass.SelloEstado",
+        "internalType": "enum CarPassTypes.SelloEstado",
         "name": "estado",
         "type": "uint8"
       },
@@ -970,7 +970,7 @@ export const CARPASS_ABI = [
     "name": "getSelloEstado",
     "outputs": [
       {
-        "internalType": "enum CarPass.SelloEstado",
+        "internalType": "enum CarPassTypes.SelloEstado",
         "name": "",
         "type": "uint8"
       }
@@ -1016,7 +1016,7 @@ export const CARPASS_ABI = [
             "type": "string"
           }
         ],
-        "internalType": "struct CarPass.VehiculoInfo",
+        "internalType": "struct CarPassTypes.VehiculoInfo",
         "name": "",
         "type": "tuple"
       }
@@ -1152,7 +1152,7 @@ export const CARPASS_ABI = [
             "type": "string"
           }
         ],
-        "internalType": "struct CarPass.VehiculoInfo",
+        "internalType": "struct CarPassTypes.VehiculoInfo",
         "name": "info",
         "type": "tuple"
       },

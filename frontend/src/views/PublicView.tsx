@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistroService, RegistroSiniestro, RegistroVTV } from '../hooks/useCarPass'
 import { DEMO_VEHICLES, filterDemoVehicles } from '../domain/carpass/demoVehicles'
 import {
@@ -7,8 +7,8 @@ import {
   type DemoCatalogFilterState,
 } from '../domain/carpass/demoCatalogFilters'
 import { DemoCatalogFilters } from '../components/DemoCatalogFilters'
-import { formatDate, formatKm, formatMonthYear, formatNumber } from '../domain/carpass/formatters'
-import { getReadSourceDetail, type PublicVehicleRecord } from '../domain/carpass/publicRead'
+import { formatDate, formatKm, formatMonthYear, formatNumber, normalizeVin, safeUpperCase } from '../domain/carpass/formatters'
+import { getReadSourceDetail, normalizePublicVehicleRecord, type PublicVehicleRecord } from '../domain/carpass/publicRead'
 import {
   SINIESTRO_GRAVEDAD_CLASSES,
   SINIESTRO_GRAVEDAD_LABELS,
@@ -16,7 +16,6 @@ import {
   VTV_RESULT_LABELS,
 } from '../domain/carpass/eventLabels'
 import { getSealUi } from '../domain/carpass/seal'
-import { safeUpperCase } from '../domain/carpass/formatters'
 import { isValidVin } from '../domain/carpass/validators'
 import { DemoVehicleCard } from '../components/DemoVehicleCard'
 import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
@@ -27,6 +26,7 @@ import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
 import { VinSearchPanel } from '../components/VinSearchPanel'
 import { MobileOperativeCta } from '../components/MobileOperativeCta'
+import { MisVehiculosHomeCard } from '../components/MisVehiculosHomeCard'
 import { MobileLinkBanner } from '../components/MobileLinkBanner'
 import { VinRelayDisplay } from '../components/VinRelayDisplay'
 import { VinQrScanner } from '../components/VinQrScanner'
@@ -43,6 +43,7 @@ import {
   getRememberedWalletHint,
 } from '../lib/companionUrl'
 import { setPendingOperativeVin } from '../lib/operativeVinBridge'
+import { subscribeVehicleChainUpdates } from '../lib/vehicleChainRefresh'
 import { getAppSessionFromUrl, syncAppSessionUrl } from '../lib/appSessionUrl'
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -193,10 +194,10 @@ function VehicleHeroCard({
 
 // ── Seal quality card ─────────────────────────────────────────────────────────
 
-function SourcePill({ data }: { data: Historial }) {
+function SourcePill({ data, syncing = false }: { data: Historial; syncing?: boolean }) {
   return (
     <span className={`pv-source-pill pv-source-pill--${data.source}`}>
-      {data.sourceLabel}
+      {syncing ? 'Actualizando...' : data.sourceLabel}
     </span>
   )
 }
@@ -297,6 +298,8 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
 
 type PublicViewProps = {
   consultaSignal?: number
+  pendingSearchVin?: string | null
+  onPendingSearchVinHandled?: () => void
   connected?: boolean
   walletLinked?: boolean
   role?: Role | null
@@ -304,12 +307,16 @@ type PublicViewProps = {
   wrongNetwork?: boolean
   walletAddress?: string
   onGoToPanel?: (vin?: string) => void
+  onGoToMisAutos?: () => void
+  onGoToMisAutosWithVin?: (vin: string) => void
   onConnectWallet?: () => void
   onSwitchNetwork?: () => void | Promise<void>
 }
 
 export function PublicView({
   consultaSignal = 0,
+  pendingSearchVin = null,
+  onPendingSearchVinHandled,
   connected = false,
   walletLinked = false,
   role = null,
@@ -317,6 +324,8 @@ export function PublicView({
   wrongNetwork = false,
   walletAddress = '',
   onGoToPanel,
+  onGoToMisAutos,
+  onGoToMisAutosWithVin,
   onConnectWallet,
   onSwitchNetwork,
 }: PublicViewProps) {
@@ -332,7 +341,13 @@ export function PublicView({
     km: 'all',
   })
   const lookup = usePublicVehicleLookup()
-  const { data, error, loading, loadingVin } = lookup
+  const { data: rawData, error, loading, loadingVin, refreshing } = lookup
+  const data = useMemo(
+    () => (rawData ? normalizePublicVehicleRecord(rawData) : null),
+    [rawData],
+  )
+  const openVinRef = useRef<string | null>(null)
+  openVinRef.current = data?.info.vin ?? null
   const isMobile = isMobileDevice()
   const showPhoneCompanion = connected && !wrongNetwork && prefersPhoneCompanion()
   const canScanFromSearch = isMobile || canUseCameraScan() || (connected && !wrongNetwork)
@@ -365,9 +380,24 @@ export function PublicView({
   }, [consultaSignal])
 
   useEffect(() => {
+    if (!pendingSearchVin) return
+    setVin(pendingSearchVin)
+    void lookup.search(pendingSearchVin)
+    onPendingSearchVinHandled?.()
+  }, [pendingSearchVin, lookup.search, onPendingSearchVinHandled])
+
+  useEffect(() => {
     if (!data) return
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [data?.info.vin])
+
+  useEffect(() => {
+    return subscribeVehicleChainUpdates(({ vin }) => {
+      const openVin = openVinRef.current
+      if (!openVin || normalizeVin(vin) !== normalizeVin(openVin)) return
+      void lookup.refresh(vin)
+    })
+  }, [lookup.refresh])
 
   const vinFilteredDemos = useMemo(() => filterDemoVehicles(vin), [vin])
   const filteredDemos = useMemo(
@@ -486,6 +516,13 @@ export function PublicView({
             />
           ) : null}
 
+          <MisVehiculosHomeCard
+            walletLinked={walletLinked}
+            wrongNetwork={wrongNetwork}
+            onConnectWallet={onConnectWallet}
+            onGoToMisAutos={onGoToMisAutos}
+          />
+
           {isMobile && getRememberedWalletHint() ? (
             <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />
           ) : null}
@@ -496,6 +533,7 @@ export function PublicView({
               detecting={detecting}
               wrongNetwork={wrongNetwork}
               onGoToPanel={handleGoToPanel}
+              onGoToMisAutos={onGoToMisAutos}
               onScanQr={openLocalScanner}
               showPhoneCompanion={showPhoneCompanion}
               onReceiveFromPhone={showPhoneCompanion ? openReceiveScanner : undefined}
@@ -605,7 +643,7 @@ export function PublicView({
               <BackIcon />
             </button>
             <span className="pv-results-vin">{data.info.vin}</span>
-            <SourcePill data={data} />
+            <SourcePill data={data} syncing={refreshing} />
             <button
               className="pv-share-btn"
               onClick={() => navigator.clipboard?.writeText(data.info.vin)}
@@ -641,13 +679,24 @@ export function PublicView({
             detecting={detecting}
             wrongNetwork={wrongNetwork}
             onGoToPanel={handleGoToPanel}
+            onGoToMisAutos={onGoToMisAutos}
             onConnectWallet={onConnectWallet}
           />
         ) : null}
 
-        {connected && onGoToPanel && (!role || role === 'none') && !isMobile ? (
+        {connected && onGoToMisAutosWithVin && role === 'none' && !isMobile ? (
+          <button
+            type="button"
+            className="pv-connected-banner__btn pv-connected-banner__btn--inline"
+            onClick={() => onGoToMisAutosWithVin(data.info.vin)}
+          >
+            Ver en mis vehículos
+          </button>
+        ) : null}
+
+        {connected && onGoToPanel && role && role !== 'none' && !isMobile ? (
           <button type="button" className="pv-connected-banner__btn pv-connected-banner__btn--inline" onClick={handleGoToPanel}>
-            Operar este vehículo (panel por rol)
+            Operar este vehículo
           </button>
         ) : null}
 

@@ -13,10 +13,12 @@ type TopbarProps = {
   role: Role | null
   detecting: boolean
   showPublic: boolean
+  showMisAutos?: boolean
   needsMobileWallet?: boolean
   connectionMode?: WalletConnectionMode
   onGoHome: () => void
   onShowPublic: () => void
+  onShowMisAutos?: () => void
   onShowPanel: () => void
   onConnect: () => void
   onDisconnect: () => void
@@ -47,6 +49,17 @@ function SearchNavIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="11" cy="11" r="8" />
       <path d="m21 21-4.35-4.35" />
+    </svg>
+  )
+}
+
+function CarNavIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 17h14" />
+      <path d="M6 11h12l1-4H5z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
     </svg>
   )
 }
@@ -98,17 +111,20 @@ export function Topbar({
   role,
   detecting,
   showPublic,
+  showMisAutos = false,
   needsMobileWallet = false,
   connectionMode = 'injected',
   onGoHome,
   onShowPublic,
+  onShowMisAutos,
   onShowPanel,
   onConnect,
   onDisconnect,
 }: TopbarProps) {
   const walletLinked = walletLinkedProp ?? Boolean(address)
-  const panelActive = walletLinked && !showPublic
-  const consultaActive = showPublic || !walletLinked
+  const panelActive = walletLinked && !showPublic && !showMisAutos
+  const misAutosActive = walletLinked && showMisAutos
+  const consultaActive = (showPublic && !showMisAutos) || !walletLinked
   const walletStatus = !walletLinked ? 'neutral' : wrongNetwork ? 'warn' : connected ? 'ok' : 'warn'
   const showRoleChip = Boolean(panelActive && role && role !== 'none' && !detecting)
   const walletActionLabel = connected
@@ -123,10 +139,18 @@ export function Topbar({
 
   function handleWalletClick() {
     if (connected) {
+      if (role === 'none') {
+        onShowMisAutos?.()
+        return
+      }
       onShowPanel()
       return
     }
     if (walletLinked && wrongNetwork) {
+      if (role === 'none') {
+        onShowMisAutos?.()
+        return
+      }
       onShowPanel()
       return
     }
@@ -144,6 +168,7 @@ export function Topbar({
 
   const navProps = {
     consultaActive,
+    misAutosActive,
     panelActive,
     walletLinked,
     connected,
@@ -152,6 +177,7 @@ export function Topbar({
     role,
     operarChip,
     onShowPublic,
+    onShowMisAutos,
     onShowPanel,
   }
 
@@ -169,10 +195,6 @@ export function Topbar({
             <span className="brand-accent">Pass</span>
           </span>
         </button>
-
-        <nav className="topbar-nav-desktop" aria-label="Navegacion principal">
-          <TopbarNavItems {...navProps} />
-        </nav>
 
         <div className="topbar-end">
           {connected ? (
@@ -194,7 +216,9 @@ export function Topbar({
               wrongNetwork
                 ? 'Red incorrecta — cambiá a Sepolia o entrá al panel'
                 : connected
-                  ? 'Ir al panel operativo'
+                  ? role === 'none'
+                    ? 'Ir a mis vehículos'
+                    : 'Ir al panel operativo'
                   : needsMobileWallet
                     ? 'Abrir CarPass en MetaMask mobile'
                     : connectionMode === 'desktop-install'
@@ -222,8 +246,33 @@ export function Topbar({
   )
 }
 
+function panelNavLabel(role: Role | null, variant: 'desktop' | 'dock'): string {
+  if (!role || role === 'none') return variant === 'dock' ? 'Operar' : 'Operar'
+
+  const dockLabels: Partial<Record<Role, string>> = {
+    admin: 'Admin',
+    registrador: 'Alta',
+    mecanico: 'Taller',
+    aseguradora: 'Siniestros',
+    inspector: 'VTV',
+  }
+
+  const desktopLabels: Partial<Record<Role, string>> = {
+    admin: 'Administrar',
+    registrador: 'Registro',
+    mecanico: 'Taller',
+    aseguradora: 'Siniestros',
+    inspector: 'VTV',
+  }
+
+  return variant === 'dock'
+    ? (dockLabels[role] ?? ROLE_LABELS[role])
+    : (desktopLabels[role] ?? ROLE_LABELS[role])
+}
+
 function TopbarNavItems({
   consultaActive,
+  misAutosActive,
   panelActive,
   walletLinked,
   wrongNetwork,
@@ -231,10 +280,12 @@ function TopbarNavItems({
   role,
   operarChip,
   onShowPublic,
+  onShowMisAutos,
   onShowPanel,
   variant = 'desktop',
 }: {
   consultaActive: boolean
+  misAutosActive: boolean
   panelActive: boolean
   walletLinked: boolean
   wrongNetwork: boolean
@@ -242,11 +293,14 @@ function TopbarNavItems({
   role: Role | null
   operarChip?: string
   onShowPublic: () => void
+  onShowMisAutos?: () => void
   onShowPanel: () => void
   variant?: 'desktop' | 'dock'
 }) {
-  const consultaLabel = variant === 'dock' ? 'Consultar' : 'Consulta'
-  const operarLabel = role === 'admin' ? 'Administrar' : 'Operar'
+  const consultaLabel = variant === 'dock' ? 'Consulta' : 'Consulta'
+  const misAutosLabel = variant === 'dock' ? 'Garaje' : 'Mis vehículos'
+  const operarLabel = panelNavLabel(role, variant)
+  const showOperarNav = Boolean(role && role !== 'none')
 
   return (
     <>
@@ -256,7 +310,16 @@ function TopbarNavItems({
         onClick={onShowPublic}
         icon={<SearchNavIcon />}
       />
-      {walletLinked ? (
+      {walletLinked && onShowMisAutos ? (
+        <NavButton
+          active={misAutosActive}
+          label={misAutosLabel}
+          onClick={onShowMisAutos}
+          icon={<CarNavIcon />}
+          title="Pasaportes NFT de tu wallet"
+        />
+      ) : null}
+      {walletLinked && showOperarNav ? (
         <NavButton
           active={panelActive}
           label={operarLabel}

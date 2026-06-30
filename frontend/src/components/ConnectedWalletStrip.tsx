@@ -6,6 +6,7 @@ type ConnectedWalletStripProps = {
   detecting: boolean
   wrongNetwork: boolean
   onGoToPanel?: () => void
+  onGoToMisAutos?: () => void
   onScanQr: () => void
   showPhoneCompanion?: boolean
   onReceiveFromPhone?: () => void
@@ -19,6 +20,17 @@ function QrIcon() {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3" />
+    </svg>
+  )
+}
+
+function CarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M5 17h14" />
+      <path d="M6 11h12l1-4H5z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
     </svg>
   )
 }
@@ -50,6 +62,7 @@ export function ConnectedWalletStrip({
   detecting,
   wrongNetwork,
   onGoToPanel,
+  onGoToMisAutos,
   onScanQr,
   showPhoneCompanion = false,
   onReceiveFromPhone,
@@ -66,6 +79,12 @@ export function ConnectedWalletStrip({
           {onSwitchNetwork ? (
             <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={() => void onSwitchNetwork()}>
               Cambiar a Sepolia
+            </button>
+          ) : null}
+          {onGoToMisAutos ? (
+            <button type="button" className="wallet-strip__btn wallet-strip__btn--ghost" onClick={onGoToMisAutos}>
+              <CarIcon />
+              Mis vehículos
             </button>
           ) : null}
           {onGoToPanel ? (
@@ -100,6 +119,12 @@ export function ConnectedWalletStrip({
           Podés consultar VIN y escanear QR. Para dar de alta o cargar hitos, pedí un rol al administrador.
         </p>
         <div className="wallet-strip__actions">
+          {onGoToMisAutos ? (
+            <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={onGoToMisAutos}>
+              <CarIcon />
+              Mis vehículos
+            </button>
+          ) : null}
           {showPhoneCompanion && onReceiveFromPhone ? (
             <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={onReceiveFromPhone}>
               <PhoneLinkIcon />
@@ -132,8 +157,14 @@ export function ConnectedWalletStrip({
       </div>
       <p className="wallet-strip__text">{caps.join(' · ')}</p>
       <div className="wallet-strip__actions">
+        {onGoToMisAutos ? (
+          <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={onGoToMisAutos}>
+            <CarIcon />
+            Mis vehículos
+          </button>
+        ) : null}
         {onGoToPanel ? (
-          <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={onGoToPanel}>
+          <button type="button" className="wallet-strip__btn wallet-strip__btn--ghost" onClick={onGoToPanel}>
             <PanelIcon />
             {panelLabel}
           </button>

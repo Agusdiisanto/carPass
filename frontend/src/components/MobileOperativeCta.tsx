@@ -10,6 +10,7 @@ type MobileOperativeCtaProps = {
   detecting: boolean
   wrongNetwork: boolean
   onGoToPanel?: () => void
+  onGoToMisAutos?: () => void
   onConnectWallet?: () => void
 }
 
@@ -40,6 +41,7 @@ export function MobileOperativeCta({
   detecting,
   wrongNetwork,
   onGoToPanel,
+  onGoToMisAutos,
   onConnectWallet,
 }: MobileOperativeCtaProps) {
   if (wrongNetwork) return null
@@ -61,6 +63,11 @@ export function MobileOperativeCta({
     onGoToPanel?.()
   }
 
+  function handleGoToMisAutos() {
+    setPendingOperativeVin(vin)
+    onGoToMisAutos?.()
+  }
+
   if (connected && detecting) {
     return (
       <section className="mobile-op-cta mobile-op-cta--loading" aria-busy="true">
@@ -77,6 +84,19 @@ export function MobileOperativeCta({
         <button type="button" className="mobile-op-cta__btn" onClick={handleGoToPanel}>
           <PanelIcon />
           Ir al panel
+        </button>
+      </section>
+    )
+  }
+
+  if (connected && role === 'none') {
+    return (
+      <section className="mobile-op-cta mobile-op-cta--ready">
+        <p className="mobile-op-cta__title">Tu pasaporte</p>
+        <p className="mobile-op-cta__text">VIN <code>{vin}</code> listo para gestionar.</p>
+        <button type="button" className="mobile-op-cta__btn" onClick={handleGoToMisAutos}>
+          <PanelIcon />
+          Ver en mis vehículos
         </button>
       </section>
     )

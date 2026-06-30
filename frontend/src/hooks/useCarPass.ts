@@ -3,9 +3,20 @@ import { useState } from 'react'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
 import { parseContractError } from '../domain/carpass/errors'
+import { normalizeVin } from '../domain/carpass/formatters'
 import { normalizeSelloCalidad, normalizeVehiculoInfo } from '../domain/carpass/vehicleInfo'
+import { isValidVin } from '../domain/carpass/validators'
 import type { Role } from '../domain/carpass/roles'
+import {
+  notifyVehicleChainUpdate,
+  type VehicleChainRefreshReason,
+} from '../lib/vehicleChainRefresh'
 import { getPublicProvider } from '../lib/publicProvider'
+import {
+  describeFleetReadError,
+  queryTransferEventsForToken,
+  queryTransferEventsToAddress,
+} from '../lib/fleetRead'
 
 import { getActiveEthereum, type EthereumProvider } from '../lib/ethereumProvider'
 
@@ -107,6 +118,102 @@ export async function detectRole(address: string): Promise<Role> {
   return 'none'
 }
 
+export async function resolveVinByTokenId(tokenId: bigint): Promise<string | null> {
+  try {
+    const c = await getReadContract()
+    const info = normalizeVehiculoInfo(await c.getVehiculoInfo(tokenId))
+    const vin = normalizeVin(info.vin)
+    return isValidVin(vin) ? vin : null
+  } catch {
+    return null
+  }
+}
+
+async function emitVehicleChainUpdateFromToken(tokenId: bigint, reason: VehicleChainRefreshReason) {
+  const vin = await resolveVinByTokenId(tokenId)
+  if (vin) notifyVehicleChainUpdate(vin, reason)
+}
+
+export async function getVehiculoPorVin(vin: string) {
+  const c = await getReadContract()
+  const tokenId: bigint = await c.vinToTokenId(vin)
+  const info = normalizeVehiculoInfo(await c.getVehiculoInfo(tokenId))
+  return { tokenId, info }
+}
+
+export async function getHistorial(tokenId: bigint) {
+  const c = await getReadContract()
+  const [services, siniestros, vtv, selloRaw] = await Promise.all([
+    c.getHistorialService(tokenId) as Promise<RegistroService[]>,
+    c.getHistorialSiniestros(tokenId) as Promise<RegistroSiniestro[]>,
+    c.getHistorialVTV(tokenId) as Promise<RegistroVTV[]>,
+    c.getSelloCalidad(tokenId),
+  ])
+  return {
+    services,
+    siniestros,
+    vtv,
+    sello: normalizeSelloCalidad(selloRaw),
+  }
+}
+
+export async function getUltimoKm(tokenId: bigint): Promise<number> {
+  const c = await getReadContract()
+  return Number(await c.ultimoKilometrajeRegistrado(tokenId))
+}
+
+export async function getPropietario(tokenId: bigint): Promise<string> {
+  const c = await getReadContract()
+  return (await c.ownerOf(tokenId)) as string
+}
+
+export async function getMisVehiculos(address: string): Promise<Array<{ tokenId: bigint; info: VehiculoInfo }>> {
+  const { tokenIds } = await queryTransferEventsToAddress(CONTRACT_ADDRESS, address)
+  const readContract = await getReadContract()
+  const results = await Promise.all(
+    tokenIds.map(async (tokenId) => {
+      try {
+        const owner: string = await readContract.ownerOf(tokenId)
+        if (owner.toLowerCase() !== address.toLowerCase()) return null
+        const info = normalizeVehiculoInfo(await readContract.getVehiculoInfo(tokenId))
+        return { tokenId, info }
+      } catch {
+        return null
+      }
+    }),
+  )
+  return results.filter((r): r is { tokenId: bigint; info: VehiculoInfo } => r !== null)
+}
+
+export async function getMisVehiculosSafe(address: string) {
+  try {
+    const vehiculos = await getMisVehiculos(address)
+    return { vehiculos, error: '' }
+  } catch (error) {
+    return { vehiculos: [], error: describeFleetReadError(error) }
+  }
+}
+
+export async function getTransferenciasVehiculo(tokenId: bigint): Promise<TransferenciaVehiculo[]> {
+  const events = await queryTransferEventsForToken(CONTRACT_ADDRESS, tokenId)
+  return events
+    .map((event) => {
+      const parsed = event as unknown as {
+        args: { from: string; to: string; tokenId: bigint }
+        blockNumber: number
+        transactionHash: string
+      }
+      return {
+        from: parsed.args.from,
+        to: parsed.args.to,
+        tokenId: parsed.args.tokenId,
+        blockNumber: parsed.blockNumber,
+        txHash: parsed.transactionHash,
+      }
+    })
+    .sort((a, b) => b.blockNumber - a.blockNumber)
+}
+
 export function useCarPass() {
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
@@ -127,12 +234,14 @@ export function useCarPass() {
   }
 
   async function registrarVehiculo(info: VehiculoInfo, propietario: string) {
-    return run('Registrando vehiculo', async () => {
+    const ok = await run('Registrando vehiculo', async () => {
       const c = await getSignerContract()
       const tx = await c.registrarVehiculo(info, propietario)
       await tx.wait()
       return 'Vehiculo registrado correctamente'
     })
+    if (ok) notifyVehicleChainUpdate(normalizeVin(info.vin), 'mint')
+    return ok
   }
 
   async function agregarService(
@@ -141,7 +250,7 @@ export function useCarPass() {
     tipo: string,
     descripcion: string,
   ) {
-    return run('Cargando service', async () => {
+    const ok = await run('Cargando service', async () => {
       const c = await getSignerContract()
       const tx = await c.agregarService(tokenId, {
         timestamp: 0,
@@ -153,6 +262,8 @@ export function useCarPass() {
       await tx.wait()
       return 'Service registrado en la blockchain'
     })
+    if (ok) void emitVehicleChainUpdateFromToken(tokenId, 'service')
+    return ok
   }
 
   async function agregarSiniestro(
@@ -162,7 +273,7 @@ export function useCarPass() {
     reparado: boolean,
     costo: number,
   ) {
-    return run('Registrando siniestro', async () => {
+    const ok = await run('Registrando siniestro', async () => {
       const c = await getSignerContract()
       const tx = await c.agregarSiniestro(tokenId, {
         timestamp: 0,
@@ -175,6 +286,8 @@ export function useCarPass() {
       await tx.wait()
       return 'Siniestro registrado en la blockchain'
     })
+    if (ok) void emitVehicleChainUpdateFromToken(tokenId, 'siniestro')
+    return ok
   }
 
   async function agregarVTV(
@@ -182,7 +295,7 @@ export function useCarPass() {
     resultado: number,
     vencimientoTs: number,
   ) {
-    return run('Registrando VTV', async () => {
+    const ok = await run('Registrando VTV', async () => {
       const c = await getSignerContract()
       const tx = await c.agregarVTV(tokenId, {
         timestamp: 0,
@@ -193,6 +306,8 @@ export function useCarPass() {
       await tx.wait()
       return 'VTV registrada en la blockchain'
     })
+    if (ok) void emitVehicleChainUpdateFromToken(tokenId, 'vtv')
+    return ok
   }
 
   async function grantRole(roleName: string, account: string) {
@@ -215,93 +330,20 @@ export function useCarPass() {
     })
   }
 
-  async function getVehiculoPorVin(vin: string) {
-    const c = await getReadContract()
-    const tokenId: bigint = await c.vinToTokenId(vin)
-    const info = normalizeVehiculoInfo(await c.getVehiculoInfo(tokenId))
-    return { tokenId, info }
-  }
-
-  async function getHistorial(tokenId: bigint) {
-    const c = await getReadContract()
-    const [services, siniestros, vtv, selloRaw] = await Promise.all([
-      c.getHistorialService(tokenId) as Promise<RegistroService[]>,
-      c.getHistorialSiniestros(tokenId) as Promise<RegistroSiniestro[]>,
-      c.getHistorialVTV(tokenId) as Promise<RegistroVTV[]>,
-      c.getSelloCalidad(tokenId),
-    ])
-    return {
-      services,
-      siniestros,
-      vtv,
-      sello: normalizeSelloCalidad(selloRaw),
-    }
-  }
-
-  async function getUltimoKm(tokenId: bigint): Promise<number> {
-    const c = await getReadContract()
-    return Number(await c.ultimoKilometrajeRegistrado(tokenId))
-  }
-
-  async function getPropietario(tokenId: bigint): Promise<string> {
-    const c = await getReadContract()
-    return (await c.ownerOf(tokenId)) as string
-  }
-
-  async function getMisVehiculos(address: string): Promise<Array<{ tokenId: bigint; info: VehiculoInfo }>> {
-    // Use MetaMask provider — publicnode blocks historical eth_getLogs without a token.
-    const provider = getProvider()
-    const c = new Contract(CONTRACT_ADDRESS, ABI, provider)
-    const filter = c.filters.Transfer(null, address)
-    const events = await c.queryFilter(filter, CARPASS_DEPLOYMENT.deployBlock)
-    const uniqueIds = [...new Set(events.map((e) => (e as unknown as { args: { tokenId: bigint } }).args.tokenId))]
-    const readContract = await getReadContract()
-    const results = await Promise.all(
-      uniqueIds.map(async (tokenId) => {
-        try {
-          const owner: string = await readContract.ownerOf(tokenId)
-          if (owner.toLowerCase() !== address.toLowerCase()) return null
-          const info = normalizeVehiculoInfo(await readContract.getVehiculoInfo(tokenId))
-          return { tokenId, info }
-        } catch {
-          return null
-        }
-      }),
-    )
-    return results.filter((r): r is { tokenId: bigint; info: VehiculoInfo } => r !== null)
-  }
-
-  async function getTransferenciasVehiculo(tokenId: bigint): Promise<TransferenciaVehiculo[]> {
-    // Use MetaMask provider: public RPCs can reject historical eth_getLogs.
-    const provider = getProvider()
-    const c = new Contract(CONTRACT_ADDRESS, ABI, provider)
-    const filter = c.filters.Transfer(null, null, tokenId)
-    const events = await c.queryFilter(filter, CARPASS_DEPLOYMENT.deployBlock)
-    return events
-      .map((event) => {
-        const parsed = event as unknown as {
-          args: { from: string; to: string; tokenId: bigint }
-          blockNumber: number
-          transactionHash: string
-        }
-        return {
-          from: parsed.args.from,
-          to: parsed.args.to,
-          tokenId: parsed.args.tokenId,
-          blockNumber: parsed.blockNumber,
-          txHash: parsed.transactionHash,
-        }
-      })
-      .sort((a, b) => b.blockNumber - a.blockNumber)
-  }
-
-  async function transferirVehiculo(from: string, to: string, tokenId: bigint) {
-    return run('Transfiriendo vehiculo', async () => {
+  async function transferirVehiculo(from: string, to: string, tokenId: bigint, vin?: string) {
+    const ok = await run('Transfiriendo vehiculo', async () => {
       const c = await getSignerContract()
       const tx = await c.transferFrom(from, to, tokenId)
       await tx.wait()
       return `Vehiculo transferido a ${to.slice(0, 8)}...`
     })
+    if (ok) {
+      const resolvedVin = vin ? normalizeVin(vin) : await resolveVinByTokenId(tokenId)
+      if (resolvedVin && isValidVin(resolvedVin)) {
+        notifyVehicleChainUpdate(resolvedVin, 'transfer')
+      }
+    }
+    return ok
   }
 
   return {
@@ -320,5 +362,6 @@ export function useCarPass() {
     getTransferenciasVehiculo,
     transferirVehiculo,
     getMisVehiculos,
+    getMisVehiculosSafe,
   }
 }
