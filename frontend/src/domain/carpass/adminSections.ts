@@ -5,6 +5,7 @@ export type AdminSectionKey =
   | 'hub'
   | 'vehiculos'
   | 'roles'
+  | 'propietario'
   | 'registrador'
   | 'taller'
   | 'aseguradora'
@@ -19,6 +20,7 @@ export type AdminSection = {
   description: string
   group: AdminSectionGroup
   roleClass?: OperativeRole
+  accentClass?: string
   capabilities?: string[]
 }
 
@@ -45,6 +47,15 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     description: 'Asigná o revocá permisos operativos a wallets del ecosistema.',
     group: 'core',
     capabilities: ['Concesionaria', 'Taller', 'Aseguradora', 'Inspector VTV'],
+  },
+  {
+    key: 'propietario',
+    label: 'Mis vehículos',
+    shortLabel: 'Propietario',
+    description: 'Listado on-chain y transferencia de titularidad para wallets propietarias.',
+    group: 'operative',
+    accentClass: 'none',
+    capabilities: ['Listado automático', 'Transferencia NFT'],
   },
   {
     key: 'registrador',

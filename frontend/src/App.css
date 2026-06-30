@@ -1194,6 +1194,10 @@ a.runtime-dock-item:focus-visible {
   line-height: 1.45;
 }
 
+.admin-demo-toolbar {
+  margin-bottom: 16px;
+}
+
 .admin-role-note {
   border: 1px solid rgba(250,204,21,0.25);
   border-radius: 10px;
@@ -5516,4 +5520,202 @@ main:has(.public-view) {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ── PropietarioView ── */
+
+.vehicle-card--info {
+  cursor: default;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.vehicle-card--info:hover:not(:disabled) {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.role-badge.none,
+.role-badge-nav.none {
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.op-shell--none {
+  border-color: rgba(100, 116, 139, 0.28);
+  background-color: rgba(100, 116, 139, 0.04);
+}
+
+.admin-nav__item--none.active {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.1);
+  box-shadow: inset 3px 0 0 #94a3b8;
+}
+
+.admin-hub__card--none { border-color: rgba(148, 163, 184, 0.24); }
+.admin-hub__pill--none { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+.admin-section-header--none { border-color: rgba(148, 163, 184, 0.24); }
+
+.vehicle-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.vehicle-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vehicle-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.vehicle-card__row strong {
+  color: #e2e8f0;
+}
+
+.vehicle-card__row code {
+  font-size: 0.8125rem;
+  color: #7dd3fc;
+}
+
+.ownership-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ownership-badge.owner {
+  background: rgba(45, 212, 191, 0.12);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+}
+
+.ownership-badge.not-owner {
+  background: rgba(251, 113, 133, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(251, 113, 133, 0.28);
+}
+
+.confirm-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(251, 113, 133, 0.25);
+  border-radius: 10px;
+  background: rgba(251, 113, 133, 0.06);
+}
+
+.confirm-block__warning {
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.btn-ghost {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #94a3b8;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.panel-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(45, 212, 191, 0.12);
+  color: #2dd4bf;
+  vertical-align: middle;
+}
+
+.prop-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.prop-empty {
+  padding: 16px 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.prop-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prop-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prop-item:hover {
+  border-color: rgba(45, 212, 191, 0.3);
+  background: rgba(45, 212, 191, 0.04);
+}
+
+.prop-item--active {
+  border-color: rgba(45, 212, 191, 0.55);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.prop-item__vin {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: #7dd3fc;
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+
+.prop-item__desc {
+  font-size: 0.875rem;
+  color: #cbd5e1;
 }

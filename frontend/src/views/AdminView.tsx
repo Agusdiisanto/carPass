@@ -16,10 +16,12 @@ import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
 import { AseguradoraView } from './AseguradoraView'
 import { InspectorVTVView } from './InspectorVTVView'
+import { PropietarioView } from './PropietarioView'
 import { RegistradorView } from './RegistradorView'
 import { TallerView } from './TallerView'
 
 const ROLES = [
+  { label: 'Administrador', fn: 'DEFAULT_ADMIN_ROLE' },
   { label: 'Concesionaria / Registrador', fn: 'REGISTRADOR_ROLE' },
   { label: 'Taller mecánico', fn: 'MECANICO_ROLE' },
   { label: 'Aseguradora', fn: 'ASEGURADORA_ROLE' },
@@ -70,7 +72,7 @@ function AdminHub({ onOpen }: { onOpen: (key: AdminSectionKey) => void }) {
         <p className="admin-hub__group-label">Vistas operativas</p>
         <div className="admin-hub__grid admin-hub__grid--operative">
           {operativeSections.map((section) => {
-            const roleClass = section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin'
+            const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
             return (
               <button
                 key={section.key}
@@ -101,7 +103,7 @@ function AdminSectionHeader({
   onBack: () => void
 }) {
   const section = getAdminSection(sectionKey)
-  const roleClass = section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin'
+  const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
 
   return (
     <header className={`admin-section-header admin-section-header--${roleClass}`}>
@@ -161,6 +163,9 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
       return <AdminHub onOpen={openSection} />
     }
 
+    if (activeSection === 'propietario') {
+      return <PropietarioView address={address} wrongNetwork={wrongNetwork} embedded />
+    }
     if (activeSection === 'registrador') {
       return <RegistradorView address={address} wrongNetwork={wrongNetwork} embedded />
     }
@@ -259,7 +264,8 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
     )
   }
 
-  const isOperativePreview = activeSection !== 'hub' && activeSection !== 'vehiculos' && activeSection !== 'roles'
+  const isOperativePreview = !['hub', 'vehiculos', 'roles'].includes(activeSection)
+  const showRoleNote = isOperativePreview && activeSection !== 'propietario'
 
   return (
     <OperativeShell
@@ -278,15 +284,14 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
             <AdminSectionHeader sectionKey={activeSection} onBack={() => openSection('hub')} />
           ) : null}
 
-          {isOperativePreview ? (
+          {showRoleNote ? (
             <div className="admin-role-note">
               Vista operativa en modo administrador. Las escrituras on-chain siguen requiriendo el rol correspondiente.
             </div>
           ) : null}
 
           {renderSectionContent()}
-          {message && activeSection !== 'registrador' && activeSection !== 'taller'
-            && activeSection !== 'aseguradora' && activeSection !== 'inspector'
+          {message && !['registrador', 'taller', 'aseguradora', 'inspector', 'propietario'].includes(activeSection)
             ? <div className="status-bar">{message}</div>
             : null}
         </div>

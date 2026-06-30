@@ -71,10 +71,20 @@ function CheckIcon() {
   )
 }
 
+function UserIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6" />
+    </svg>
+  )
+}
+
 const SECTION_ICONS: Record<AdminSectionKey, () => ReactNode> = {
   hub: HubIcon,
   vehiculos: CarIcon,
   roles: ShieldIcon,
+  propietario: UserIcon,
   registrador: StoreIcon,
   taller: WrenchIcon,
   aseguradora: AlertIcon,
@@ -93,12 +103,12 @@ function NavItem({
   variant: 'sidebar' | 'rail'
 }) {
   const Icon = SECTION_ICONS[section.key]
-  const roleClass = section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin'
+  const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
 
   return (
     <button
       type="button"
-      className={`admin-nav__item admin-nav__item--${variant} ${active ? 'active' : ''} ${section.roleClass ? `admin-nav__item--${roleClass}` : ''}`}
+      className={`admin-nav__item admin-nav__item--${variant} ${active ? 'active' : ''} admin-nav__item--${roleClass}`}
       onClick={() => onChange(section.key)}
       aria-current={active ? 'page' : undefined}
     >

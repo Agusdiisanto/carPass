@@ -240,6 +240,38 @@ export function useCarPass() {
     return (await c.ownerOf(tokenId)) as string
   }
 
+  async function getMisVehiculos(address: string): Promise<Array<{ tokenId: bigint; info: VehiculoInfo }>> {
+    // Use MetaMask provider — publicnode blocks historical eth_getLogs without a token.
+    const provider = getProvider()
+    const c = new Contract(CONTRACT_ADDRESS, ABI, provider)
+    const filter = c.filters.Transfer(null, address)
+    const events = await c.queryFilter(filter, CARPASS_DEPLOYMENT.deployBlock)
+    const uniqueIds = [...new Set(events.map((e) => (e as unknown as { args: { tokenId: bigint } }).args.tokenId))]
+    const readContract = await getReadContract()
+    const results = await Promise.all(
+      uniqueIds.map(async (tokenId) => {
+        try {
+          const owner: string = await readContract.ownerOf(tokenId)
+          if (owner.toLowerCase() !== address.toLowerCase()) return null
+          const info: VehiculoInfo = await readContract.getVehiculoInfo(tokenId)
+          return { tokenId, info }
+        } catch {
+          return null
+        }
+      }),
+    )
+    return results.filter((r): r is { tokenId: bigint; info: VehiculoInfo } => r !== null)
+  }
+
+  async function transferirVehiculo(from: string, to: string, tokenId: bigint) {
+    return run('Transfiriendo vehículo', async () => {
+      const c = await getSignerContract()
+      const tx = await c.transferFrom(from, to, tokenId)
+      await tx.wait()
+      return `Vehículo transferido a ${to.slice(0, 8)}...`
+    })
+  }
+
   return {
     busy,
     message,
@@ -253,5 +285,7 @@ export function useCarPass() {
     getHistorial,
     getUltimoKm,
     getPropietario,
+    transferirVehiculo,
+    getMisVehiculos,
   }
 }
