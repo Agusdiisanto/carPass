@@ -22,6 +22,7 @@ import {
   ensureConnectProvider,
   switchConnectToSepolia,
 } from '../lib/metamaskConnect'
+import { parseWalletConnectError } from '../lib/walletErrors'
 
 export type WalletState = {
   address: string
@@ -172,8 +173,7 @@ export function useWallet() {
       setChainId(chain)
       return ok && chain === expectedChainId
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo cambiar a Sepolia'
-      setConnectError(message)
+      setConnectError(parseWalletConnectError(error))
       return false
     }
   }
@@ -190,8 +190,7 @@ export function useWallet() {
       setChainId(chain)
       return ok && chain === expectedChainId
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo cambiar a Sepolia'
-      setConnectError(message)
+      setConnectError(parseWalletConnectError(error))
       return false
     }
   }
@@ -214,8 +213,7 @@ export function useWallet() {
         setChainId(state.chainId)
         return true
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'No se pudo preparar MetaMask en Sepolia'
-        setConnectError(message)
+        setConnectError(parseWalletConnectError(error))
         return false
       }
     }
@@ -239,8 +237,8 @@ export function useWallet() {
         setProviderReady(true)
         return Boolean(state.address)
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'No se pudo conectar con MetaMask mobile'
-        setConnectError(message)
+        setConnectError(parseWalletConnectError(error))
+        setPairingUri('')
         return false
       } finally {
         setConnecting(false)

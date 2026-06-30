@@ -224,17 +224,19 @@ function WalletHintRestoreChip({
 function WalletHintToolbar({
   title,
   statusLabel,
+  statusTone = 'neutral',
   expanded,
   onToggleDetails,
   onDismiss,
-  actions,
+  actions = null,
 }: {
   title: string
   statusLabel?: string
+  statusTone?: 'neutral' | 'ok' | 'error' | 'pending'
   expanded: boolean
   onToggleDetails: () => void
   onDismiss: () => void
-  actions: ReactNode
+  actions?: ReactNode
 }) {
   return (
     <div className="wallet-hint-toolbar">
@@ -243,7 +245,11 @@ function WalletHintToolbar({
       </div>
       <div className="wallet-hint-toolbar__copy">
         <p className="wallet-hint-toolbar__title">{title}</p>
-        {statusLabel ? <span className="wallet-hint-toolbar__status">{statusLabel}</span> : null}
+        {statusLabel ? (
+          <span className={`wallet-hint-toolbar__status wallet-hint-toolbar__status--${statusTone}`}>
+            {statusLabel}
+          </span>
+        ) : null}
       </div>
       <div className="wallet-hint-toolbar__actions">
         {actions}
@@ -284,74 +290,107 @@ function DesktopConnectPanel({
   if (visibility === 'dismissed') {
     return (
       <WalletHintRestoreChip
-        label="Wallet pendiente"
-        status={connecting ? 'Conectando…' : 'Conectar con QR o extensión'}
+        label="Conectar wallet"
+        status={connecting ? 'Generando QR…' : 'MetaMask mobile o extensión'}
         onRestore={restore}
       />
     )
   }
 
   const expanded = visibility === 'expanded'
-  const statusLabel = connecting ? 'Conectando' : 'Pendiente'
+  const hasError = Boolean(connectError)
+  const statusLabel = hasError
+    ? 'Sin respuesta'
+    : connecting
+      ? 'Conectando…'
+      : showQr
+        ? 'QR listo'
+        : 'Elegí un método'
+  const statusTone = hasError ? 'error' : connecting ? 'pending' : showQr ? 'ok' : 'neutral'
 
   return (
     <section
-      className={`mobile-wallet-hint mobile-wallet-hint--desktop-install${expanded ? ' mobile-wallet-hint--expanded' : ' mobile-wallet-hint--minimized'}`}
+      className={`mobile-wallet-hint mobile-wallet-hint--desktop-install${expanded ? ' mobile-wallet-hint--expanded' : ' mobile-wallet-hint--minimized'}${hasError ? ' mobile-wallet-hint--error' : ''}`}
       aria-label="Conexion wallet desktop"
     >
       <WalletHintToolbar
-        title="Conectá sin extensión"
+        title="Conectar MetaMask"
         statusLabel={statusLabel}
+        statusTone={statusTone}
         expanded={expanded}
         onToggleDetails={toggleDetails}
         onDismiss={dismiss}
-        actions={
-          <>
-            <HintIconBtn
-              title={connecting ? 'Generando QR…' : showQr ? 'Regenerar QR' : 'Conectar con QR'}
-              onClick={handleConnectClick}
-              disabled={connecting}
-              active={showQr}
-            >
-              <QrActionIcon />
-            </HintIconBtn>
-            <HintIconBtn title="Instalar extensión MetaMask" onClick={() => onInstallExtension?.()}>
-              <ExtensionIcon />
-            </HintIconBtn>
-          </>
-        }
+        actions={null}
       />
 
-      {connectError && !expanded ? <p className="mobile-wallet-hint__error mobile-wallet-hint__error--inline">{connectError}</p> : null}
+      {!expanded && hasError ? (
+        <div className="desktop-connect__minibar" role="alert">
+          <p className="desktop-connect__minibar-text">{connectError}</p>
+          <div className="desktop-connect__minibar-actions">
+            <button type="button" className="desktop-connect__minibar-btn desktop-connect__minibar-btn--primary" onClick={handleConnectClick} disabled={connecting}>
+              Reintentar QR
+            </button>
+            <button type="button" className="desktop-connect__minibar-btn" onClick={() => onInstallExtension?.()}>
+              Extensión
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {expanded ? (
-        <div id="wallet-hint-panel" className="mobile-wallet-hint__panel">
-          <p className="mobile-wallet-hint__text">{hint}</p>
-          <div className={`mobile-wallet-hint__body${showQr ? ' mobile-wallet-hint__body--with-qr' : ''}`}>
-            <ol className="mobile-wallet-hint__steps">
-              <li>
-                <span className="mobile-wallet-hint__step-num">1</span>
-                <span>Tocá el ícono QR y abrí MetaMask mobile.</span>
-              </li>
-              <li>
-                <span className="mobile-wallet-hint__step-num">2</span>
-                <span>En MetaMask, escaneá el código de esta pantalla.</span>
-              </li>
-              <li>
-                <span className="mobile-wallet-hint__step-num">3</span>
-                <span>Aprobá la conexión y cambiá a Sepolia.</span>
-              </li>
-            </ol>
-
-            {showQr ? (
-              <div className="mobile-wallet-hint__qr-panel">
-                <QrCodeImage value={pairingUri ?? ''} size={168} label="QR para conectar MetaMask mobile" />
-                <p className="mobile-wallet-hint__qr-caption">Escanealo desde MetaMask mobile, no desde la cámara común</p>
-              </div>
-            ) : null}
+        <div id="wallet-hint-panel" className="mobile-wallet-hint__panel desktop-connect__panel">
+          <div className="desktop-connect__actions">
+            <button
+              type="button"
+              className="desktop-connect__action desktop-connect__action--primary"
+              onClick={handleConnectClick}
+              disabled={connecting}
+            >
+              <QrActionIcon />
+              <span>{connecting ? 'Generando QR…' : showQr ? 'Regenerar QR' : 'Conectar con QR mobile'}</span>
+            </button>
+            <button
+              type="button"
+              className="desktop-connect__action"
+              onClick={() => onInstallExtension?.()}
+            >
+              <ExtensionIcon />
+              <span>Instalar extensión</span>
+            </button>
           </div>
 
-          {connectError ? <p className="mobile-wallet-hint__error">{connectError}</p> : null}
+          {showQr ? (
+            <div className="desktop-connect__qr-layout">
+              <div className="desktop-connect__steps-wrap">
+                <p className="desktop-connect__steps-title">Desde MetaMask mobile</p>
+                <ol className="mobile-wallet-hint__steps mobile-wallet-hint__steps--compact">
+                  <li>
+                    <span className="mobile-wallet-hint__step-num">1</span>
+                    <span>Abrí MetaMask → ícono QR → escanear.</span>
+                  </li>
+                  <li>
+                    <span className="mobile-wallet-hint__step-num">2</span>
+                    <span>Aprobá la conexión y usá Sepolia.</span>
+                  </li>
+                </ol>
+              </div>
+              <div className="mobile-wallet-hint__qr-panel desktop-connect__qr">
+                <QrCodeImage value={pairingUri ?? ''} size={148} label="QR para conectar MetaMask mobile" />
+                <p className="mobile-wallet-hint__qr-caption">Escaneá desde MetaMask, no desde la cámara del sistema</p>
+              </div>
+            </div>
+          ) : (
+            <p className="desktop-connect__hint">{hint}</p>
+          )}
+
+          {connectError ? (
+            <div className="desktop-connect__error-panel" role="alert">
+              <p>{connectError}</p>
+              <button type="button" className="desktop-connect__minibar-btn desktop-connect__minibar-btn--primary" onClick={handleConnectClick} disabled={connecting}>
+                Reintentar conexión
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

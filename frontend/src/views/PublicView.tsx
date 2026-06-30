@@ -498,7 +498,8 @@ export function PublicView({
         <div className="pv-hero-bg" aria-hidden />
         <div className="pv-layout">
           <header className="pv-hero pv-hero--compact">
-            <h1 className="pv-title">Consulta por VIN o QR</h1>
+            <h1 className="pv-title">Pasaporte vehicular</h1>
+            <p className="pv-subtitle pv-subtitle--compact">Buscá por VIN o escaneá el QR. Sin wallet para consultar.</p>
           </header>
 
           {!relayVin ? (

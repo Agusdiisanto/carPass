@@ -12,7 +12,6 @@ import { MisAutosView } from './views/MisAutosView'
 import { PublicView } from './views/PublicView'
 import { MobileWalletHint } from './components/MobileWalletHint'
 import { RuntimeStrip } from './components/RuntimeStrip'
-import { ChainActivityFeed } from './components/ChainActivityFeed'
 import { RoleDetectingState } from './components/RoleDetectingState'
 import { AppNavRail, type AppNavSection } from './components/AppNavRail'
 import { Topbar } from './components/Topbar'
@@ -459,10 +458,6 @@ export default function App() {
         role={role}
         detecting={detecting}
       />
-
-      {walletLinked && address ? (
-        <ChainActivityFeed walletAddress={address} wrongNetwork={wrongNetwork} />
-      ) : null}
 
       {!hasContractAddress && (
         <div className="config-warning">
