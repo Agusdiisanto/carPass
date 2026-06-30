@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { RegistroService, RegistroSiniestro, RegistroVTV } from '../hooks/useCarPass'
-import { DEMO_VEHICLES, filterDemoVehicles, findDemoVehicle } from '../domain/carpass/demoVehicles'
+import { DEMO_VEHICLES, filterDemoVehicles } from '../domain/carpass/demoVehicles'
 import {
   applyDemoCatalogFilters,
   DEMO_CATALOG_FILTER_THRESHOLD,
