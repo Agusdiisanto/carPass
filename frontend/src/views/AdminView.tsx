@@ -9,8 +9,10 @@ import { RegistradorView } from './RegistradorView'
 import { TallerView } from './TallerView'
 import { AseguradoraView } from './AseguradoraView'
 import { InspectorVTVView } from './InspectorVTVView'
+import { PropietarioView } from './PropietarioView'
 
 const ROLES = [
+  { label: 'Administrador', fn: 'DEFAULT_ADMIN_ROLE' },
   { label: 'Concesionaria / Registrador', fn: 'REGISTRADOR_ROLE' },
   { label: 'Taller mecánico', fn: 'MECANICO_ROLE' },
   { label: 'Aseguradora', fn: 'ASEGURADORA_ROLE' },
@@ -19,6 +21,7 @@ const ROLES = [
 
 const ADMIN_VIEWS = [
   { key: 'admin', label: 'Administracion' },
+  { key: 'propietario', label: 'Mis vehículos' },
   { key: 'registrador', label: 'Concesionaria' },
   { key: 'taller', label: 'Taller' },
   { key: 'aseguradora', label: 'Aseguradora' },
@@ -61,12 +64,24 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
     setRoleTarget('')
   }
 
-  function renderActiveView() {
-    if (activeView === 'registrador') return <RegistradorView address={address} wrongNetwork={wrongNetwork} embedded />
-    if (activeView === 'taller') return <TallerView address={address} wrongNetwork={wrongNetwork} embedded />
-    if (activeView === 'aseguradora') return <AseguradoraView address={address} wrongNetwork={wrongNetwork} embedded />
-    if (activeView === 'inspector') return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} embedded />
+  function renderSwitcher() {
+    return (
+      <div className="admin-view-switcher" aria-label="Vistas disponibles para administrador">
+        {ADMIN_VIEWS.map((view) => (
+          <button
+            className={`admin-view-tab ${activeView === view.key ? 'active' : ''}`}
+            key={view.key}
+            onClick={() => setActiveView(view.key)}
+            type="button"
+          >
+            {view.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
 
+  function renderAdminPanel() {
     return (
       <>
         <div className="panels-grid">
@@ -162,6 +177,33 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
     )
   }
 
+  function renderRoleView() {
+    if (activeView === 'propietario') return <PropietarioView address={address} wrongNetwork={wrongNetwork} />
+    if (activeView === 'registrador') return <RegistradorView address={address} wrongNetwork={wrongNetwork} />
+    if (activeView === 'taller') return <TallerView address={address} wrongNetwork={wrongNetwork} />
+    if (activeView === 'aseguradora') return <AseguradoraView address={address} wrongNetwork={wrongNetwork} />
+    if (activeView === 'inspector') return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} />
+    return null
+  }
+
+  if (activeView !== 'admin') {
+    return (
+      <>
+        <div className="view-container admin-demo-toolbar">
+          {renderSwitcher()}
+          {activeView !== 'propietario' && (
+            <div className="admin-role-note">
+              Modo demo de administrador: estás viendo la pantalla real del rol seleccionado. Las escrituras siguen
+              requiriendo el rol on-chain correspondiente para esta wallet.
+            </div>
+          )}
+        </div>
+
+        {renderRoleView()}
+      </>
+    )
+  }
+
   return (
     <OperativeShell
       role="admin"
@@ -170,26 +212,8 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
       address={address}
       wrongNetwork={wrongNetwork}
     >
-      <div className="admin-view-switcher" aria-label="Vistas disponibles para administrador">
-        {ADMIN_VIEWS.map((view) => (
-          <button
-            className={`admin-view-tab ${activeView === view.key ? 'active' : ''}`}
-            key={view.key}
-            onClick={() => setActiveView(view.key)}
-            type="button"
-          >
-            {view.label}
-          </button>
-        ))}
-      </div>
-
-      {activeView !== 'admin' ? (
-        <div className="admin-role-note">
-          Estás viendo este panel como administrador. Las escrituras siguen requiriendo el rol on-chain correspondiente.
-        </div>
-      ) : null}
-
-      {renderActiveView()}
+      {renderSwitcher()}
+      {renderAdminPanel()}
     </OperativeShell>
   )
 }

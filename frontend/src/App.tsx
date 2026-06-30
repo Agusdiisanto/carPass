@@ -8,7 +8,7 @@ import { RegistradorView } from './views/RegistradorView'
 import { TallerView } from './views/TallerView'
 import { AseguradoraView } from './views/AseguradoraView'
 import { InspectorVTVView } from './views/InspectorVTVView'
-import { NoRoleView } from './views/NoRoleView'
+import { PropietarioView } from './views/PropietarioView'
 import { PublicView } from './views/PublicView'
 import { RuntimeStrip } from './components/RuntimeStrip'
 import { RoleDetectingState } from './components/RoleDetectingState'
@@ -88,7 +88,7 @@ export default function App() {
     if (role === 'mecanico') return <TallerView address={address} wrongNetwork={wrongNetwork} />
     if (role === 'aseguradora') return <AseguradoraView address={address} wrongNetwork={wrongNetwork} />
     if (role === 'inspector') return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} />
-    return <NoRoleView address={address} />
+    return <PropietarioView address={address} wrongNetwork={wrongNetwork} />
   }
 
   return (
