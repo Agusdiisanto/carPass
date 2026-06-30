@@ -38,9 +38,18 @@ Mapa rapido para leer y defender CarPass.
 
 ## Frontend Hooks
 
-- `frontend/src/hooks/useWallet.ts`: conexion MetaMask y red esperada.
+- `frontend/src/hooks/useWallet.ts`: conexion MetaMask (extension, deep link mobile, QR Connect) y red esperada.
 - `frontend/src/hooks/useCarPass.ts`: operaciones de lectura/escritura contra el contrato.
 - `frontend/src/hooks/useVehicleLookup.ts`: busqueda reutilizable por VIN.
+
+## Frontend Wallet / Mobile
+
+- `frontend/src/lib/ethereumProvider.ts`: modos de conexion, deep link MetaMask, `getActiveEthereum()`.
+- `frontend/src/lib/metamaskConnect.ts`: cliente `@metamask/connect-evm` headless para QR desktop.
+- `frontend/src/lib/deviceProfile.ts`: deteccion mobile, iOS y Safari.
+- `frontend/src/lib/publicAppUrl.ts`: URL publica para deep links y companion desde localhost.
+- `frontend/src/components/MobileWalletHint.tsx`: banner de conexion segun modo (desktop QR / mobile deeplink).
+- `frontend/src/components/QrCodeImage.tsx`: render local de QR para emparejamiento wallet.
 
 ## Frontend Views
 

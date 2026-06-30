@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { Html5Qrcode } from 'html5-qrcode'
 import { extractVinFromQrPayload } from '../domain/carpass/vinFromQr'
+import { hasBarcodeDetector } from '../lib/deviceProfile'
+
+const H5QR_READER_ID = 'vin-h5qr-reader'
 
 type VinQrScannerProps = {
   open: boolean
@@ -12,6 +16,7 @@ type VinQrScannerProps = {
 }
 
 type ScanMode = 'camera' | 'manual'
+type CameraEngine = 'barcode-detector' | 'html5-qrcode' | 'idle'
 
 function CloseIcon() {
   return (
@@ -51,6 +56,7 @@ export function VinQrScanner({
   const [manualVin, setManualVin] = useState('')
   const [mode, setMode] = useState<ScanMode>('camera')
   const [cameraReady, setCameraReady] = useState(false)
+  const [cameraEngine, setCameraEngine] = useState<CameraEngine>('idle')
 
   useEffect(() => {
     if (!open) {
@@ -58,12 +64,28 @@ export function VinQrScanner({
       setError('')
       setManualVin('')
       setCameraReady(false)
+      setCameraEngine('idle')
       return
     }
   }, [open])
 
   useEffect(() => {
-    if (!open || mode !== 'camera') return
+    if (!open || mode !== 'camera') {
+      setCameraEngine('idle')
+      return
+    }
+
+    if (!('mediaDevices' in navigator)) {
+      setError('Tu navegador no permite acceso a cámara.')
+      setMode('manual')
+      return
+    }
+
+    setCameraEngine(hasBarcodeDetector() ? 'barcode-detector' : 'html5-qrcode')
+  }, [open, mode])
+
+  useEffect(() => {
+    if (!open || mode !== 'camera' || cameraEngine !== 'barcode-detector') return
 
     let stream: MediaStream | null = null
     let frameId = 0
@@ -73,21 +95,11 @@ export function VinQrScanner({
       setError('')
       setCameraReady(false)
 
-      if (!('mediaDevices' in navigator)) {
-        setError('Tu navegador no permite acceso a cámara.')
-        setMode('manual')
-        return
-      }
-
       const Detector = (window as Window & { BarcodeDetector?: new (opts: { formats: string[] }) => {
         detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue?: string }>>
       } }).BarcodeDetector
 
-      if (!Detector) {
-        setError('QR por cámara no disponible aquí. Usá la pestaña Pegar código.')
-        setMode('manual')
-        return
-      }
+      if (!Detector) return
 
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -143,7 +155,61 @@ export function VinQrScanner({
       stream?.getTracks().forEach((track) => track.stop())
       setCameraReady(false)
     }
-  }, [open, mode, onClose, onDetected])
+  }, [open, mode, cameraEngine, onClose, onDetected])
+
+  useEffect(() => {
+    if (!open || mode !== 'camera' || cameraEngine !== 'html5-qrcode') return
+
+    let scanner: Html5Qrcode | null = null
+    let cancelled = false
+
+    async function start() {
+      setError('')
+      setCameraReady(false)
+
+      try {
+        scanner = new Html5Qrcode(H5QR_READER_ID)
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1 },
+          (decodedText) => {
+            if (cancelled) return
+            const vin = extractVinFromQrPayload(decodedText)
+            if (vin) {
+              void scanner?.stop().finally(() => {
+                if (!cancelled) {
+                  onDetected(vin)
+                  onClose()
+                }
+              })
+              return
+            }
+            setError('QR leído, pero no contiene un VIN válido.')
+          },
+          () => {},
+        )
+        if (!cancelled) setCameraReady(true)
+      } catch {
+        if (!cancelled) {
+          setError('No se pudo abrir la cámara. Revisá permisos o pegá el código manualmente.')
+          setMode('manual')
+        }
+      }
+    }
+
+    const timer = window.setTimeout(() => {
+      void start()
+    }, 80)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+      if (scanner?.isScanning) {
+        void scanner.stop().catch(() => {})
+      }
+      setCameraReady(false)
+    }
+  }, [open, mode, cameraEngine, onClose, onDetected])
 
   if (!open) return null
 
@@ -224,14 +290,20 @@ export function VinQrScanner({
 
         {mode === 'camera' ? (
           <div className="qr-scanner-viewport">
-            <video ref={videoRef} className="qr-scanner-video" muted playsInline />
-            <div className="qr-scanner-frame" aria-hidden>
-              <span className="qr-scanner-corner qr-scanner-corner--tl" />
-              <span className="qr-scanner-corner qr-scanner-corner--tr" />
-              <span className="qr-scanner-corner qr-scanner-corner--bl" />
-              <span className="qr-scanner-corner qr-scanner-corner--br" />
-              <span className="qr-scanner-scanline" />
-            </div>
+            {cameraEngine === 'html5-qrcode' ? (
+              <div id={H5QR_READER_ID} className="qr-scanner-h5qr" />
+            ) : (
+              <>
+                <video ref={videoRef} className="qr-scanner-video" muted playsInline />
+                <div className="qr-scanner-frame" aria-hidden>
+                  <span className="qr-scanner-corner qr-scanner-corner--tl" />
+                  <span className="qr-scanner-corner qr-scanner-corner--tr" />
+                  <span className="qr-scanner-corner qr-scanner-corner--bl" />
+                  <span className="qr-scanner-corner qr-scanner-corner--br" />
+                  <span className="qr-scanner-scanline" />
+                </div>
+              </>
+            )}
             {!cameraReady && !error ? (
               <p className="qr-scanner-hint">Activando cámara...</p>
             ) : (
@@ -240,7 +312,7 @@ export function VinQrScanner({
                   ? 'Apunta al QR grande en la pantalla del celular'
                   : variant === 'operativo'
                     ? 'Centrá el QR del pasaporte CarPass dentro del recuadro'
-                    : 'Centra el QR dentro del recuadro'}
+                    : 'Centrá el QR dentro del recuadro'}
               </p>
             )}
           </div>

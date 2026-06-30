@@ -7,10 +7,13 @@ import {
 } from '../lib/publicAppUrl'
 import { setSessionDevLanHost } from '../lib/lanHost'
 import { useLanHost } from '../hooks/useLanHost'
+import { shortAddress } from '../hooks/useWallet'
 import { QrCodeImage } from './QrCodeImage'
 
 type PhoneCompanionCardProps = {
   onReceiveFromPhone: () => void
+  operative?: boolean
+  walletAddress?: string
 }
 
 function PhoneIcon() {
@@ -41,7 +44,11 @@ function ReceiveIcon() {
   )
 }
 
-export function PhoneCompanionCard({ onReceiveFromPhone }: PhoneCompanionCardProps) {
+export function PhoneCompanionCard({
+  onReceiveFromPhone,
+  operative = false,
+  walletAddress = '',
+}: PhoneCompanionCardProps) {
   const { isLocalDev, lanIp, discovering } = useLanHost()
   const [copied, setCopied] = useState(false)
   const [urlDraft, setUrlDraft] = useState('')
@@ -50,8 +57,13 @@ export function PhoneCompanionCard({ onReceiveFromPhone }: PhoneCompanionCardPro
 
   const publicAppUrl = getEffectivePublicAppUrl()
   const companionUrl = useMemo(
-    () => buildCompanionScanUrl({ lanHost: isLocalDev ? lanIp : null }),
-    [isLocalDev, lanIp, urlRevision, publicAppUrl],
+    () =>
+      buildCompanionScanUrl({
+        lanHost: isLocalDev ? lanIp : null,
+        operative,
+        walletAddress: operative ? walletAddress : null,
+      }),
+    [isLocalDev, lanIp, urlRevision, publicAppUrl, operative, walletAddress],
   )
   const qrReady = isCompanionUrlReachable(companionUrl)
 
@@ -108,12 +120,20 @@ export function PhoneCompanionCard({ onReceiveFromPhone }: PhoneCompanionCardPro
         </div>
         <div>
           <p className="phone-companion__eyebrow">Notebook + celular</p>
-          <h2 className="phone-companion__title">Tu PC opera, tu celular escanea</h2>
+          <h2 className="phone-companion__title">Escaneá desde el celular</h2>
           <p className="phone-companion__subtitle">
-            Escanea el QR con el celular para abrir el escaner. Luego mostra la pantalla del telefono a esta notebook para cargar el VIN.
+            {operative
+              ? 'Escaneá el QR, leé el pasaporte del auto y en el celular conectá MetaMask con la misma cuenta que acá.'
+              : 'Escaneá el QR para abrir la cámara en el celular. Después podés mostrar el VIN a esta PC.'}
           </p>
         </div>
       </div>
+
+      {operative && walletAddress ? (
+        <p className="phone-companion__wallet-hint" role="note">
+          Wallet en esta PC: <strong>{shortAddress(walletAddress)}</strong> — usá la misma en el celular.
+        </p>
+      ) : null}
 
       {isLocalDev ? (
         <div className="phone-companion__dev-hint" role="note">
@@ -179,15 +199,15 @@ export function PhoneCompanionCard({ onReceiveFromPhone }: PhoneCompanionCardPro
         <ol className="phone-companion__steps">
           <li>
             <span className="phone-companion__step-num">1</span>
-            Escanea este QR con tu celular
+            Escaneá este QR con el celular
           </li>
           <li>
             <span className="phone-companion__step-num">2</span>
-            Apunta al QR del parabrisas o cedula
+            Apuntá al QR del parabrisas o cédula
           </li>
           <li>
             <span className="phone-companion__step-num">3</span>
-            Mostra el codigo en el celular a esta PC
+            {operative ? 'Conectá MetaMask en el celular (misma cuenta)' : 'Mostrá el VIN a esta PC'}
           </li>
         </ol>
       </div>

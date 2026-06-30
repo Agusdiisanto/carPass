@@ -205,16 +205,19 @@ Estado: `DONE`.
 Implementado:
 
 - DApp React.
-- Conexion MetaMask.
+- Conexion MetaMask (extension inyectada).
+- Conexion desktop sin extension via QR (`@metamask/connect-evm`).
+- Deep link mobile (`metamask.app.link`) y banner `MobileWalletHint`.
 - Validacion de Sepolia por chain id.
 - Deteccion de rol on-chain.
 - Ruteo por rol.
 - Listeners para cambios de cuenta/red.
 - Vista publica accesible sin operar wallet.
+- Provider activo unificado (`getActiveEthereum`) para extension y Connect.
 
 Falta:
 
-- Nada funcional dentro del alcance actual.
+- Nada funcional dentro del alcance actual del SDD.
 
 Spec:
 

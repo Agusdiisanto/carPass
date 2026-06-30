@@ -13,7 +13,7 @@ Operadores que conectan wallet desde notebook no pueden escanear comodamente el 
 - Deteccion de dispositivo para mostrar el companion solo en desktop.
 - Deep link `?vin=` para completar la busqueda al recibir el codigo.
 
-No incluye WalletConnect ni sync realtime cross-device.
+No incluye WalletConnect generico ni sync realtime cross-device. La conexion wallet por QR en desktop (MetaMask Connect) vive en EPIC-09; este epic solo reutiliza `VITE_PUBLIC_APP_URL` y flujos mobile.
 
 ## Entradas
 

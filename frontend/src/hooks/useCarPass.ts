@@ -6,9 +6,7 @@ import { parseContractError } from '../domain/carpass/errors'
 import type { Role } from '../domain/carpass/roles'
 import { getPublicProvider } from '../lib/publicProvider'
 
-type EthereumProvider = {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
-}
+import { getActiveEthereum, type EthereumProvider } from '../lib/ethereumProvider'
 
 function resolveContractAddress() {
   const envAddress = import.meta.env.VITE_CARPASS_CONTRACT_ADDRESS
@@ -60,8 +58,9 @@ export type SelloCalidad = {
 }
 
 function getProvider() {
-  if (!window.ethereum) throw new Error('MetaMask no detectado')
-  return new BrowserProvider(window.ethereum as EthereumProvider)
+  const eth = getActiveEthereum()
+  if (!eth) throw new Error('MetaMask no detectado')
+  return new BrowserProvider(eth as EthereumProvider)
 }
 
 async function getSignerContract() {

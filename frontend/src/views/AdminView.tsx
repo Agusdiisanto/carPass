@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { AdminNav } from '../components/AdminNav'
+import { AdminHub } from '../components/AdminHub'
+import { AdminSectionHeader } from '../components/AdminSectionHeader'
 import { OperativeShell } from '../components/OperativeShell'
+import { VinQrScanner } from '../components/VinQrScanner'
 import {
-  ADMIN_SECTIONS,
   getAdminSection,
   readAdminSection,
   saveAdminSection,
@@ -14,6 +16,7 @@ import type { VehiculoInfo } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
+import { setPendingOperativeVin } from '../lib/operativeVinBridge'
 import { AseguradoraView } from './AseguradoraView'
 import { InspectorVTVView } from './InspectorVTVView'
 import { PropietarioView } from './PropietarioView'
@@ -21,106 +24,18 @@ import { RegistradorView } from './RegistradorView'
 import { TallerView } from './TallerView'
 
 const ROLES = [
-  { label: 'Administrador', fn: 'DEFAULT_ADMIN_ROLE' },
-  { label: 'Concesionaria / Registrador', fn: 'REGISTRADOR_ROLE' },
-  { label: 'Taller mecánico', fn: 'MECANICO_ROLE' },
-  { label: 'Aseguradora', fn: 'ASEGURADORA_ROLE' },
-  { label: 'Inspector VTV', fn: 'INSPECTOR_VTV_ROLE' },
+  { label: 'Administrador', fn: 'DEFAULT_ADMIN_ROLE', desc: 'Control total del contrato' },
+  { label: 'Concesionaria', fn: 'REGISTRADOR_ROLE', desc: 'Alta de vehículos' },
+  { label: 'Taller mecánico', fn: 'MECANICO_ROLE', desc: 'Services y kilometraje' },
+  { label: 'Aseguradora', fn: 'ASEGURADORA_ROLE', desc: 'Siniestros' },
+  { label: 'Inspector VTV', fn: 'INSPECTOR_VTV_ROLE', desc: 'Inspecciones técnicas' },
 ]
-
-function AdminHub({ onOpen }: { onOpen: (key: AdminSectionKey) => void }) {
-  const coreSections = ADMIN_SECTIONS.filter((section) => section.key !== 'hub' && section.group === 'core')
-  const operativeSections = ADMIN_SECTIONS.filter((section) => section.group === 'operative')
-
-  return (
-    <div className="admin-hub">
-      <section className="admin-hub__intro">
-        <h3 className="admin-hub__title">Centro de administración</h3>
-        <p className="admin-hub__text">
-          Elegí un apartado para gestionar vehículos, permisos o revisar las vistas operativas del ecosistema CarPass.
-        </p>
-      </section>
-
-      <div className="admin-hub__group">
-        <p className="admin-hub__group-label">Gestión central</p>
-        <div className="admin-hub__grid">
-          {coreSections.map((section) => (
-            <button
-              key={section.key}
-              type="button"
-              className="admin-hub__card admin-hub__card--core"
-              onClick={() => onOpen(section.key)}
-            >
-              <span className="admin-hub__card-head">
-                <span className="admin-hub__card-title">{section.label}</span>
-                <span className="admin-hub__card-cta">Entrar</span>
-              </span>
-              <span className="admin-hub__card-desc">{section.description}</span>
-              {section.capabilities ? (
-                <span className="admin-hub__tags">
-                  {section.capabilities.map((cap) => (
-                    <span className="admin-hub__tag" key={cap}>{cap}</span>
-                  ))}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="admin-hub__group">
-        <p className="admin-hub__group-label">Vistas operativas</p>
-        <div className="admin-hub__grid admin-hub__grid--operative">
-          {operativeSections.map((section) => {
-            const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
-            return (
-              <button
-                key={section.key}
-                type="button"
-                className={`admin-hub__card admin-hub__card--${roleClass}`}
-                onClick={() => onOpen(section.key)}
-              >
-                <span className="admin-hub__card-head">
-                  <span className={`admin-hub__pill admin-hub__pill--${roleClass}`}>{section.shortLabel}</span>
-                  <span className="admin-hub__card-cta">Abrir vista</span>
-                </span>
-                <span className="admin-hub__card-title">{section.label}</span>
-                <span className="admin-hub__card-desc">{section.description}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function AdminSectionHeader({
-  sectionKey,
-  onBack,
-}: {
-  sectionKey: AdminSectionKey
-  onBack: () => void
-}) {
-  const section = getAdminSection(sectionKey)
-  const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
-
-  return (
-    <header className={`admin-section-header admin-section-header--${roleClass}`}>
-      <button type="button" className="admin-section-header__back" onClick={onBack}>
-        ← Volver al inicio
-      </button>
-      <div className="admin-section-header__copy">
-        <h3 className="admin-section-header__title">{section.label}</h3>
-        <p className="admin-section-header__desc">{section.description}</p>
-      </div>
-    </header>
-  )
-}
 
 export function AdminView({ address, wrongNetwork = false }: { address: string; wrongNetwork?: boolean }) {
   const { busy, message, registrarVehiculo, grantRole, revokeRole } = useCarPass()
   const [activeSection, setActiveSection] = useState<AdminSectionKey>(readAdminSection)
+  const [qrReceiveOpen, setQrReceiveOpen] = useState(false)
+  const [receivedVin, setReceivedVin] = useState('')
 
   const [vin, setVin] = useState('8AJBA3CD4E1234567')
   const [marca, setMarca] = useState('Toyota')
@@ -136,10 +51,21 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
   const vehicleInfo: VehiculoInfo = { vin, marca, modelo, anio, color }
   const vehicleFormValido = isValidVehicleInfo(vehicleInfo) && propietarioValido
 
+  const sectionMeta = getAdminSection(activeSection)
+  const sectionAccent = sectionMeta.accentClass ?? (sectionMeta.roleClass ? ROLE_BADGE_CLASS[sectionMeta.roleClass] : 'admin')
+  const isOperativePreview = !['hub', 'vehiculos', 'roles'].includes(activeSection)
+  const showRoleNote = isOperativePreview && activeSection !== 'propietario'
+
   function openSection(key: AdminSectionKey) {
     setActiveSection(key)
     saveAdminSection(key)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleQrFromPhone(detectedVin: string) {
+    setReceivedVin(detectedVin)
+    setPendingOperativeVin(detectedVin)
+    setQrReceiveOpen(false)
   }
 
   async function handleRegistrar() {
@@ -160,7 +86,14 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
 
   function renderSectionContent() {
     if (activeSection === 'hub') {
-      return <AdminHub onOpen={openSection} />
+      return (
+        <AdminHub
+          address={address}
+          wrongNetwork={wrongNetwork}
+          onOpen={openSection}
+          onReceiveFromPhone={() => setQrReceiveOpen(true)}
+        />
+      )
     }
 
     if (activeSection === 'propietario') {
@@ -182,9 +115,14 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
     if (activeSection === 'vehiculos') {
       return (
         <div className="panels-grid single">
-          <section className="panel">
-            <h3>Registrar vehículo</h3>
-            <p className="panel-desc">Acuñá el pasaporte digital vinculado al VIN en Sepolia con 0 km iniciales.</p>
+          <section className="panel panel--admin-form">
+            <div className="panel-step">
+              <span className="panel-step__num">1</span>
+              <div>
+                <h3>Registrar vehículo</h3>
+                <p className="panel-desc">Emití el pasaporte digital vinculado al VIN en Sepolia con 0 km iniciales.</p>
+              </div>
+            </div>
 
             <label className="field">
               VIN <span className="field-hint">17 caracteres</span>
@@ -226,46 +164,54 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
     }
 
     return (
-      <div className="panels-grid single">
-        <section className="panel">
-          <h3>Gestión de roles</h3>
-          <p className="panel-desc">Asigná o revocá permisos a wallets del sistema.</p>
+      <div className="panels-grid admin-roles-layout">
+        <section className="panel panel--admin-form">
+          <div className="panel-step">
+            <span className="panel-step__num">1</span>
+            <div>
+              <h3>Gestión de roles</h3>
+              <p className="panel-desc">Asigná o revocá permisos operativos a wallets del ecosistema.</p>
+            </div>
+          </div>
+
+          <div className="admin-role-picker" role="listbox" aria-label="Seleccionar rol">
+            {ROLES.map((role) => (
+              <button
+                key={role.fn}
+                type="button"
+                className={`admin-role-picker__item ${selectedRole === role.fn ? 'active' : ''}`}
+                onClick={() => setSelectedRole(role.fn)}
+                aria-selected={selectedRole === role.fn}
+              >
+                <span className="admin-role-picker__label">{role.label}</span>
+                <span className="admin-role-picker__desc">{role.desc}</span>
+              </button>
+            ))}
+          </div>
 
           <label className="field">
-            Rol
-            <select className="select-input" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
-              {ROLES.map((role) => (
-                <option key={role.fn} value={role.fn}>{role.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field">
-            Wallet
-            <input placeholder="Dirección 0x..." value={roleTarget} onChange={(e) => setRoleTarget(e.target.value)} />
+            Wallet destino
+            <input placeholder="0x..." value={roleTarget} onChange={(e) => setRoleTarget(e.target.value)} />
           </label>
           {roleTarget && !roleTargetValido ? <p className="error-msg">Dirección inválida</p> : null}
 
           <div className="action-row">
             <button className="btn-primary" disabled={!roleTargetValido || Boolean(busy)} onClick={handleGrant}>
-              {busy === 'Asignando rol' ? 'Asignando...' : 'Asignar'}
+              {busy === 'Asignando rol' ? 'Asignando...' : 'Asignar rol'}
             </button>
             <button className="btn-danger" disabled={!roleTargetValido || Boolean(busy)} onClick={handleRevoke}>
-              {busy === 'Revocando rol' ? 'Revocando...' : 'Revocar'}
+              {busy === 'Revocando rol' ? 'Revocando...' : 'Revocar rol'}
             </button>
           </div>
 
           <div className="wallet-info">
-            <span>Tu wallet</span>
+            <span>Tu wallet admin</span>
             <code>{shortAddress(address)}</code>
           </div>
         </section>
       </div>
     )
   }
-
-  const isOperativePreview = !['hub', 'vehiculos', 'roles'].includes(activeSection)
-  const showRoleNote = isOperativePreview && activeSection !== 'propietario'
 
   return (
     <OperativeShell
@@ -279,23 +225,41 @@ export function AdminView({ address, wrongNetwork = false }: { address: string; 
       <div className="admin-layout">
         <AdminNav active={activeSection} onChange={openSection} />
 
-        <div className="admin-layout__main">
+        <div className={`admin-layout__main admin-layout__main--${sectionAccent}`}>
           {activeSection !== 'hub' ? (
-            <AdminSectionHeader sectionKey={activeSection} onBack={() => openSection('hub')} />
+            <AdminSectionHeader
+              sectionKey={activeSection}
+              onBack={() => openSection('hub')}
+              showPreviewNote={showRoleNote}
+            />
           ) : null}
 
-          {showRoleNote ? (
-            <div className="admin-role-note">
-              Vista operativa en modo administrador. Las escrituras on-chain siguen requiriendo el rol correspondiente.
-            </div>
-          ) : null}
+          <div className="admin-layout__content">
+            {receivedVin && isOperativePreview ? (
+              <div className="admin-vin-received" role="status">
+                <p>
+                  VIN recibido del celular: <code>{receivedVin}</code> — precargado en el identificador.
+                </p>
+                <button type="button" className="admin-vin-received__clear" onClick={() => setReceivedVin('')}>
+                  Descartar
+                </button>
+              </div>
+            ) : null}
+            {renderSectionContent()}
+          </div>
 
-          {renderSectionContent()}
           {message && !['registrador', 'taller', 'aseguradora', 'inspector', 'propietario'].includes(activeSection)
             ? <div className="status-bar">{message}</div>
             : null}
         </div>
       </div>
+
+      <VinQrScanner
+        open={qrReceiveOpen}
+        onClose={() => setQrReceiveOpen(false)}
+        onDetected={handleQrFromPhone}
+        receiveMode
+      />
     </OperativeShell>
   )
 }

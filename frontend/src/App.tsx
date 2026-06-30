@@ -10,9 +10,12 @@ import { AseguradoraView } from './views/AseguradoraView'
 import { InspectorVTVView } from './views/InspectorVTVView'
 import { PropietarioView } from './views/PropietarioView'
 import { PublicView } from './views/PublicView'
+import { MobileWalletHint } from './components/MobileWalletHint'
 import { RuntimeStrip } from './components/RuntimeStrip'
 import { RoleDetectingState } from './components/RoleDetectingState'
 import { Topbar } from './components/Topbar'
+import { clearOperativeSessionFromUrl, getAppSessionFromUrl, syncAppSessionUrl } from './lib/appSessionUrl'
+import { setPendingOperativeVin } from './lib/operativeVinBridge'
 
 const PANEL_OPEN_KEY = 'carpass_wallet_panel_open'
 
@@ -34,7 +37,22 @@ function savePanelOpenPreference(open: boolean) {
 }
 
 export default function App() {
-  const { address, chainId, connected, wrongNetwork, restoring, connect, disconnect } = useWallet()
+  const {
+    address,
+    chainId,
+    connected,
+    wrongNetwork,
+    restoring,
+    connectionMode,
+    needsMobileWallet,
+    connecting,
+    pairingUri,
+    connectError,
+    connect,
+    openInMetaMaskApp,
+    openMetaMaskInstall,
+    disconnect,
+  } = useWallet()
   const [role, setRole] = useState<Role | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [showPublic, setShowPublic] = useState(true)
@@ -44,12 +62,16 @@ export default function App() {
   function goToConsulta() {
     setShowPublic(true)
     savePanelOpenPreference(false)
+    clearOperativeSessionFromUrl()
     setConsultaSignal((value) => value + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  function goToPanel() {
+  function goToPanel(vin?: string) {
     if (!connected) return
+    const sessionVin = vin ?? getAppSessionFromUrl().vin
+    if (sessionVin) setPendingOperativeVin(sessionVin)
+    syncAppSessionUrl({ wantsPanel: true, vin: sessionVin ?? null })
     setShowPublic(false)
     savePanelOpenPreference(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -59,15 +81,54 @@ export default function App() {
     try {
       await connect()
     } catch {
-      // MetaMask cancelado o no disponible.
+      // MetaMask cancelado, no disponible o redirigiendo a la app mobile.
     }
   }
 
   useEffect(() => {
-    if (restoring || panelRestored || !connected) return
-    if (readPanelOpenPreference()) setShowPublic(false)
+    const session = getAppSessionFromUrl()
+    if (session.vin) setPendingOperativeVin(session.vin)
+  }, [])
+
+  useEffect(() => {
+    if (restoring || panelRestored) return
+
+    const session = getAppSessionFromUrl()
+    const wantsPanel = session.wantsPanel || readPanelOpenPreference()
+
+    if (!connected) {
+      if (!session.wantsPanel) setPanelRestored(true)
+      return
+    }
+
+    if (wantsPanel) {
+      if (session.vin) setPendingOperativeVin(session.vin)
+      setShowPublic(false)
+      savePanelOpenPreference(true)
+      syncAppSessionUrl({ wantsPanel: true, vin: session.vin })
+    }
+
     setPanelRestored(true)
   }, [connected, restoring, panelRestored])
+
+  useEffect(() => {
+    if (restoring || detecting || !connected) return
+    const session = getAppSessionFromUrl()
+    if (!session.wantsPanel || !session.vin) return
+    if (!role || role === 'none') return
+    if (!showPublic) return
+    setShowPublic(false)
+    savePanelOpenPreference(true)
+    setPendingOperativeVin(session.vin)
+  }, [connected, detecting, restoring, role, showPublic])
+
+  useEffect(() => {
+    if (restoring || detecting || !connected) return
+    const session = getAppSessionFromUrl()
+    if (!session.wantsPanel) return
+    if (role !== 'none') return
+    setShowPublic(true)
+  }, [connected, detecting, restoring, role])
 
   useEffect(() => {
     if (!connected || !hasContractAddress) {
@@ -91,7 +152,9 @@ export default function App() {
           role={role}
           detecting={detecting}
           wrongNetwork={wrongNetwork}
+          walletAddress={address}
           onGoToPanel={goToPanel}
+          onConnectWallet={handleConnect}
         />
       )
     }
@@ -106,7 +169,9 @@ export default function App() {
           role={role}
           detecting={detecting}
           wrongNetwork={wrongNetwork}
+          walletAddress={address}
           onGoToPanel={goToPanel}
+          onConnectWallet={handleConnect}
         />
       )
     }
@@ -132,8 +197,24 @@ export default function App() {
         onShowPublic={goToConsulta}
         onShowPanel={goToPanel}
         onConnect={handleConnect}
+        needsMobileWallet={needsMobileWallet}
+        connectionMode={connectionMode}
         onDisconnect={disconnect}
       />
+
+      {!connected && !restoring && connectionMode !== 'injected' ? (
+        <div className="wallet-hint-shell">
+          <MobileWalletHint
+            mode={connectionMode}
+            onOpenMetaMask={openInMetaMaskApp}
+            onConnect={handleConnect}
+            onInstallExtension={openMetaMaskInstall}
+            connecting={connecting}
+            pairingUri={pairingUri}
+            connectError={connectError}
+          />
+        </div>
+      ) : null}
 
       <RuntimeStrip
         connected={connected}

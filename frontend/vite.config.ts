@@ -10,6 +10,6 @@ export default defineConfig({
     strictPort: true,
   },
   optimizeDeps: {
-    include: ['qrcode'],
+    include: ['qrcode', '@metamask/connect-evm'],
   },
 })

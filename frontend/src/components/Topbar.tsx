@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Role } from '../hooks/useCarPass'
 import { ROLE_BADGE_CLASS, ROLE_LABELS } from '../domain/carpass/roles'
+import type { WalletConnectionMode } from '../lib/ethereumProvider'
 import { shortAddress } from '../hooks/useWallet'
 import { CarPassLogoMark } from './CarPassLogo'
 
@@ -11,6 +12,8 @@ type TopbarProps = {
   role: Role | null
   detecting: boolean
   showPublic: boolean
+  needsMobileWallet?: boolean
+  connectionMode?: WalletConnectionMode
   onGoHome: () => void
   onShowPublic: () => void
   onShowPanel: () => void
@@ -93,6 +96,8 @@ export function Topbar({
   role,
   detecting,
   showPublic,
+  needsMobileWallet = false,
+  connectionMode = 'injected',
   onGoHome,
   onShowPublic,
   onShowPanel,
@@ -104,6 +109,21 @@ export function Topbar({
   const consultaActive = showPublic || !walletLinked
   const walletStatus = !walletLinked ? 'neutral' : wrongNetwork ? 'warn' : 'ok'
   const showRoleChip = Boolean(panelActive && role && role !== 'none' && !detecting)
+  const walletActionLabel = connected
+    ? shortAddress(address)
+    : needsMobileWallet
+      ? 'Abrir MetaMask'
+      : connectionMode === 'desktop-install'
+        ? 'Instalar wallet'
+        : 'Conectar wallet'
+
+  function handleWalletClick() {
+    if (connected) {
+      onShowPanel()
+      return
+    }
+    onConnect()
+  }
 
   const operarChip = (() => {
     if (!walletLinked || !connected) return undefined
@@ -159,13 +179,17 @@ export function Topbar({
           <button
             type="button"
             className={`btn-wallet btn-wallet--${walletStatus} ${connected ? 'connected' : ''}`}
-            onClick={connected ? onShowPanel : onConnect}
+            onClick={handleWalletClick}
             title={
               wrongNetwork
                 ? 'Red incorrecta — cambia a Sepolia en MetaMask'
                 : connected
                   ? 'Ir al panel operativo'
-                  : 'Conectar MetaMask'
+                  : needsMobileWallet
+                    ? 'Abrir CarPass en MetaMask mobile'
+                    : connectionMode === 'desktop-install'
+                      ? 'Instalar MetaMask para conectar'
+                      : 'Conectar MetaMask'
             }
           >
             {!connected ? null : (
@@ -175,7 +199,7 @@ export function Topbar({
               <WalletIcon />
             </span>
             <span className="btn-wallet-label">
-              {connected ? shortAddress(address) : 'Conectar wallet'}
+              {walletActionLabel}
             </span>
           </button>
         </div>

@@ -25,6 +25,9 @@ import { VinQrScanner } from '../components/VinQrScanner'
 import { PublicContractBar } from '../components/PublicContractBar'
 import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
+import { MobileStartCard } from '../components/MobileStartCard'
+import { MobileOperativeCta } from '../components/MobileOperativeCta'
+import { MobileLinkBanner } from '../components/MobileLinkBanner'
 import { VinRelayDisplay } from '../components/VinRelayDisplay'
 import { VehiclePassportQr } from '../components/VehiclePassportQr'
 import type { Role } from '../hooks/useCarPass'
@@ -37,8 +40,10 @@ import {
   clearVinFromUrl,
   getVinFromLocation,
   isCompanionScanMode,
+  getRememberedWalletHint,
 } from '../lib/companionUrl'
 import { setPendingOperativeVin } from '../lib/operativeVinBridge'
+import { getAppSessionFromUrl, syncAppSessionUrl } from '../lib/appSessionUrl'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type TimelineEvent =
@@ -294,7 +299,9 @@ type PublicViewProps = {
   role?: Role | null
   detecting?: boolean
   wrongNetwork?: boolean
-  onGoToPanel?: () => void
+  walletAddress?: string
+  onGoToPanel?: (vin?: string) => void
+  onConnectWallet?: () => void
 }
 
 export function PublicView({
@@ -303,7 +310,9 @@ export function PublicView({
   role = null,
   detecting = false,
   wrongNetwork = false,
+  walletAddress = '',
   onGoToPanel,
+  onConnectWallet,
 }: PublicViewProps) {
   const [vin, setVin] = useState('')
   const [qrOpen, setQrOpen] = useState(false)
@@ -318,7 +327,10 @@ export function PublicView({
   })
   const lookup = usePublicVehicleLookup()
   const { data, error, loading, loadingVin } = lookup
+  const isMobile = isMobileDevice()
   const showPhoneCompanion = connected && !wrongNetwork && prefersPhoneCompanion()
+  const canScanFromSearch = isMobile || (connected && !wrongNetwork)
+  const companionOperative = Boolean(role && role !== 'none')
 
   useEffect(() => {
     const urlVin = getVinFromLocation()
@@ -326,6 +338,10 @@ export function PublicView({
     setVin(urlVin)
     clearVinFromUrl()
     void lookup.search(urlVin)
+  }, [])
+
+  useEffect(() => {
+    getRememberedWalletHint()
   }, [])
 
   useEffect(() => {
@@ -376,8 +392,21 @@ export function PublicView({
 
   function handleGoToPanel() {
     const vinToCarry = data?.info.vin || (isValidVin(vin) ? vin : '')
-    if (vinToCarry) setPendingOperativeVin(vinToCarry)
-    onGoToPanel?.()
+    if (vinToCarry) {
+      setPendingOperativeVin(vinToCarry)
+      syncAppSessionUrl({ vin: vinToCarry, wantsPanel: true })
+    }
+    onGoToPanel?.(vinToCarry || undefined)
+  }
+
+  function handleContinueOnPhone(detectedVin: string) {
+    setPendingOperativeVin(detectedVin)
+    syncAppSessionUrl({ vin: detectedVin, wantsPanel: true })
+    setRelayVin(null)
+    setVin(detectedVin)
+    void buscar(detectedVin)
+    if (connected) onGoToPanel?.(detectedVin)
+    else onConnectWallet?.()
   }
 
   function openLocalScanner() {
@@ -398,6 +427,9 @@ export function PublicView({
   function handleQrDetected(detectedVin: string) {
     if (role && role !== 'none') {
       setPendingOperativeVin(detectedVin)
+      syncAppSessionUrl({ vin: detectedVin, wantsPanel: true })
+    } else {
+      syncAppSessionUrl({ vin: detectedVin, wantsPanel: false })
     }
     if (isMobileDevice() && companionSession) {
       setRelayVin(detectedVin)
@@ -427,6 +459,10 @@ export function PublicView({
             </p>
           </header>
 
+          {isMobile && getRememberedWalletHint() ? (
+            <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />
+          ) : null}
+
           {connected ? (
             <ConnectedWalletStrip
               role={role}
@@ -440,7 +476,19 @@ export function PublicView({
           ) : null}
 
           {showPhoneCompanion && !relayVin ? (
-            <PhoneCompanionCard onReceiveFromPhone={openReceiveScanner} />
+            <PhoneCompanionCard
+              onReceiveFromPhone={openReceiveScanner}
+              operative={companionOperative}
+              walletAddress={walletAddress}
+            />
+          ) : null}
+
+          {isMobile && !relayVin ? (
+            <MobileStartCard
+              connected={connected}
+              onScan={openLocalScanner}
+              onConnectWallet={onConnectWallet}
+            />
           ) : null}
 
           {relayVin ? (
@@ -457,13 +505,16 @@ export function PublicView({
                 setQrReceiveMode(false)
                 setQrOpen(true)
               }}
+              onContinueOnPhone={
+                companionOperative || getAppSessionFromUrl().wantsPanel ? handleContinueOnPhone : undefined
+              }
             />
           ) : null}
 
           <PublicContractBar connected={connected} />
 
           <section className="pv-search-panel" aria-label="Busqueda por VIN">
-            <div className={`vin-search-bar ${connected ? 'vin-search-bar--with-qr' : ''}`}>
+            <div className={`vin-search-bar ${canScanFromSearch ? 'vin-search-bar--with-qr' : ''}`}>
               <span className="vin-search-bar__icon" aria-hidden>
                 <SearchIcon />
               </span>
@@ -481,7 +532,7 @@ export function PublicView({
                 spellCheck={false}
                 aria-label="Numero VIN"
               />
-              {connected && !wrongNetwork ? (
+              {canScanFromSearch ? (
                 <button
                   type="button"
                   className="vin-search-bar__qr"
@@ -617,7 +668,23 @@ export function PublicView({
         </div>
         <SealQualityCard data={data} />
 
-        {connected && onGoToPanel && (!role || role === 'none') ? (
+        {isMobile && getRememberedWalletHint() ? (
+          <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />
+        ) : null}
+
+        {isMobile ? (
+          <MobileOperativeCta
+            vin={data.info.vin}
+            connected={connected}
+            role={role}
+            detecting={detecting}
+            wrongNetwork={wrongNetwork}
+            onGoToPanel={handleGoToPanel}
+            onConnectWallet={onConnectWallet}
+          />
+        ) : null}
+
+        {connected && onGoToPanel && (!role || role === 'none') && !isMobile ? (
           <button type="button" className="pv-connected-banner__btn pv-connected-banner__btn--inline" onClick={handleGoToPanel}>
             Operar este vehículo (panel por rol)
           </button>
