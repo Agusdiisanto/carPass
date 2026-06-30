@@ -15,6 +15,9 @@ type VehiclePassportQrProps = {
   connected?: boolean
   role?: Role | null
   onGoToPanel?: () => void
+  size?: number
+  /** Ficha pública: layout compacto optimizado para mostrar en taller. */
+  variant?: 'default' | 'featured' | 'flip'
 }
 
 function LinkIcon() {
@@ -44,6 +47,16 @@ function DownloadIcon() {
   )
 }
 
+function StickerIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M6 3h9l3 3v15H6z" />
+      <path d="M15 3v3h3" />
+      <path d="M9 13h6M9 17h4" />
+    </svg>
+  )
+}
+
 function PanelIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -55,14 +68,31 @@ function PanelIcon() {
   )
 }
 
-function StickerIcon() {
+function CheckIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M6 3h9l3 3v15H6z" />
-      <path d="M15 3v3h3" />
-      <path d="M9 13h6M9 17h4" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+      <path d="M20 6L9 17l-5-5" />
     </svg>
   )
+}
+
+function WarnIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M12 9v4M12 17h.01" />
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    </svg>
+  )
+}
+
+type ToolbarAction = 'link' | 'vin' | 'qr' | 'sticker' | 'panel'
+
+const FEEDBACK_LABELS: Record<ToolbarAction, string> = {
+  qr: 'QR descargado',
+  sticker: 'Sticker listo',
+  link: 'Enlace copiado',
+  vin: 'VIN copiado',
+  panel: 'Abriendo panel',
 }
 
 export function VehiclePassportQr({
@@ -74,9 +104,15 @@ export function VehiclePassportQr({
   connected = false,
   role = null,
   onGoToPanel,
+  size,
+  variant = 'default',
 }: VehiclePassportQrProps) {
+  const featured = variant === 'featured'
+  const flip = variant === 'flip'
+  const qrSize = size ?? (flip ? 132 : featured ? 148 : 204)
+
   const [dataUrl, setDataUrl] = useState('')
-  const [copied, setCopied] = useState<'link' | 'vin' | null>(null)
+  const [feedback, setFeedback] = useState<ToolbarAction | null>(null)
   const [stickerOpen, setStickerOpen] = useState(false)
 
   const shareUrl = useMemo(() => buildVinRelayPayload(vin), [vin])
@@ -89,12 +125,17 @@ export function VehiclePassportQr({
   }, [shareUrl])
 
   const operativeReady = connected && role && role !== 'none' && onGoToPanel
+  const vehicleLabel = `${marca} ${modelo}`.trim()
 
-  async function copyText(text: string, kind: 'link' | 'vin') {
+  function flash(action: ToolbarAction) {
+    setFeedback(action)
+    window.setTimeout(() => setFeedback(null), 2000)
+  }
+
+  async function copyText(text: string, action: ToolbarAction) {
     try {
       await navigator.clipboard.writeText(text)
-      setCopied(kind)
-      window.setTimeout(() => setCopied(null), 2000)
+      flash(action)
     } catch {
       // clipboard no disponible.
     }
@@ -106,70 +147,128 @@ export function VehiclePassportQr({
     anchor.href = dataUrl
     anchor.download = `carpass-${vin}.png`
     anchor.click()
+    flash('qr')
   }
 
   return (
-    <section className="passport-qr" aria-label="QR del pasaporte vehicular">
-      <div className="passport-qr__glow" aria-hidden />
+    <section
+      className={`passport-qr${featured ? ' passport-qr--featured' : ''}${flip ? ' passport-qr--flip' : ''}`}
+      aria-label={`QR pasaporte ${vin}`}
+    >
+      <article className="passport-qr__card">
+        {!featured && !flip ? (
+          <header className="passport-qr__head">
+            <span className="passport-qr__head-label">Pasaporte digital</span>
+            {localhostOnly ? (
+              <span className="passport-qr__localhost" title="Localhost: configurá VITE_PUBLIC_APP_URL">
+                <WarnIcon />
+              </span>
+            ) : null}
+          </header>
+        ) : null}
 
-      <div className="passport-qr__head">
-        <p className="passport-qr__eyebrow">Pasaporte digital</p>
-        <h3 className="passport-qr__title">QR para operar</h3>
-        <p className="passport-qr__subtitle">
-          {marca} {modelo} · escanealo en taller, aseguradora o línea de VTV sin tipear el VIN.
-        </p>
-      </div>
-
-      <div className="passport-qr__body">
-        <div className="passport-qr__qr-wrap">
-          <div className="passport-qr__qr-ring" aria-hidden />
-          <QrCodeImage
-            value={shareUrl}
-            size={212}
-            label={`QR pasaporte CarPass ${vin}`}
-            onDataUrl={setDataUrl}
-          />
-        </div>
-
-        <div className="passport-qr__meta">
-          <code className="passport-qr__vin">{vin}</code>
-          <p className="passport-qr__hint">
-            El código abre la ficha pública y permite identificar el vehículo en los paneles operativos.
-          </p>
-
-          {localhostOnly ? (
-            <p className="passport-qr__warn">
-              Estás en localhost: para escanear desde otro dispositivo configurá <code>VITE_PUBLIC_APP_URL</code>.
-            </p>
-          ) : null}
-
-          <div className="passport-qr__actions">
-            <button type="button" className="passport-qr__btn" onClick={() => copyText(shareUrl, 'link')}>
-              <LinkIcon />
-              {copied === 'link' ? 'Enlace copiado' : 'Copiar enlace'}
-            </button>
-            <button type="button" className="passport-qr__btn" onClick={() => copyText(vin, 'vin')}>
-              <CopyIcon />
-              {copied === 'vin' ? 'VIN copiado' : 'Copiar VIN'}
-            </button>
-            <button type="button" className="passport-qr__btn" disabled={!dataUrl} onClick={downloadQr}>
-              <DownloadIcon />
-              Descargar QR
-            </button>
-            <button type="button" className="passport-qr__btn passport-qr__btn--accent" onClick={() => setStickerOpen(true)}>
-              <StickerIcon />
-              Sticker A6
-            </button>
+        <div className="passport-qr__body">
+          <div className="passport-qr__frame">
+            <span className="passport-qr__corner passport-qr__corner--tl" aria-hidden />
+            <span className="passport-qr__corner passport-qr__corner--tr" aria-hidden />
+            <span className="passport-qr__corner passport-qr__corner--bl" aria-hidden />
+            <span className="passport-qr__corner passport-qr__corner--br" aria-hidden />
+            <div className="passport-qr__canvas">
+              <QrCodeImage
+                value={shareUrl}
+                size={qrSize}
+                label={`QR pasaporte CarPass ${vin}`}
+                onDataUrl={setDataUrl}
+              />
+            </div>
           </div>
 
-          {operativeReady ? (
-            <button type="button" className="passport-qr__panel-btn" onClick={onGoToPanel}>
-              <PanelIcon />
-              Cargar en panel · {ROLE_LABELS[role]}
-            </button>
+          {featured ? (
+            <div className="passport-qr__meta">
+              <p className="passport-qr__vehicle">{vehicleLabel}</p>
+              <p className="passport-qr__hint">Mostrá este código en taller o VTV</p>
+              {localhostOnly ? (
+                <p className="passport-qr__localhost-note">
+                  <WarnIcon />
+                  Localhost: no escaneable desde otro dispositivo
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
-      </div>
+
+        {feedback ? (
+          <p className="passport-qr__toast" role="status" aria-live="polite">
+            {FEEDBACK_LABELS[feedback]}
+          </p>
+        ) : null}
+
+        <footer className="passport-qr__dock" role="toolbar" aria-label="Acciones del QR">
+          <button
+            type="button"
+            className={`passport-qr__dock-btn${feedback === 'qr' ? ' passport-qr__dock-btn--ok' : ''}`}
+            disabled={!dataUrl}
+            title="Descargar PNG"
+            aria-label="Descargar QR en PNG"
+            onClick={downloadQr}
+          >
+            {feedback === 'qr' ? <CheckIcon /> : <DownloadIcon />}
+          </button>
+
+          <button
+            type="button"
+            className={`passport-qr__dock-btn passport-qr__dock-btn--accent${feedback === 'sticker' ? ' passport-qr__dock-btn--ok' : ''}`}
+            title="Sticker A6"
+            aria-label="Descargar sticker A6 para imprimir"
+            onClick={() => {
+              setStickerOpen(true)
+              flash('sticker')
+            }}
+          >
+            <StickerIcon />
+          </button>
+
+          <span className="passport-qr__dock-sep" aria-hidden />
+
+          <button
+            type="button"
+            className={`passport-qr__dock-btn${feedback === 'link' ? ' passport-qr__dock-btn--ok' : ''}`}
+            title="Copiar enlace"
+            aria-label="Copiar enlace del pasaporte"
+            onClick={() => copyText(shareUrl, 'link')}
+          >
+            {feedback === 'link' ? <CheckIcon /> : <LinkIcon />}
+          </button>
+
+          <button
+            type="button"
+            className={`passport-qr__dock-btn${feedback === 'vin' ? ' passport-qr__dock-btn--ok' : ''}`}
+            title="Copiar VIN"
+            aria-label={`Copiar VIN ${vin}`}
+            onClick={() => copyText(vin, 'vin')}
+          >
+            {feedback === 'vin' ? <CheckIcon /> : <CopyIcon />}
+          </button>
+
+          {operativeReady ? (
+            <>
+              <span className="passport-qr__dock-sep" aria-hidden />
+              <button
+                type="button"
+                className="passport-qr__dock-btn passport-qr__dock-btn--panel"
+                title={`Panel · ${ROLE_LABELS[role]}`}
+                aria-label={`Cargar en panel de ${ROLE_LABELS[role]}`}
+                onClick={() => {
+                  flash('panel')
+                  onGoToPanel?.()
+                }}
+              >
+                <PanelIcon />
+              </button>
+            </>
+          ) : null}
+        </footer>
+      </article>
 
       <VehiclePassportStickerModal
         open={stickerOpen}

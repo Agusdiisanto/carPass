@@ -32,7 +32,7 @@ export function buildAppContinuationUrl(options: {
   basePath?: string
 }): string {
   const origin = getPublicAppOrigin()
-  const path = options.basePath ?? (typeof window !== 'undefined' ? window.location.pathname : '/') || '/'
+  const path = options.basePath ?? ((typeof window !== 'undefined' ? window.location.pathname : '/') || '/')
   const url = new URL(path, origin)
 
   if (options.vin) {

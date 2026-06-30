@@ -1,8 +1,8 @@
-import { normalizeVin } from './formatters'
+import { coerceString, normalizeVin } from './formatters'
 import { isValidVin } from './validators'
 
-export function extractVinFromQrPayload(raw: string): string | null {
-  const trimmed = raw.trim()
+export function extractVinFromQrPayload(raw: unknown): string | null {
+  const trimmed = coerceString(raw).trim()
   if (!trimmed) return null
 
   const direct = normalizeVin(trimmed)

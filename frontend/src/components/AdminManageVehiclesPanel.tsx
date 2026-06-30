@@ -1,20 +1,15 @@
 import { useState } from 'react'
-import { useCarPass } from '../hooks/useCarPass'
-import type { VehiculoInfo } from '../hooks/useCarPass'
+import { VehiclePassportQr } from './VehiclePassportQr'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVehicleInfo, isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
-import { OperativeShell } from '../components/OperativeShell'
-import { VehiclePassportQr } from '../components/VehiclePassportQr'
+import { useCarPass } from '../hooks/useCarPass'
+import type { VehiculoInfo } from '../hooks/useCarPass'
 
-export function RegistradorView({
-  address,
-  wrongNetwork = false,
-  embedded = false,
-}: {
+type AdminManageVehiclesPanelProps = {
   address: string
-  wrongNetwork?: boolean
-  embedded?: boolean
-}) {
+}
+
+export function AdminManageVehiclesPanel({ address }: AdminManageVehiclesPanelProps) {
   const { busy, message, registrarVehiculo } = useCarPass()
 
   const [vin, setVin] = useState('8AJBA3CD4E1234567')
@@ -24,27 +19,34 @@ export function RegistradorView({
   const [color, setColor] = useState('Blanco')
   const [propietario, setPropietario] = useState(address)
   const [pasaporteEmitido, setPasaporteEmitido] = useState<VehiculoInfo | null>(null)
+
   const propietarioValido = !propietario || isValidWalletAddress(propietario)
-  const info: VehiculoInfo = { vin, marca, modelo, anio, color }
-  const formularioValido = isValidVehicleInfo(info) && propietarioValido
+  const vehicleInfo: VehiculoInfo = { vin, marca, modelo, anio, color }
+  const vehicleFormValido = isValidVehicleInfo(vehicleInfo) && propietarioValido
 
   async function handleRegistrar() {
-    const ok = await registrarVehiculo(info, propietario || address)
-    if (ok) setPasaporteEmitido({ ...info })
+    const ok = await registrarVehiculo(vehicleInfo, propietario || address)
+    if (ok) setPasaporteEmitido({ ...vehicleInfo })
   }
 
-  const panels = (
+  return (
+    <>
       <div className="panels-grid single">
-        <section className="panel">
-          <h3>Registrar vehiculo</h3>
-          <p className="panel-desc">Alta del pasaporte digital en la blockchain. El primer service deberá superar 0 km.</p>
+        <section className="panel panel--admin-form">
+          <div className="panel-step">
+            <span className="panel-step__num">1</span>
+            <div>
+              <h3>Registrar vehículo</h3>
+              <p className="panel-desc">Emití el pasaporte digital vinculado al VIN en Sepolia con 0 km iniciales.</p>
+            </div>
+          </div>
 
           <label className="field">
             VIN <span className="field-hint">17 caracteres</span>
             <input maxLength={17} value={vin} onChange={(e) => setVin(normalizeVin(e.target.value))} />
-            {vin.length > 0 && (
+            {vin.length > 0 ? (
               <span className={`vin-count ${isValidVin(vin) ? 'ok' : 'warn'}`}>{vin.length}/17</span>
-            )}
+            ) : null}
           </label>
 
           <div className="two-col">
@@ -64,14 +66,14 @@ export function RegistradorView({
             Propietario
             <input placeholder={address} value={propietario} onChange={(e) => setPropietario(e.target.value)} />
           </label>
-          {!propietarioValido && <p className="error-msg">Direccion invalida</p>}
+          {!propietarioValido ? <p className="error-msg">Dirección inválida</p> : null}
 
           <button
             className="btn-primary full-width"
-            disabled={!formularioValido || Boolean(busy)}
+            disabled={!vehicleFormValido || Boolean(busy)}
             onClick={handleRegistrar}
           >
-            {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehiculo'}
+            {busy === 'Registrando vehiculo' ? 'Registrando...' : 'Registrar vehículo'}
           </button>
 
           {pasaporteEmitido ? (
@@ -89,27 +91,7 @@ export function RegistradorView({
           ) : null}
         </section>
       </div>
-  )
-
-  if (embedded) {
-    return (
-      <>
-        {panels}
-        {message ? <div className="status-bar">{message}</div> : null}
-      </>
-    )
-  }
-
-  return (
-    <OperativeShell
-      role="registrador"
-      title="Panel de concesionaria"
-      description="Registrá vehículos nuevos. Cada pasaporte se emite con kilometraje inicial 0 km."
-      address={address}
-      wrongNetwork={wrongNetwork}
-      footer={message ? <div className="status-bar">{message}</div> : null}
-    >
-      {panels}
-    </OperativeShell>
+      {message ? <div className="status-bar">{message}</div> : null}
+    </>
   )
 }

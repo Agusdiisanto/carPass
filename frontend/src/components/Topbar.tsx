@@ -226,7 +226,6 @@ function TopbarNavItems({
   consultaActive,
   panelActive,
   walletLinked,
-  connected,
   wrongNetwork,
   showRoleChip,
   role,
@@ -238,7 +237,6 @@ function TopbarNavItems({
   consultaActive: boolean
   panelActive: boolean
   walletLinked: boolean
-  connected: boolean
   wrongNetwork: boolean
   showRoleChip: boolean
   role: Role | null

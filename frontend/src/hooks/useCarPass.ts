@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
 import { parseContractError } from '../domain/carpass/errors'
+import { normalizeSelloCalidad, normalizeVehiculoInfo } from '../domain/carpass/vehicleInfo'
 import type { Role } from '../domain/carpass/roles'
 import { getPublicProvider } from '../lib/publicProvider'
 
@@ -217,23 +218,23 @@ export function useCarPass() {
   async function getVehiculoPorVin(vin: string) {
     const c = await getReadContract()
     const tokenId: bigint = await c.vinToTokenId(vin)
-    const info: VehiculoInfo = await c.getVehiculoInfo(tokenId)
+    const info = normalizeVehiculoInfo(await c.getVehiculoInfo(tokenId))
     return { tokenId, info }
   }
 
   async function getHistorial(tokenId: bigint) {
     const c = await getReadContract()
-    const [services, siniestros, vtv, sello] = await Promise.all([
+    const [services, siniestros, vtv, selloRaw] = await Promise.all([
       c.getHistorialService(tokenId) as Promise<RegistroService[]>,
       c.getHistorialSiniestros(tokenId) as Promise<RegistroSiniestro[]>,
       c.getHistorialVTV(tokenId) as Promise<RegistroVTV[]>,
-      c.getSelloCalidad(tokenId) as Promise<[number, string]>,
+      c.getSelloCalidad(tokenId),
     ])
     return {
       services,
       siniestros,
       vtv,
-      sello: { estado: Number(sello[0]), motivo: sello[1] } as SelloCalidad,
+      sello: normalizeSelloCalidad(selloRaw),
     }
   }
 
@@ -260,7 +261,7 @@ export function useCarPass() {
         try {
           const owner: string = await readContract.ownerOf(tokenId)
           if (owner.toLowerCase() !== address.toLowerCase()) return null
-          const info: VehiculoInfo = await readContract.getVehiculoInfo(tokenId)
+          const info = normalizeVehiculoInfo(await readContract.getVehiculoInfo(tokenId))
           return { tokenId, info }
         } catch {
           return null

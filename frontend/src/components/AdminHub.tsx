@@ -1,16 +1,13 @@
-import { PhoneCompanionCard } from './PhoneCompanionCard'
 import {
-  ADMIN_SECTIONS,
-  type AdminSectionKey,
+  ADMIN_MANAGE_SECTIONS,
+  type AdminManageSectionKey,
 } from '../domain/carpass/adminSections'
-import { ROLE_BADGE_CLASS } from '../domain/carpass/roles'
 import { shortAddress } from '../hooks/useWallet'
 
 type AdminHubProps = {
   address: string
   wrongNetwork: boolean
-  onOpen: (key: AdminSectionKey) => void
-  onReceiveFromPhone: () => void
+  onOpen: (key: AdminManageSectionKey) => void
 }
 
 function StatIcon() {
@@ -21,12 +18,11 @@ function StatIcon() {
   )
 }
 
-export function AdminHub({ address, wrongNetwork, onOpen, onReceiveFromPhone }: AdminHubProps) {
-  const coreSections = ADMIN_SECTIONS.filter((section) => section.key !== 'hub' && section.group === 'core')
-  const operativeSections = ADMIN_SECTIONS.filter((section) => section.group === 'operative')
+export function AdminHub({ address, wrongNetwork, onOpen }: AdminHubProps) {
+  const manageCards = ADMIN_MANAGE_SECTIONS.filter((section) => section.key !== 'hub')
 
   return (
-    <div className="admin-hub">
+    <div className="admin-hub admin-hub--manage">
       <section className="admin-hub__stats" aria-label="Estado del panel">
         <div className="admin-hub__stat">
           <StatIcon />
@@ -51,9 +47,6 @@ export function AdminHub({ address, wrongNetwork, onOpen, onReceiveFromPhone }: 
             <button type="button" className="admin-hub__quick-btn" onClick={() => onOpen('roles')}>
               Roles
             </button>
-            <button type="button" className="admin-hub__quick-btn" onClick={() => onOpen('taller')}>
-              Taller
-            </button>
           </div>
         </div>
       </section>
@@ -61,27 +54,20 @@ export function AdminHub({ address, wrongNetwork, onOpen, onReceiveFromPhone }: 
       <section className="admin-hub__intro">
         <h3 className="admin-hub__title">Centro de administración</h3>
         <p className="admin-hub__text">
-          Gestioná el ecosistema CarPass, asigná permisos y probá cada vista operativa sin salir del panel.
+          Gestioná pasaportes digitales y permisos del ecosistema. Para simular taller, aseguradora o VTV, usá el
+          flujo <strong>Operar por rol</strong>.
         </p>
       </section>
-
-      {!wrongNetwork ? (
-        <PhoneCompanionCard
-          onReceiveFromPhone={onReceiveFromPhone}
-          operative
-          walletAddress={address}
-        />
-      ) : null}
 
       <div className="admin-hub__group">
         <p className="admin-hub__group-label">Gestión central</p>
         <div className="admin-hub__grid">
-          {coreSections.map((section) => (
+          {manageCards.map((section) => (
             <button
               key={section.key}
               type="button"
               className="admin-hub__card admin-hub__card--core"
-              onClick={() => onOpen(section.key)}
+              onClick={() => onOpen(section.key as AdminManageSectionKey)}
             >
               <span className="admin-hub__card-head">
                 <span className="admin-hub__card-title">{section.label}</span>
@@ -97,30 +83,6 @@ export function AdminHub({ address, wrongNetwork, onOpen, onReceiveFromPhone }: 
               ) : null}
             </button>
           ))}
-        </div>
-      </div>
-
-      <div className="admin-hub__group">
-        <p className="admin-hub__group-label">Vistas operativas</p>
-        <div className="admin-hub__grid admin-hub__grid--operative">
-          {operativeSections.map((section) => {
-            const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
-            return (
-              <button
-                key={section.key}
-                type="button"
-                className={`admin-hub__card admin-hub__card--${roleClass}`}
-                onClick={() => onOpen(section.key)}
-              >
-                <span className="admin-hub__card-head">
-                  <span className={`admin-hub__pill admin-hub__pill--${roleClass}`}>{section.shortLabel}</span>
-                  <span className="admin-hub__card-cta">Abrir vista</span>
-                </span>
-                <span className="admin-hub__card-title">{section.label}</span>
-                <span className="admin-hub__card-desc">{section.description}</span>
-              </button>
-            )
-          })}
         </div>
       </div>
     </div>

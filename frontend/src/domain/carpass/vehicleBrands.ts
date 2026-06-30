@@ -51,13 +51,16 @@ export const BRAND_STYLES: Record<string, BrandStyle> = {
   },
 }
 
-export function getBrandStyle(marca: string): BrandStyle {
-  return BRAND_STYLES[marca] ?? {
+import { coerceString } from './formatters'
+
+export function getBrandStyle(marca: unknown): BrandStyle {
+  const name = coerceString(marca)
+  return BRAND_STYLES[name] ?? {
     ...DEFAULT_BRAND,
-    abbr: marca.slice(0, 1).toUpperCase() || '?',
+    abbr: name.slice(0, 1).toUpperCase() || '?',
   }
 }
 
-export function getBrandIconSlug(marca: string): string | undefined {
-  return BRAND_STYLES[marca]?.iconSlug
+export function getBrandIconSlug(marca: unknown): string | undefined {
+  return BRAND_STYLES[coerceString(marca)]?.iconSlug
 }

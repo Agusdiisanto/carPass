@@ -1,5 +1,6 @@
 import snapshotData from '../../data/publicVehicleSnapshot.json'
 import { DEMO_VEHICLES, findDemoVehicle } from './demoVehicles'
+import { normalizeSelloCalidad, normalizeVehiculoInfo } from './vehicleInfo'
 import type {
   RegistroService,
   RegistroSiniestro,
@@ -138,7 +139,7 @@ export function getSnapshotVehicle(vin: string, fallbackReason: string | null): 
     syncedAt: snapshot.syncedAt,
     fallbackReason,
     tokenId: BigInt(vehicle.tokenId),
-    info: vehicle.info,
+    info: normalizeVehiculoInfo(vehicle.info),
     services: vehicle.services.map((record) => ({
       timestamp: BigInt(record.timestamp),
       tipoServicio: record.tipoServicio,
@@ -160,7 +161,7 @@ export function getSnapshotVehicle(vin: string, fallbackReason: string | null): 
       vencimiento: BigInt(record.vencimiento),
       planta: record.planta,
     })),
-    sello: vehicle.sello,
+    sello: normalizeSelloCalidad(vehicle.sello),
     ownerAddress: vehicle.ownerAddress,
   }
 }

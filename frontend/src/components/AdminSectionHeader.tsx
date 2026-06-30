@@ -1,10 +1,14 @@
-import { getAdminSection, type AdminSectionKey } from '../domain/carpass/adminSections'
+import {
+  getAdminSection,
+  type AdminPath,
+  type AdminSectionKey,
+} from '../domain/carpass/adminSections'
 import { ROLE_BADGE_CLASS, ROLE_LABELS } from '../domain/carpass/roles'
 
 type AdminSectionHeaderProps = {
+  path: AdminPath
   sectionKey: AdminSectionKey
   onBack: () => void
-  showPreviewNote?: boolean
 }
 
 function ChevronIcon() {
@@ -15,16 +19,17 @@ function ChevronIcon() {
   )
 }
 
-export function AdminSectionHeader({ sectionKey, onBack, showPreviewNote = false }: AdminSectionHeaderProps) {
+export function AdminSectionHeader({ path, sectionKey, onBack }: AdminSectionHeaderProps) {
   const section = getAdminSection(sectionKey)
   const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
   const previewRole = section.roleClass ? ROLE_LABELS[section.roleClass] : null
+  const pathLabel = path === 'manage' ? 'Administración' : 'Operar por rol'
 
   return (
     <header className={`admin-section-header admin-section-header--${roleClass}`}>
       <nav className="admin-breadcrumb" aria-label="Ubicación en el panel">
         <button type="button" className="admin-breadcrumb__link" onClick={onBack}>
-          Inicio
+          {pathLabel}
         </button>
         <ChevronIcon />
         <span className="admin-breadcrumb__current">{section.label}</span>
@@ -33,18 +38,12 @@ export function AdminSectionHeader({ sectionKey, onBack, showPreviewNote = false
       <div className="admin-section-header__row">
         <div className="admin-section-header__copy">
           <div className="admin-section-header__badges">
-            {section.group === 'operative' ? (
-              <span className={`admin-section-header__pill admin-section-header__pill--${roleClass}`}>
-                Vista operativa
-              </span>
-            ) : (
-              <span className="admin-section-header__pill admin-section-header__pill--admin">
-                Administración
-              </span>
-            )}
+            <span className={`admin-section-header__pill admin-section-header__pill--${path === 'manage' ? 'admin' : roleClass}`}>
+              {path === 'manage' ? 'Gestión' : 'Flujo operativo'}
+            </span>
             {previewRole ? (
               <span className={`admin-section-header__pill admin-section-header__pill--ghost admin-section-header__pill--${roleClass}`}>
-                Rol real: {previewRole}
+                Rol: {previewRole}
               </span>
             ) : null}
           </div>
@@ -53,9 +52,10 @@ export function AdminSectionHeader({ sectionKey, onBack, showPreviewNote = false
         </div>
       </div>
 
-      {showPreviewNote ? (
+      {path === 'operate' && sectionKey !== 'inicio' ? (
         <p className="admin-section-header__note" role="note">
-          Estás previsualizando la interfaz operativa. Las transacciones on-chain exigen el rol correspondiente en tu wallet.
+          Estás en el flujo operativo completo de este rol. Si la wallet admin no tiene el permiso on-chain, asignalo
+          desde Administración → Roles.
         </p>
       ) : null}
     </header>

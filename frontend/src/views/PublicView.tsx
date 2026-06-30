@@ -7,7 +7,7 @@ import {
   type DemoCatalogFilterState,
 } from '../domain/carpass/demoCatalogFilters'
 import { DemoCatalogFilters } from '../components/DemoCatalogFilters'
-import { formatDate, formatKm, formatMonthYear, formatNumber, normalizeVin } from '../domain/carpass/formatters'
+import { formatDate, formatKm, formatMonthYear, formatNumber } from '../domain/carpass/formatters'
 import { getReadSourceDetail, type PublicVehicleRecord } from '../domain/carpass/publicRead'
 import {
   SINIESTRO_GRAVEDAD_CLASSES,
@@ -16,25 +16,25 @@ import {
   VTV_RESULT_LABELS,
 } from '../domain/carpass/eventLabels'
 import { getSealUi } from '../domain/carpass/seal'
+import { safeUpperCase } from '../domain/carpass/formatters'
 import { isValidVin } from '../domain/carpass/validators'
 import { DemoVehicleCard } from '../components/DemoVehicleCard'
 import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
 import { BrandLogo } from '../components/BrandLogo'
-import { VehicleMediaHero } from '../components/VehicleMediaHero'
-import { VinQrScanner } from '../components/VinQrScanner'
+import { VehiclePassportFlipHero } from '../components/VehiclePassportFlipHero'
 import { PublicContractBar } from '../components/PublicContractBar'
 import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
-import { MobileStartCard } from '../components/MobileStartCard'
+import { VinSearchPanel } from '../components/VinSearchPanel'
 import { MobileOperativeCta } from '../components/MobileOperativeCta'
 import { MobileLinkBanner } from '../components/MobileLinkBanner'
 import { VinRelayDisplay } from '../components/VinRelayDisplay'
-import { VehiclePassportQr } from '../components/VehiclePassportQr'
+import { VinQrScanner } from '../components/VinQrScanner'
 import type { Role } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 import { usePublicVehicleLookup } from '../hooks/usePublicVehicleLookup'
 import { useVehicleMedia } from '../hooks/useVehicleMedia'
-import { isMobileDevice, prefersPhoneCompanion } from '../lib/deviceProfile'
+import { isMobileDevice, prefersPhoneCompanion, canUseCameraScan } from '../lib/deviceProfile'
 import {
   clearCompanionFromUrl,
   clearVinFromUrl,
@@ -100,7 +100,17 @@ function ShareIcon() {
 
 // ── Vehicle hero card ─────────────────────────────────────────────────────────
 
-function VehicleHeroCard({ data }: { data: Historial }) {
+function VehicleHeroCard({
+  data,
+  connected = false,
+  role = null,
+  onGoToPanel,
+}: {
+  data: Historial
+  connected?: boolean
+  role?: Role | null
+  onGoToPanel?: () => void
+}) {
   const lastKm = data.services.length
     ? Number(data.services[data.services.length - 1].kilometraje)
     : 0
@@ -114,20 +124,26 @@ function VehicleHeroCard({ data }: { data: Historial }) {
 
   return (
     <div className="vh-card">
-      <VehicleMediaHero
+      <VehiclePassportFlipHero
+        key={data.info.vin}
         marca={data.info.marca}
         modelo={data.info.modelo}
         anio={data.info.anio}
         imageUrl={media.imageUrl}
         loading={media.loading}
-        sealLabel={sello.label.toUpperCase()}
+        sealLabel={safeUpperCase(sello.label)}
         sealClassName={sello.cls}
+        vin={data.info.vin}
+        color={data.info.color}
+        connected={connected}
+        role={role}
+        onGoToPanel={onGoToPanel}
       />
       <div className="vh-top vh-top--with-media">
         <div className="vh-identity">
           <div className="vh-identity-row">
             <BrandLogo marca={data.info.marca} size="sm" />
-            <p className="vh-brand">{data.info.marca.toUpperCase()}</p>
+            <p className="vh-brand">{safeUpperCase(data.info.marca)}</p>
           </div>
           <h2 className="vh-model">{data.info.modelo}</h2>
           <p className="vh-meta">
@@ -195,7 +211,7 @@ function SealQualityCard({ data }: { data: Historial }) {
       <div className="sqc-body">
         <div className={`sqc-icon-wrap ${info.cls}`}>{info.icon}</div>
         <div>
-          <p className="sqc-label">{info.label.toUpperCase()}</p>
+          <p className="sqc-label">{safeUpperCase(info.label)}</p>
           <p className="sqc-reason">{sello.motivo}</p>
         </div>
       </div>
@@ -276,20 +292,6 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
   )
 }
 
-function QrIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="3" width="7" height="7" />
-      <rect x="14" y="3" width="7" height="7" />
-      <rect x="3" y="14" width="7" height="7" />
-      <path d="M14 14h2v2h-2z" />
-      <path d="M20 14h1v1h-1z" />
-      <path d="M14 20h2v1h-2z" />
-      <path d="M20 17h1v4h-1z" />
-      <path d="M17 20h4v1h-4z" />
-    </svg>
-  )
-}
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -333,7 +335,7 @@ export function PublicView({
   const { data, error, loading, loadingVin } = lookup
   const isMobile = isMobileDevice()
   const showPhoneCompanion = connected && !wrongNetwork && prefersPhoneCompanion()
-  const canScanFromSearch = isMobile || (connected && !wrongNetwork)
+  const canScanFromSearch = isMobile || canUseCameraScan() || (connected && !wrongNetwork)
   const companionOperative = Boolean(role && role !== 'none')
 
   useEffect(() => {
@@ -459,9 +461,30 @@ export function PublicView({
             <p className="pv-eyebrow">Pasaporte vehicular verificable</p>
             <h1 className="pv-title">Consulta el historial y sello de calidad</h1>
             <p className="pv-subtitle">
-              Busca por VIN o explora los casos demo cargados en Sepolia. Sin wallet, sin friccion.
+              {isMobile
+                ? 'Escaneá el QR del pasaporte o buscá por VIN. Sin wallet para consultar.'
+                : 'Busca por VIN o explora los casos demo cargados en Sepolia. Sin wallet, sin friccion.'}
             </p>
           </header>
+
+          {!relayVin ? (
+            <VinSearchPanel
+              vin={vin}
+              loading={loading}
+              error={error}
+              scanEnabled={canScanFromSearch}
+              scanFirst={isMobile}
+              vinMatchDemo={vinMatchDemo}
+              onVinChange={(value) => {
+                setVin(value)
+                lookup.reset()
+              }}
+              onSearch={() => buscar()}
+              onScan={openLocalScanner}
+              onConnectWallet={onConnectWallet}
+              showWalletLink={isMobile && !walletLinked}
+            />
+          ) : null}
 
           {isMobile && getRememberedWalletHint() ? (
             <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />
@@ -488,14 +511,6 @@ export function PublicView({
             />
           ) : null}
 
-          {isMobile && !relayVin ? (
-            <MobileStartCard
-              connected={connected}
-              onScan={openLocalScanner}
-              onConnectWallet={onConnectWallet}
-            />
-          ) : null}
-
           {relayVin ? (
             <VinRelayDisplay
               vin={relayVin}
@@ -517,60 +532,6 @@ export function PublicView({
           ) : null}
 
           <PublicContractBar connected={connected} />
-
-          <section className="pv-search-panel" aria-label="Busqueda por VIN">
-            <div className={`vin-search-bar ${canScanFromSearch ? 'vin-search-bar--with-qr' : ''}`}>
-              <span className="vin-search-bar__icon" aria-hidden>
-                <SearchIcon />
-              </span>
-              <input
-                className="vin-search-bar__input"
-                maxLength={17}
-                placeholder="Ingresa el VIN de 17 caracteres"
-                value={vin}
-                onChange={(e) => {
-                  setVin(normalizeVin(e.target.value))
-                  lookup.reset()
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && buscar()}
-                autoComplete="off"
-                spellCheck={false}
-                aria-label="Numero VIN"
-              />
-              {canScanFromSearch ? (
-                <button
-                  type="button"
-                  className="vin-search-bar__qr"
-                  onClick={openLocalScanner}
-                  title="Escanear QR de VIN"
-                  aria-label="Escanear QR de VIN"
-                >
-                  <QrIcon />
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className="vin-search-bar__btn"
-                disabled={!isValidVin(vin) || loading}
-                onClick={() => buscar()}
-              >
-                {loading ? '...' : 'Buscar'}
-              </button>
-            </div>
-
-            <div className="pv-search-meta">
-              <span className={`pv-vin-counter ${isValidVin(vin) ? 'ready' : ''}`}>
-                {vin.length}/17 caracteres
-              </span>
-              {vinMatchDemo ? (
-                <span className="pv-vin-hint">
-                  Coincide con {vinMatchDemo.marca} {vinMatchDemo.modelo} demo
-                </span>
-              ) : null}
-            </div>
-
-            {error ? <p className="pv-error">{error}</p> : null}
-          </section>
 
           {loading ? (
             <SearchLoadingSkeleton />
@@ -659,13 +620,8 @@ export function PublicView({
       <div className="pv-results-shell">
       <div className="pv-content">
         <div className="pv-passport-layout">
-          <VehicleHeroCard data={data} />
-          <VehiclePassportQr
-            vin={data.info.vin}
-            marca={data.info.marca}
-            modelo={data.info.modelo}
-            anio={data.info.anio}
-            color={data.info.color}
+          <VehicleHeroCard
+            data={data}
             connected={connected}
             role={role}
             onGoToPanel={connected ? handleGoToPanel : undefined}

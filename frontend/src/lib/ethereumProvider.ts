@@ -108,9 +108,9 @@ export function waitForEthereumProvider(timeoutMs = 900): Promise<EthereumProvid
 export function getWalletConnectHint(mode: WalletConnectionMode): string {
   if (mode === 'injected') return ''
   if (mode === 'mobile-deeplink') {
-    return 'En Safari o Chrome mobile, abrí CarPass desde el navegador integrado de MetaMask para conectar la wallet.'
+    return 'Safari y Chrome mobile pueden consultar VIN sin wallet. Para firmar altas, services o transferencias, abri CarPass dentro del navegador de MetaMask mobile.'
   }
-  return 'Conectá con MetaMask mobile escaneando el QR, o instalá la extensión en este navegador.'
+  return 'Conecta con MetaMask mobile escaneando el QR desde la app MetaMask, o instala la extension en este navegador.'
 }
 
 export const METAMASK_DOWNLOAD_URL = 'https://metamask.io/download/'

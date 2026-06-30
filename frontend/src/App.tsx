@@ -14,6 +14,7 @@ import { MobileWalletHint } from './components/MobileWalletHint'
 import { RuntimeStrip } from './components/RuntimeStrip'
 import { RoleDetectingState } from './components/RoleDetectingState'
 import { Topbar } from './components/Topbar'
+import { isMobileDevice } from './lib/deviceProfile'
 import { clearOperativeSessionFromUrl, getAppSessionFromUrl, syncAppSessionUrl } from './lib/appSessionUrl'
 import { setPendingOperativeVin } from './lib/operativeVinBridge'
 
@@ -158,7 +159,7 @@ export default function App() {
           walletAddress={address}
           onGoToPanel={goToPanel}
           onConnectWallet={handleConnect}
-          onSwitchNetwork={switchToSepolia}
+          onSwitchNetwork={() => { void switchToSepolia() }}
         />
       )
     }
@@ -177,7 +178,7 @@ export default function App() {
           walletAddress={address}
           onGoToPanel={goToPanel}
           onConnectWallet={handleConnect}
-          onSwitchNetwork={switchToSepolia}
+          onSwitchNetwork={() => { void switchToSepolia() }}
         />
       )
     }
@@ -191,7 +192,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${showPublic ? ' app-shell--public' : ''}`}>
       <Topbar
         connected={connected}
         walletLinked={walletLinked}
@@ -209,7 +210,7 @@ export default function App() {
         onDisconnect={disconnect}
       />
 
-      {!walletLinked && !restoring && connectionMode !== 'injected' ? (
+      {!walletLinked && !restoring && connectionMode !== 'injected' && !(isMobileDevice() && showPublic) ? (
         <div className="wallet-hint-shell">
           <MobileWalletHint
             mode={connectionMode}

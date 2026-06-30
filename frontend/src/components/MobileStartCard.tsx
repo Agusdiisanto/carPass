@@ -50,21 +50,21 @@ export function MobileStartCard({ connected, onScan, onConnectWallet }: MobileSt
           <span className="mobile-start-card__step-num">1</span>
           <div>
             <strong>Escanear</strong>
-            <span>QR del pasaporte o VIN — no hace falta wallet.</span>
+            <span>QR del pasaporte o VIN. No hace falta wallet para consultar.</span>
           </div>
         </li>
         <li>
           <span className="mobile-start-card__step-num">2</span>
           <div>
             <strong>Operar</strong>
-            <span>{isIosSafari() ? 'Abrí en MetaMask mobile.' : 'Conectá MetaMask.'}</span>
+            <span>{isIosSafari() ? 'Safari no firma: abri en MetaMask mobile.' : 'Conecta MetaMask para firmar.'}</span>
           </div>
         </li>
         <li>
           <span className="mobile-start-card__step-num">3</span>
           <div>
             <strong>Misma cuenta</strong>
-            <span>Usá la wallet que tenés en la PC.</span>
+            <span>Usa la wallet que tenes en la PC.</span>
           </div>
         </li>
       </ol>

@@ -1,14 +1,20 @@
 import type { ReactNode } from 'react'
 import {
-  ADMIN_SECTIONS,
+  ADMIN_MANAGE_SECTIONS,
+  ADMIN_OPERATIVE_SECTIONS,
+  type AdminManageSectionKey,
+  type AdminOperativeSectionKey,
+  type AdminPath,
   type AdminSection,
-  type AdminSectionKey,
 } from '../domain/carpass/adminSections'
 import { ROLE_BADGE_CLASS } from '../domain/carpass/roles'
 
 type AdminNavProps = {
-  active: AdminSectionKey
-  onChange: (key: AdminSectionKey) => void
+  path: AdminPath
+  manageActive: AdminManageSectionKey
+  operativeActive: AdminOperativeSectionKey
+  onManageChange: (key: AdminManageSectionKey) => void
+  onOperativeChange: (key: AdminOperativeSectionKey) => void
 }
 
 function HubIcon() {
@@ -80,8 +86,20 @@ function UserIcon() {
   )
 }
 
-const SECTION_ICONS: Record<AdminSectionKey, () => ReactNode> = {
+function GridIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+
+const SECTION_ICONS: Record<string, () => ReactNode> = {
   hub: HubIcon,
+  inicio: GridIcon,
   vehiculos: CarIcon,
   roles: ShieldIcon,
   propietario: UserIcon,
@@ -99,17 +117,17 @@ function NavItem({
 }: {
   section: AdminSection
   active: boolean
-  onChange: (key: AdminSectionKey) => void
+  onChange: () => void
   variant: 'sidebar' | 'rail'
 }) {
-  const Icon = SECTION_ICONS[section.key]
+  const Icon = SECTION_ICONS[section.key] ?? HubIcon
   const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
 
   return (
     <button
       type="button"
       className={`admin-nav__item admin-nav__item--${variant} ${active ? 'active' : ''} admin-nav__item--${roleClass}`}
-      onClick={() => onChange(section.key)}
+      onClick={onChange}
       aria-current={active ? 'page' : undefined}
     >
       <span className="admin-nav__icon" aria-hidden>
@@ -125,55 +143,47 @@ function NavItem({
   )
 }
 
-function NavGroup({
-  title,
-  sections,
-  active,
-  onChange,
-  variant,
-}: {
-  title: string
-  sections: AdminSection[]
-  active: AdminSectionKey
-  onChange: (key: AdminSectionKey) => void
-  variant: 'sidebar' | 'rail'
-}) {
+export function AdminNav({
+  path,
+  manageActive,
+  operativeActive,
+  onManageChange,
+  onOperativeChange,
+}: AdminNavProps) {
+  const sections = path === 'manage' ? ADMIN_MANAGE_SECTIONS : ADMIN_OPERATIVE_SECTIONS
+  const activeKey = path === 'manage' ? manageActive : operativeActive
+  const pathLabel = path === 'manage' ? 'Administración' : 'Operar por rol'
+
   return (
-    <div className="admin-nav__group">
-      <p className="admin-nav__group-title">{title}</p>
-      <div className="admin-nav__group-items">
+    <>
+      <nav className={`admin-nav admin-nav--sidebar admin-nav--${path}`} aria-label={`Secciones de ${pathLabel}`}>
+        <p className="admin-nav__path-label">{pathLabel}</p>
+        <div className="admin-nav__group-items">
+          {sections.map((section) => (
+            <NavItem
+              key={section.key}
+              section={section}
+              active={activeKey === section.key}
+              onChange={() => {
+                if (path === 'manage') onManageChange(section.key as AdminManageSectionKey)
+                else onOperativeChange(section.key as AdminOperativeSectionKey)
+              }}
+              variant="sidebar"
+            />
+          ))}
+        </div>
+      </nav>
+
+      <nav className={`admin-nav admin-nav--rail admin-nav--${path}`} aria-label={`Secciones de ${pathLabel}`}>
         {sections.map((section) => (
           <NavItem
             key={section.key}
             section={section}
-            active={active === section.key}
-            onChange={onChange}
-            variant={variant}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export function AdminNav({ active, onChange }: AdminNavProps) {
-  const coreSections = ADMIN_SECTIONS.filter((section) => section.group === 'core')
-  const operativeSections = ADMIN_SECTIONS.filter((section) => section.group === 'operative')
-
-  return (
-    <>
-      <nav className="admin-nav admin-nav--sidebar" aria-label="Secciones de administración">
-        <NavGroup title="Administración" sections={coreSections} active={active} onChange={onChange} variant="sidebar" />
-        <NavGroup title="Vistas operativas" sections={operativeSections} active={active} onChange={onChange} variant="sidebar" />
-      </nav>
-
-      <nav className="admin-nav admin-nav--rail" aria-label="Secciones de administración">
-        {ADMIN_SECTIONS.map((section) => (
-          <NavItem
-            key={section.key}
-            section={section}
-            active={active === section.key}
-            onChange={onChange}
+            active={activeKey === section.key}
+            onChange={() => {
+              if (path === 'manage') onManageChange(section.key as AdminManageSectionKey)
+              else onOperativeChange(section.key as AdminOperativeSectionKey)
+            }}
             variant="rail"
           />
         ))}

@@ -117,7 +117,7 @@ export function VehicleIdentifyPanel({
   }
 
   function handleManualSearch() {
-    void runSearch()
+    void runSearch(lookup.vin)
   }
 
   if (lookup.found && lookup.vehicle) {

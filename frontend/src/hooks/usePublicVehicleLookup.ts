@@ -6,6 +6,7 @@ import {
   getSnapshotVehicle,
   type PublicVehicleRecord,
 } from '../domain/carpass/publicRead'
+import { normalizeVehiculoInfo, normalizeSelloCalidad } from '../domain/carpass/vehicleInfo'
 import { isValidVin } from '../domain/carpass/validators'
 import { useCarPass } from './useCarPass'
 
@@ -69,8 +70,11 @@ export function usePublicVehicleLookup() {
 
     return createLiveVehicleRecord({
       tokenId,
-      info,
-      ...historial,
+      info: normalizeVehiculoInfo(info),
+      services: historial.services,
+      siniestros: historial.siniestros,
+      vtv: historial.vtv,
+      sello: normalizeSelloCalidad(historial.sello),
       ownerAddress,
     })
   }

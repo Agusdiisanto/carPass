@@ -12,6 +12,7 @@ Operadores que conectan wallet desde notebook no pueden escanear comodamente el 
 - Recepcion del VIN en notebook escaneando la pantalla del celular.
 - Deteccion de dispositivo para mostrar el companion solo en desktop.
 - Deep link `?vin=` para completar la busqueda al recibir el codigo.
+- QR fisico/post-alta del vehiculo como URL publica con `?vin=`.
 
 No incluye WalletConnect generico ni sync realtime cross-device. La conexion wallet por QR en desktop (MetaMask Connect) vive en EPIC-09; este epic solo reutiliza `VITE_PUBLIC_APP_URL` y flujos mobile.
 
@@ -35,6 +36,7 @@ No incluye WalletConnect generico ni sync realtime cross-device. La conexion wal
 - Al detectar VIN en modo companion, mostrar relay antes de buscar en celular.
 - El escaner de recepcion en desktop reutiliza `VinQrScanner` existente.
 - `?vin=` en URL dispara busqueda al cargar la vista publica.
+- El QR descargado por la concesionaria puede ser escaneado por taller, aseguradora o VTV para precargar el VIN.
 
 ## Errores esperados
 
@@ -50,6 +52,7 @@ No incluye WalletConnect generico ni sync realtime cross-device. La conexion wal
 - Desktop "Recibir VIN del celular": escaner lee QR del celular y busca el vehiculo.
 - Mobile normal sin companion: flujo de escaneo directo sin relay obligatorio.
 - Visitante sin wallet en desktop: no ve card companion (solo consulta manual/demo).
+- Tras el alta de un vehiculo, la concesionaria puede descargar el QR del pasaporte para pegarlo en el auto o entregarlo impreso.
 
 ## Impacto en ABI
 

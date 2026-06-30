@@ -1,15 +1,19 @@
 import type { OperativeRole } from './roles'
 import { ROLE_CAPABILITIES, ROLE_DESCRIPTIONS, ROLE_LABELS } from './roles'
 
-export type AdminSectionKey =
-  | 'hub'
-  | 'vehiculos'
-  | 'roles'
+export type AdminPath = 'manage' | 'operate'
+
+export type AdminManageSectionKey = 'hub' | 'vehiculos' | 'roles'
+
+export type AdminOperativeSectionKey =
+  | 'inicio'
   | 'propietario'
   | 'registrador'
   | 'taller'
   | 'aseguradora'
   | 'inspector'
+
+export type AdminSectionKey = AdminManageSectionKey | AdminOperativeSectionKey
 
 export type AdminSectionGroup = 'core' | 'operative'
 
@@ -19,18 +23,26 @@ export type AdminSection = {
   shortLabel: string
   description: string
   group: AdminSectionGroup
+  path: AdminPath
   roleClass?: OperativeRole
   accentClass?: string
   capabilities?: string[]
 }
 
-export const ADMIN_SECTIONS: AdminSection[] = [
+export const ADMIN_PATH_STORAGE_KEY = 'carpass_admin_path'
+export const ADMIN_MANAGE_SECTION_STORAGE_KEY = 'carpass_admin_manage_section'
+export const ADMIN_OPERATIVE_SECTION_STORAGE_KEY = 'carpass_admin_operative_section'
+/** @deprecated Migración desde layout anterior */
+export const ADMIN_SECTION_STORAGE_KEY = 'carpass_admin_section'
+
+export const ADMIN_MANAGE_SECTIONS: AdminSection[] = [
   {
     key: 'hub',
     label: 'Inicio',
     shortLabel: 'Inicio',
-    description: 'Resumen del panel y acceso rápido a cada área.',
+    description: 'Resumen de administración, red y accesos de gestión.',
     group: 'core',
+    path: 'manage',
   },
   {
     key: 'vehiculos',
@@ -38,6 +50,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     shortLabel: 'Vehículos',
     description: 'Emití pasaportes digitales vinculados al VIN con 0 km iniciales.',
     group: 'core',
+    path: 'manage',
     capabilities: ['VIN único', 'Propietario inicial', 'Sepolia testnet'],
   },
   {
@@ -46,16 +59,29 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     shortLabel: 'Roles',
     description: 'Asigná o revocá permisos operativos a wallets del ecosistema.',
     group: 'core',
+    path: 'manage',
     capabilities: ['Concesionaria', 'Taller', 'Aseguradora', 'Inspector VTV'],
+  },
+]
+
+export const ADMIN_OPERATIVE_SECTIONS: AdminSection[] = [
+  {
+    key: 'inicio',
+    label: 'Elegir operación',
+    shortLabel: 'Inicio',
+    description: 'Seleccioná el rol operativo que querés simular o usar.',
+    group: 'operative',
+    path: 'operate',
   },
   {
     key: 'propietario',
     label: 'Cambio de dominio',
     shortLabel: 'Dominio',
-    description: 'Listado on-chain, busqueda por VIN/QR y transferencia de dominio CarPass para wallets propietarias.',
+    description: 'Listado on-chain, búsqueda por VIN/QR y transferencia de dominio CarPass.',
     group: 'operative',
+    path: 'operate',
     accentClass: 'none',
-    capabilities: ['Listado automatico', 'VIN/QR', 'Transferencia NFT'],
+    capabilities: ['Listado automático', 'VIN/QR', 'Transferencia NFT'],
   },
   {
     key: 'registrador',
@@ -63,6 +89,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     shortLabel: 'Concesionaria',
     description: ROLE_DESCRIPTIONS.registrador,
     group: 'operative',
+    path: 'operate',
     roleClass: 'registrador',
     capabilities: ROLE_CAPABILITIES.registrador,
   },
@@ -72,6 +99,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     shortLabel: 'Taller',
     description: ROLE_DESCRIPTIONS.mecanico,
     group: 'operative',
+    path: 'operate',
     roleClass: 'mecanico',
     capabilities: ROLE_CAPABILITIES.mecanico,
   },
@@ -81,6 +109,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     shortLabel: 'Aseguradora',
     description: ROLE_DESCRIPTIONS.aseguradora,
     group: 'operative',
+    path: 'operate',
     roleClass: 'aseguradora',
     capabilities: ROLE_CAPABILITIES.aseguradora,
   },
@@ -90,33 +119,102 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     shortLabel: 'Inspector VTV',
     description: ROLE_DESCRIPTIONS.inspector,
     group: 'operative',
+    path: 'operate',
     roleClass: 'inspector',
     capabilities: ROLE_CAPABILITIES.inspector,
   },
 ]
 
-export const ADMIN_SECTION_STORAGE_KEY = 'carpass_admin_section'
+export const ADMIN_SECTIONS: AdminSection[] = [...ADMIN_MANAGE_SECTIONS, ...ADMIN_OPERATIVE_SECTIONS]
 
-export function readAdminSection(): AdminSectionKey {
+const LEGACY_OPERATIVE_KEYS = new Set<AdminOperativeSectionKey>([
+  'propietario',
+  'registrador',
+  'taller',
+  'aseguradora',
+  'inspector',
+])
+
+function isManageSectionKey(key: string): key is AdminManageSectionKey {
+  return key === 'hub' || key === 'vehiculos' || key === 'roles'
+}
+
+function isOperativeSectionKey(key: string): key is AdminOperativeSectionKey {
+  return ADMIN_OPERATIVE_SECTIONS.some((section) => section.key === key)
+}
+
+export function readAdminPath(): AdminPath {
   try {
-    const raw = localStorage.getItem(ADMIN_SECTION_STORAGE_KEY)
-    if (raw && ADMIN_SECTIONS.some((section) => section.key === raw)) {
-      return raw as AdminSectionKey
+    const stored = localStorage.getItem(ADMIN_PATH_STORAGE_KEY)
+    if (stored === 'manage' || stored === 'operate') return stored
+
+    const legacy = localStorage.getItem(ADMIN_SECTION_STORAGE_KEY)
+    if (legacy && LEGACY_OPERATIVE_KEYS.has(legacy as AdminOperativeSectionKey)) {
+      return 'operate'
     }
+  } catch {
+    // localStorage no disponible.
+  }
+  return 'manage'
+}
+
+export function saveAdminPath(path: AdminPath) {
+  try {
+    localStorage.setItem(ADMIN_PATH_STORAGE_KEY, path)
+  } catch {
+    // localStorage no disponible.
+  }
+}
+
+export function readAdminManageSection(): AdminManageSectionKey {
+  try {
+    const raw = localStorage.getItem(ADMIN_MANAGE_SECTION_STORAGE_KEY)
+    if (raw && isManageSectionKey(raw)) return raw
+
+    const legacy = localStorage.getItem(ADMIN_SECTION_STORAGE_KEY)
+    if (legacy && isManageSectionKey(legacy)) return legacy
   } catch {
     // localStorage no disponible.
   }
   return 'hub'
 }
 
-export function saveAdminSection(key: AdminSectionKey) {
+export function saveAdminManageSection(key: AdminManageSectionKey) {
   try {
-    localStorage.setItem(ADMIN_SECTION_STORAGE_KEY, key)
+    localStorage.setItem(ADMIN_MANAGE_SECTION_STORAGE_KEY, key)
+  } catch {
+    // localStorage no disponible.
+  }
+}
+
+export function readAdminOperativeSection(): AdminOperativeSectionKey {
+  try {
+    const raw = localStorage.getItem(ADMIN_OPERATIVE_SECTION_STORAGE_KEY)
+    if (raw && isOperativeSectionKey(raw)) return raw
+
+    const legacy = localStorage.getItem(ADMIN_SECTION_STORAGE_KEY)
+    if (legacy && LEGACY_OPERATIVE_KEYS.has(legacy as AdminOperativeSectionKey)) {
+      return legacy as AdminOperativeSectionKey
+    }
+  } catch {
+    // localStorage no disponible.
+  }
+  return 'inicio'
+}
+
+export function saveAdminOperativeSection(key: AdminOperativeSectionKey) {
+  try {
+    localStorage.setItem(ADMIN_OPERATIVE_SECTION_STORAGE_KEY, key)
   } catch {
     // localStorage no disponible.
   }
 }
 
 export function getAdminSection(key: AdminSectionKey): AdminSection {
-  return ADMIN_SECTIONS.find((section) => section.key === key) ?? ADMIN_SECTIONS[0]
+  return ADMIN_SECTIONS.find((section) => section.key === key) ?? ADMIN_MANAGE_SECTIONS[0]
+}
+
+export function operativeSectionToRole(key: AdminOperativeSectionKey): OperativeRole | null {
+  const section = getAdminSection(key)
+  return section.roleClass ?? null
 }

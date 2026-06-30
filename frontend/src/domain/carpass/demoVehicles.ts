@@ -1,4 +1,5 @@
 import type { SealState } from './seal'
+import { safeUpperCase } from './formatters'
 
 export type DemoVehicle = {
   vin: string
@@ -98,8 +99,8 @@ export function findDemoVehicle(vin: string): DemoVehicle | undefined {
   return DEMO_VEHICLES.find((vehicle) => vehicle.vin === vin)
 }
 
-export function filterDemoVehicles(query: string): DemoVehicle[] {
-  const q = query.trim().toUpperCase()
+export function filterDemoVehicles(query: unknown): DemoVehicle[] {
+  const q = safeUpperCase(query).trim()
   if (!q) return DEMO_VEHICLES
 
   return DEMO_VEHICLES.filter((vehicle) => {
