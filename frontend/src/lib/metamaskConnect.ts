@@ -98,3 +98,18 @@ export async function disconnectMetaMaskConnect(): Promise<void> {
     // Sesión ya revocada o cliente no inicializado.
   }
 }
+
+export async function switchConnectToSepolia(): Promise<void> {
+  const client = await getConnectClient()
+  const sepoliaHex = getSepoliaChainHex()
+  await client.switchChain({
+    chainId: sepoliaHex,
+    chainConfiguration: {
+      chainId: sepoliaHex,
+      chainName: 'Sepolia',
+      nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
+      rpcUrls: [getPublicRpcUrl()],
+      blockExplorerUrls: ['https://sepolia.etherscan.io'],
+    },
+  })
+}

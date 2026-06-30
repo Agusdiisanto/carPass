@@ -57,6 +57,14 @@ export type SelloCalidad = {
   motivo: string
 }
 
+export type TransferenciaVehiculo = {
+  from: string
+  to: string
+  tokenId: bigint
+  blockNumber: number
+  txHash: string
+}
+
 function getProvider() {
   const eth = getActiveEthereum()
   if (!eth) throw new Error('MetaMask no detectado')
@@ -262,12 +270,36 @@ export function useCarPass() {
     return results.filter((r): r is { tokenId: bigint; info: VehiculoInfo } => r !== null)
   }
 
+  async function getTransferenciasVehiculo(tokenId: bigint): Promise<TransferenciaVehiculo[]> {
+    // Use MetaMask provider: public RPCs can reject historical eth_getLogs.
+    const provider = getProvider()
+    const c = new Contract(CONTRACT_ADDRESS, ABI, provider)
+    const filter = c.filters.Transfer(null, null, tokenId)
+    const events = await c.queryFilter(filter, CARPASS_DEPLOYMENT.deployBlock)
+    return events
+      .map((event) => {
+        const parsed = event as unknown as {
+          args: { from: string; to: string; tokenId: bigint }
+          blockNumber: number
+          transactionHash: string
+        }
+        return {
+          from: parsed.args.from,
+          to: parsed.args.to,
+          tokenId: parsed.args.tokenId,
+          blockNumber: parsed.blockNumber,
+          txHash: parsed.transactionHash,
+        }
+      })
+      .sort((a, b) => b.blockNumber - a.blockNumber)
+  }
+
   async function transferirVehiculo(from: string, to: string, tokenId: bigint) {
-    return run('Transfiriendo vehículo', async () => {
+    return run('Transfiriendo vehiculo', async () => {
       const c = await getSignerContract()
       const tx = await c.transferFrom(from, to, tokenId)
       await tx.wait()
-      return `Vehículo transferido a ${to.slice(0, 8)}...`
+      return `Vehiculo transferido a ${to.slice(0, 8)}...`
     })
   }
 
@@ -284,6 +316,7 @@ export function useCarPass() {
     getHistorial,
     getUltimoKm,
     getPropietario,
+    getTransferenciasVehiculo,
     transferirVehiculo,
     getMisVehiculos,
   }

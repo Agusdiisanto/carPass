@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { useWallet } from './hooks/useWallet'
+import { useWallet, expectedChainId } from './hooks/useWallet'
 import { detectRole, hasContractAddress } from './hooks/useCarPass'
 import type { Role } from './hooks/useCarPass'
 import { AdminView } from './views/AdminView'
@@ -41,6 +41,7 @@ export default function App() {
     address,
     chainId,
     connected,
+    walletLinked,
     wrongNetwork,
     restoring,
     connectionMode,
@@ -49,6 +50,7 @@ export default function App() {
     pairingUri,
     connectError,
     connect,
+    switchToSepolia,
     openInMetaMaskApp,
     openMetaMaskInstall,
     disconnect,
@@ -68,7 +70,7 @@ export default function App() {
   }
 
   function goToPanel(vin?: string) {
-    if (!connected) return
+    if (!walletLinked) return
     const sessionVin = vin ?? getAppSessionFromUrl().vin
     if (sessionVin) setPendingOperativeVin(sessionVin)
     syncAppSessionUrl({ wantsPanel: true, vin: sessionVin ?? null })
@@ -96,7 +98,7 @@ export default function App() {
     const session = getAppSessionFromUrl()
     const wantsPanel = session.wantsPanel || readPanelOpenPreference()
 
-    if (!connected) {
+    if (!walletLinked) {
       if (!session.wantsPanel) setPanelRestored(true)
       return
     }
@@ -109,10 +111,10 @@ export default function App() {
     }
 
     setPanelRestored(true)
-  }, [connected, restoring, panelRestored])
+  }, [walletLinked, restoring, panelRestored])
 
   useEffect(() => {
-    if (restoring || detecting || !connected) return
+    if (restoring || detecting || !walletLinked) return
     const session = getAppSessionFromUrl()
     if (!session.wantsPanel || !session.vin) return
     if (!role || role === 'none') return
@@ -120,18 +122,18 @@ export default function App() {
     setShowPublic(false)
     savePanelOpenPreference(true)
     setPendingOperativeVin(session.vin)
-  }, [connected, detecting, restoring, role, showPublic])
+  }, [walletLinked, detecting, restoring, role, showPublic])
 
   useEffect(() => {
-    if (restoring || detecting || !connected) return
+    if (restoring || detecting || !walletLinked) return
     const session = getAppSessionFromUrl()
     if (!session.wantsPanel) return
     if (role !== 'none') return
     setShowPublic(true)
-  }, [connected, detecting, restoring, role])
+  }, [walletLinked, detecting, restoring, role])
 
   useEffect(() => {
-    if (!connected || !hasContractAddress) {
+    if (!address || !hasContractAddress) {
       setRole(null)
       return
     }
@@ -141,20 +143,22 @@ export default function App() {
       .then(setRole)
       .catch(() => setRole('none'))
       .finally(() => setDetecting(false))
-  }, [address, connected])
+  }, [address])
 
   function renderView() {
-    if (showPublic || !connected) {
+    if (showPublic || !walletLinked) {
       return (
         <PublicView
           consultaSignal={consultaSignal}
           connected={connected}
+          walletLinked={walletLinked}
           role={role}
           detecting={detecting}
           wrongNetwork={wrongNetwork}
           walletAddress={address}
           onGoToPanel={goToPanel}
           onConnectWallet={handleConnect}
+          onSwitchNetwork={switchToSepolia}
         />
       )
     }
@@ -166,12 +170,14 @@ export default function App() {
         <PublicView
           consultaSignal={consultaSignal}
           connected={connected}
+          walletLinked={walletLinked}
           role={role}
           detecting={detecting}
           wrongNetwork={wrongNetwork}
           walletAddress={address}
           onGoToPanel={goToPanel}
           onConnectWallet={handleConnect}
+          onSwitchNetwork={switchToSepolia}
         />
       )
     }
@@ -188,6 +194,7 @@ export default function App() {
     <div className="app-shell">
       <Topbar
         connected={connected}
+        walletLinked={walletLinked}
         wrongNetwork={wrongNetwork}
         address={address}
         role={role}
@@ -202,7 +209,7 @@ export default function App() {
         onDisconnect={disconnect}
       />
 
-      {!connected && !restoring && connectionMode !== 'injected' ? (
+      {!walletLinked && !restoring && connectionMode !== 'injected' ? (
         <div className="wallet-hint-shell">
           <MobileWalletHint
             mode={connectionMode}
@@ -213,6 +220,22 @@ export default function App() {
             pairingUri={pairingUri}
             connectError={connectError}
           />
+        </div>
+      ) : null}
+
+      {walletLinked && wrongNetwork && !restoring ? (
+        <div className="wallet-hint-shell">
+          <section className="network-switch-banner" aria-label="Red incorrecta">
+            <div className="network-switch-banner__copy">
+              <p className="network-switch-banner__title">Cambiá a Sepolia para operar</p>
+              <p className="network-switch-banner__text">
+                Tu wallet está conectada pero en otra red. CarPass opera en Sepolia ({expectedChainId}).
+              </p>
+            </div>
+            <button type="button" className="network-switch-banner__btn" onClick={() => void switchToSepolia()}>
+              Cambiar a Sepolia
+            </button>
+          </section>
         </div>
       ) : null}
 

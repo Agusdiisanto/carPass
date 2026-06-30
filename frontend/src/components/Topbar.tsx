@@ -7,6 +7,7 @@ import { CarPassLogoMark } from './CarPassLogo'
 
 type TopbarProps = {
   connected: boolean
+  walletLinked?: boolean
   wrongNetwork: boolean
   address: string
   role: Role | null
@@ -91,6 +92,7 @@ function NavButton({ active, label, onClick, icon, chip, chipClass, disabled = f
 
 export function Topbar({
   connected,
+  walletLinked: walletLinkedProp,
   wrongNetwork,
   address,
   role,
@@ -104,21 +106,27 @@ export function Topbar({
   onConnect,
   onDisconnect,
 }: TopbarProps) {
-  const walletLinked = Boolean(address)
+  const walletLinked = walletLinkedProp ?? Boolean(address)
   const panelActive = walletLinked && !showPublic
   const consultaActive = showPublic || !walletLinked
-  const walletStatus = !walletLinked ? 'neutral' : wrongNetwork ? 'warn' : 'ok'
+  const walletStatus = !walletLinked ? 'neutral' : wrongNetwork ? 'warn' : connected ? 'ok' : 'warn'
   const showRoleChip = Boolean(panelActive && role && role !== 'none' && !detecting)
   const walletActionLabel = connected
     ? shortAddress(address)
-    : needsMobileWallet
-      ? 'Abrir MetaMask'
-      : connectionMode === 'desktop-install'
-        ? 'Instalar wallet'
-        : 'Conectar wallet'
+    : walletLinked && wrongNetwork
+      ? 'Red incorrecta'
+      : needsMobileWallet
+        ? 'Abrir MetaMask'
+        : connectionMode === 'desktop-install'
+          ? 'Conectar wallet'
+          : 'Conectar wallet'
 
   function handleWalletClick() {
     if (connected) {
+      onShowPanel()
+      return
+    }
+    if (walletLinked && wrongNetwork) {
       onShowPanel()
       return
     }
@@ -126,9 +134,11 @@ export function Topbar({
   }
 
   const operarChip = (() => {
-    if (!walletLinked || !connected) return undefined
+    if (!walletLinked) return undefined
     if (detecting) return '...'
+    if (wrongNetwork) return 'Red'
     if (role && role !== 'none') return ROLE_LABELS[role]
+    if (!connected) return undefined
     return 'Sin rol'
   })()
 
@@ -182,13 +192,13 @@ export function Topbar({
             onClick={handleWalletClick}
             title={
               wrongNetwork
-                ? 'Red incorrecta — cambia a Sepolia en MetaMask'
+                ? 'Red incorrecta — cambiá a Sepolia o entrá al panel'
                 : connected
                   ? 'Ir al panel operativo'
                   : needsMobileWallet
                     ? 'Abrir CarPass en MetaMask mobile'
                     : connectionMode === 'desktop-install'
-                      ? 'Instalar MetaMask para conectar'
+                      ? 'Conectar con MetaMask mobile (QR)'
                       : 'Conectar MetaMask'
             }
           >
@@ -254,7 +264,7 @@ function TopbarNavItems({
           label={operarLabel}
           onClick={onShowPanel}
           icon={<PanelNavIcon />}
-          disabled={!connected}
+          disabled={!walletLinked}
           title={
             wrongNetwork
               ? 'Cambia a Sepolia en MetaMask para operar'

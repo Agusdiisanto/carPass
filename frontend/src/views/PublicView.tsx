@@ -296,23 +296,27 @@ function QrIcon() {
 type PublicViewProps = {
   consultaSignal?: number
   connected?: boolean
+  walletLinked?: boolean
   role?: Role | null
   detecting?: boolean
   wrongNetwork?: boolean
   walletAddress?: string
   onGoToPanel?: (vin?: string) => void
   onConnectWallet?: () => void
+  onSwitchNetwork?: () => void | Promise<void>
 }
 
 export function PublicView({
   consultaSignal = 0,
   connected = false,
+  walletLinked = false,
   role = null,
   detecting = false,
   wrongNetwork = false,
   walletAddress = '',
   onGoToPanel,
   onConnectWallet,
+  onSwitchNetwork,
 }: PublicViewProps) {
   const [vin, setVin] = useState('')
   const [qrOpen, setQrOpen] = useState(false)
@@ -463,7 +467,7 @@ export function PublicView({
             <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />
           ) : null}
 
-          {connected ? (
+          {walletLinked ? (
             <ConnectedWalletStrip
               role={role}
               detecting={detecting}
@@ -472,6 +476,7 @@ export function PublicView({
               onScanQr={openLocalScanner}
               showPhoneCompanion={showPhoneCompanion}
               onReceiveFromPhone={showPhoneCompanion ? openReceiveScanner : undefined}
+              onSwitchNetwork={onSwitchNetwork}
             />
           ) : null}
 

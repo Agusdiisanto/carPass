@@ -9,6 +9,7 @@ type ConnectedWalletStripProps = {
   onScanQr: () => void
   showPhoneCompanion?: boolean
   onReceiveFromPhone?: () => void
+  onSwitchNetwork?: () => void | Promise<void>
 }
 
 function QrIcon() {
@@ -52,12 +53,28 @@ export function ConnectedWalletStrip({
   onScanQr,
   showPhoneCompanion = false,
   onReceiveFromPhone,
+  onSwitchNetwork,
 }: ConnectedWalletStripProps) {
   if (wrongNetwork) {
     return (
       <div className="wallet-strip wallet-strip--warn">
         <p className="wallet-strip__title">Red incorrecta</p>
-        <p className="wallet-strip__text">Cambiá a Sepolia en MetaMask para escanear QR y operar en CarPass.</p>
+        <p className="wallet-strip__text">
+          Cambiá a Sepolia en MetaMask para firmar transacciones. Podés entrar al panel en modo lectura.
+        </p>
+        <div className="wallet-strip__actions">
+          {onSwitchNetwork ? (
+            <button type="button" className="wallet-strip__btn wallet-strip__btn--primary" onClick={() => void onSwitchNetwork()}>
+              Cambiar a Sepolia
+            </button>
+          ) : null}
+          {onGoToPanel ? (
+            <button type="button" className="wallet-strip__btn wallet-strip__btn--ghost" onClick={onGoToPanel}>
+              <PanelIcon />
+              {role === 'admin' ? 'Ver administración' : 'Ver panel'}
+            </button>
+          ) : null}
+        </div>
       </div>
     )
   }

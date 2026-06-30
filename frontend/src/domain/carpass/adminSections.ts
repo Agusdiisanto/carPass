@@ -50,12 +50,12 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   },
   {
     key: 'propietario',
-    label: 'Mis vehículos',
-    shortLabel: 'Propietario',
-    description: 'Listado on-chain y transferencia de titularidad para wallets propietarias.',
+    label: 'Cambio de dominio',
+    shortLabel: 'Dominio',
+    description: 'Listado on-chain, busqueda por VIN/QR y transferencia de dominio CarPass para wallets propietarias.',
     group: 'operative',
     accentClass: 'none',
-    capabilities: ['Listado automático', 'Transferencia NFT'],
+    capabilities: ['Listado automatico', 'VIN/QR', 'Transferencia NFT'],
   },
   {
     key: 'registrador',
