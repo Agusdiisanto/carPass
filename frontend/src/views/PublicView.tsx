@@ -31,7 +31,7 @@ import { MobileLinkBanner } from '../components/MobileLinkBanner'
 import { VinRelayDisplay } from '../components/VinRelayDisplay'
 import { VinQrScanner } from '../components/VinQrScanner'
 import type { Role } from '../hooks/useCarPass'
-import { shortAddress } from '../hooks/useWallet'
+import { shortAddress, isSameWalletAddress } from '../hooks/useWallet'
 import { usePublicVehicleLookup } from '../hooks/usePublicVehicleLookup'
 import { useVehicleMedia } from '../hooks/useVehicleMedia'
 import { isMobileDevice, prefersPhoneCompanion, canUseCameraScan } from '../lib/deviceProfile'
@@ -95,21 +95,6 @@ function ShareIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-    </svg>
-  )
-}
-
-function QrIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="3" width="7" height="7" />
-      <rect x="14" y="3" width="7" height="7" />
-      <rect x="3" y="14" width="7" height="7" />
-      <path d="M14 14h2v2h-2z" />
-      <path d="M20 14h1v1h-1z" />
-      <path d="M14 20h2v1h-2z" />
-      <path d="M20 17h1v4h-1z" />
-      <path d="M17 20h4v1h-4z" />
     </svg>
   )
 }
@@ -326,6 +311,7 @@ type PublicViewProps = {
   onGoToPanel?: (vin?: string) => void
   onGoToMisAutos?: () => void
   onGoToMisAutosWithVin?: (vin: string) => void
+  onGoToTransfer?: (vin: string) => void
   onConnectWallet?: () => void
   onSwitchNetwork?: () => void | Promise<void>
 }
@@ -343,6 +329,7 @@ export function PublicView({
   onGoToPanel,
   onGoToMisAutos,
   onGoToMisAutosWithVin,
+  onGoToTransfer,
   onConnectWallet,
   onSwitchNetwork,
 }: PublicViewProps) {
@@ -369,6 +356,9 @@ export function PublicView({
   const showPhoneCompanion = connected && !wrongNetwork && prefersPhoneCompanion()
   const canScanFromSearch = isMobile || canUseCameraScan()
   const companionOperative = Boolean(role && role !== 'none')
+  const walletEsPropietaria = Boolean(
+    connected && walletAddress && data && isSameWalletAddress(walletAddress, data.ownerAddress),
+  )
 
   useEffect(() => {
     const urlVin = getVinFromLocation()
@@ -641,17 +631,6 @@ export function PublicView({
             >
               <ShareIcon />
             </button>
-            {canScanFromSearch ? (
-              <button
-                type="button"
-                className="pv-share-btn pv-share-btn--qr"
-                onClick={openLocalScanner}
-                title="Escanear otro QR"
-                aria-label="Escanear QR de otro vehículo"
-              >
-                <QrIcon />
-              </button>
-            ) : null}
           </div>
         </div>
       </div>
@@ -679,13 +658,25 @@ export function PublicView({
             role={role}
             detecting={detecting}
             wrongNetwork={wrongNetwork}
+            isOwner={walletEsPropietaria}
             onGoToPanel={handleGoToPanel}
             onGoToMisAutos={onGoToMisAutos}
+            onGoToTransfer={onGoToTransfer}
             onConnectWallet={onConnectWallet}
           />
         ) : null}
 
-        {connected && onGoToMisAutosWithVin && role === 'none' && !isMobile ? (
+        {connected && walletEsPropietaria && onGoToTransfer && !isMobile ? (
+          <button
+            type="button"
+            className="pv-connected-banner__btn pv-connected-banner__btn--inline"
+            onClick={() => onGoToTransfer(data.info.vin)}
+          >
+            Transferir
+          </button>
+        ) : null}
+
+        {connected && !walletEsPropietaria && onGoToMisAutosWithVin && role === 'none' && !isMobile ? (
           <button
             type="button"
             className="pv-connected-banner__btn pv-connected-banner__btn--inline"
@@ -695,7 +686,7 @@ export function PublicView({
           </button>
         ) : null}
 
-        {connected && onGoToPanel && role && role !== 'none' && !isMobile ? (
+        {connected && !walletEsPropietaria && onGoToPanel && role && role !== 'none' && !isMobile ? (
           <button type="button" className="pv-connected-banner__btn pv-connected-banner__btn--inline" onClick={handleGoToPanel}>
             Operar este vehículo
           </button>

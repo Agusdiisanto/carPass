@@ -14,6 +14,7 @@ type AppNavRailProps = {
   onMisAutos?: () => void
   onPanel?: () => void
   onViewContextVin?: (vin: string) => void
+  onTransferContextVin?: (vin: string) => void
 }
 
 function SearchIcon() {
@@ -101,6 +102,7 @@ export function AppNavRail({
   onMisAutos,
   onPanel,
   onViewContextVin,
+  onTransferContextVin,
 }: AppNavRailProps) {
   if (!walletLinked) return null
 
@@ -138,7 +140,15 @@ export function AppNavRail({
         <div className="app-nav-rail__context">
           <span className="app-nav-rail__context-label">VIN activo</span>
           <code className="app-nav-rail__context-vin">{contextVin}</code>
-          {onViewContextVin ? (
+          {active === 'mis-autos' && onTransferContextVin ? (
+            <button
+              type="button"
+              className="app-nav-rail__context-link"
+              onClick={() => onTransferContextVin(contextVin)}
+            >
+              Transferir
+            </button>
+          ) : onViewContextVin ? (
             <button
               type="button"
               className="app-nav-rail__context-link"

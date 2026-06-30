@@ -20,24 +20,6 @@ type VehiclePassportQrProps = {
   variant?: 'default' | 'featured' | 'flip'
 }
 
-function LinkIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  )
-}
-
-function CopyIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <rect x="9" y="9" width="13" height="13" rx="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  )
-}
-
 function DownloadIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -85,13 +67,11 @@ function WarnIcon() {
   )
 }
 
-type ToolbarAction = 'link' | 'vin' | 'qr' | 'sticker' | 'panel'
+type ToolbarAction = 'qr' | 'sticker' | 'panel'
 
 const FEEDBACK_LABELS: Record<ToolbarAction, string> = {
   qr: 'QR descargado',
   sticker: 'Sticker listo',
-  link: 'Enlace copiado',
-  vin: 'VIN copiado',
   panel: 'Abriendo panel',
 }
 
@@ -130,15 +110,6 @@ export function VehiclePassportQr({
   function flash(action: ToolbarAction) {
     setFeedback(action)
     window.setTimeout(() => setFeedback(null), 2000)
-  }
-
-  async function copyText(text: string, action: ToolbarAction) {
-    try {
-      await navigator.clipboard.writeText(text)
-      flash(action)
-    } catch {
-      // clipboard no disponible.
-    }
   }
 
   function downloadQr() {
@@ -226,28 +197,6 @@ export function VehiclePassportQr({
             }}
           >
             <StickerIcon />
-          </button>
-
-          <span className="passport-qr__dock-sep" aria-hidden />
-
-          <button
-            type="button"
-            className={`passport-qr__dock-btn${feedback === 'link' ? ' passport-qr__dock-btn--ok' : ''}`}
-            title="Copiar enlace"
-            aria-label="Copiar enlace del pasaporte"
-            onClick={() => copyText(shareUrl, 'link')}
-          >
-            {feedback === 'link' ? <CheckIcon /> : <LinkIcon />}
-          </button>
-
-          <button
-            type="button"
-            className={`passport-qr__dock-btn${feedback === 'vin' ? ' passport-qr__dock-btn--ok' : ''}`}
-            title="Copiar VIN"
-            aria-label={`Copiar VIN ${vin}`}
-            onClick={() => copyText(vin, 'vin')}
-          >
-            {feedback === 'vin' ? <CheckIcon /> : <CopyIcon />}
           </button>
 
           {operativeReady ? (

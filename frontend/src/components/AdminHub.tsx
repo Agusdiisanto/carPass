@@ -54,8 +54,8 @@ export function AdminHub({ address, wrongNetwork, onOpen }: AdminHubProps) {
       <section className="admin-hub__intro">
         <h3 className="admin-hub__title">Centro de administración</h3>
         <p className="admin-hub__text">
-          Gestioná pasaportes digitales y permisos del ecosistema. Para simular taller, aseguradora o VTV, usá el
-          flujo <strong>Operar por rol</strong>.
+          Gestioná pasaportes digitales y permisos del ecosistema. Para transferir tu flota o simular taller, aseguradora
+          o VTV, usá el flujo <strong>Garaje y roles</strong>.
         </p>
       </section>
 

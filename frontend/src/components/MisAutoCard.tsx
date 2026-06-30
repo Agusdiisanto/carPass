@@ -59,18 +59,18 @@ export function MisAutoCard({
           <button
             type="button"
             className="mis-auto-card__btn mis-auto-card__btn--primary"
-            onClick={() => onViewPassport(info.vin)}
-          >
-            Ver pasaporte
-          </button>
-          <button
-            type="button"
-            className="mis-auto-card__btn mis-auto-card__btn--ghost"
             disabled={wrongNetwork}
             title={wrongNetwork ? 'Cambiá a Sepolia para transferir' : 'Transferir dominio CarPass'}
             onClick={() => onTransfer(info.vin)}
           >
             Transferir
+          </button>
+          <button
+            type="button"
+            className="mis-auto-card__btn mis-auto-card__btn--ghost"
+            onClick={() => onViewPassport(info.vin)}
+          >
+            Ver pasaporte
           </button>
         </div>
       </div>

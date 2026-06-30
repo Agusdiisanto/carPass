@@ -1,6 +1,8 @@
 import { PhoneCompanionCard } from './PhoneCompanionCard'
 import {
+  ADMIN_OPERATIVE_ROLE_SECTIONS,
   ADMIN_OPERATIVE_SECTIONS,
+  ADMIN_PATH_LABELS,
   type AdminOperativeSectionKey,
 } from '../domain/carpass/adminSections'
 import { ROLE_BADGE_CLASS } from '../domain/carpass/roles'
@@ -31,31 +33,50 @@ export function AdminOperateHub({
   onReceiveFromPhone,
   onGoToMisAutos,
 }: AdminOperateHubProps) {
-  const roleSections = ADMIN_OPERATIVE_SECTIONS.filter(
-    (section) => section.key !== 'inicio' && section.key !== 'propietario',
-  )
+  const garageSection = ADMIN_OPERATIVE_SECTIONS.find((section) => section.key === 'propietario')
+  const pathMeta = ADMIN_PATH_LABELS.operate
 
   return (
     <div className="admin-hub admin-hub--operate">
       <section className="admin-hub__intro admin-hub__intro--operate">
-        <h3 className="admin-hub__title">Operar por rol</h3>
+        <h3 className="admin-hub__title">{pathMeta.label}</h3>
         <p className="admin-hub__text">
-          Elegí el rol del ecosistema. Para tu flota NFT usá Mis vehículos en la barra superior o el acceso directo de abajo.
+          Gestioná tu flota NFT como propietario o simulá los flujos operativos del ecosistema CarPass.
         </p>
       </section>
 
-      {onGoToMisAutos ? (
-        <button type="button" className="admin-hub__garaje-cta" onClick={onGoToMisAutos}>
-          <span className="admin-hub__garaje-icon" aria-hidden>
-            <GarageIcon />
-          </span>
-          <span className="admin-hub__garaje-copy">
-            <strong>Ir a Mis vehículos</strong>
-            <span>Flota NFT, pasaporte público y transferencias en pantalla completa.</span>
-          </span>
-          <span className="admin-hub__garaje-arrow" aria-hidden>→</span>
-        </button>
-      ) : null}
+      <div className="admin-hub__group">
+        <p className="admin-hub__group-label">Tu garaje</p>
+        <div className="admin-hub__grid admin-hub__grid--garage">
+          {garageSection ? (
+            <button
+              type="button"
+              className="admin-hub__card admin-hub__card--none"
+              onClick={() => onOpen('propietario')}
+            >
+              <span className="admin-hub__card-head">
+                <span className="admin-hub__pill admin-hub__pill--none">{garageSection.shortLabel}</span>
+                <span className="admin-hub__card-cta">Ver flota</span>
+              </span>
+              <span className="admin-hub__card-title">{garageSection.label}</span>
+              <span className="admin-hub__card-desc">{garageSection.description}</span>
+            </button>
+          ) : null}
+
+          {onGoToMisAutos ? (
+            <button type="button" className="admin-hub__garaje-cta" onClick={onGoToMisAutos}>
+              <span className="admin-hub__garaje-icon" aria-hidden>
+                <GarageIcon />
+              </span>
+              <span className="admin-hub__garaje-copy">
+                <strong>Abrir garaje en pantalla completa</strong>
+                <span>Transferí dominio y consultá pasaportes con la vista dedicada de Mis vehículos.</span>
+              </span>
+              <span className="admin-hub__garaje-arrow" aria-hidden>→</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       {!wrongNetwork ? (
         <PhoneCompanionCard
@@ -68,7 +89,7 @@ export function AdminOperateHub({
       <div className="admin-hub__group">
         <p className="admin-hub__group-label">Roles operativos</p>
         <div className="admin-hub__grid admin-hub__grid--operative">
-          {roleSections.map((section) => {
+          {ADMIN_OPERATIVE_ROLE_SECTIONS.map((section) => {
             const roleClass = section.accentClass ?? (section.roleClass ? ROLE_BADGE_CLASS[section.roleClass] : 'admin')
             return (
               <button

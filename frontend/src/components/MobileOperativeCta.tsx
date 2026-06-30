@@ -9,8 +9,10 @@ type MobileOperativeCtaProps = {
   role: Role | null
   detecting: boolean
   wrongNetwork: boolean
+  isOwner?: boolean
   onGoToPanel?: () => void
   onGoToMisAutos?: () => void
+  onGoToTransfer?: (vin: string) => void
   onConnectWallet?: () => void
 }
 
@@ -34,14 +36,25 @@ function WalletIcon() {
   )
 }
 
+function TransferIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M7 7h10v10" />
+      <path d="M7 17 17 7" />
+    </svg>
+  )
+}
+
 export function MobileOperativeCta({
   vin,
   connected,
   role,
   detecting,
   wrongNetwork,
+  isOwner = false,
   onGoToPanel,
   onGoToMisAutos,
+  onGoToTransfer,
   onConnectWallet,
 }: MobileOperativeCtaProps) {
   if (wrongNetwork) return null
@@ -68,10 +81,28 @@ export function MobileOperativeCta({
     onGoToMisAutos?.()
   }
 
+  function handleGoToTransfer() {
+    setPendingOperativeVin(vin)
+    onGoToTransfer?.(vin)
+  }
+
   if (connected && detecting) {
     return (
       <section className="mobile-op-cta mobile-op-cta--loading" aria-busy="true">
         <p className="mobile-op-cta__title">Verificando rol...</p>
+      </section>
+    )
+  }
+
+  if (connected && isOwner && onGoToTransfer) {
+    return (
+      <section className="mobile-op-cta mobile-op-cta--ready">
+        <p className="mobile-op-cta__title">Tu pasaporte</p>
+        <p className="mobile-op-cta__text">VIN <code>{vin}</code> · sos el titular NFT.</p>
+        <button type="button" className="mobile-op-cta__btn" onClick={handleGoToTransfer}>
+          <TransferIcon />
+          Transferir
+        </button>
       </section>
     )
   }

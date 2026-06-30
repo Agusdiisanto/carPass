@@ -15,7 +15,7 @@ export type AdminOperativeSectionKey =
 
 export type AdminSectionKey = AdminManageSectionKey | AdminOperativeSectionKey
 
-export type AdminSectionGroup = 'core' | 'operative'
+export type AdminSectionGroup = 'core' | 'operative' | 'owner'
 
 export type AdminSection = {
   key: AdminSectionKey
@@ -27,6 +27,22 @@ export type AdminSection = {
   roleClass?: OperativeRole
   accentClass?: string
   capabilities?: string[]
+}
+
+export const ADMIN_PATH_LABELS: Record<
+  AdminPath,
+  { label: string; tabSubtitle: string; navEyebrow: string }
+> = {
+  manage: {
+    label: 'Administración',
+    tabSubtitle: 'Vehículos y roles',
+    navEyebrow: 'Gestión del contrato',
+  },
+  operate: {
+    label: 'Garaje y roles',
+    tabSubtitle: 'Transferir · simular roles',
+    navEyebrow: 'Propietario y ecosistema',
+  },
 }
 
 export const ADMIN_PATH_STORAGE_KEY = 'carpass_admin_path'
@@ -67,9 +83,9 @@ export const ADMIN_MANAGE_SECTIONS: AdminSection[] = [
 export const ADMIN_OPERATIVE_SECTIONS: AdminSection[] = [
   {
     key: 'inicio',
-    label: 'Elegir operación',
+    label: 'Inicio',
     shortLabel: 'Inicio',
-    description: 'Seleccioná el rol operativo que querés simular o usar.',
+    description: 'Accedé a tu garaje NFT o simulá los flujos operativos del ecosistema.',
     group: 'operative',
     path: 'operate',
   },
@@ -77,11 +93,11 @@ export const ADMIN_OPERATIVE_SECTIONS: AdminSection[] = [
     key: 'propietario',
     label: 'Mis vehículos',
     shortLabel: 'Garaje',
-    description: 'Flota NFT de tu wallet, consulta de pasaporte y transferencia de dominio CarPass.',
-    group: 'operative',
+    description: 'Flota NFT en tu wallet: consultá el pasaporte público o transferí dominio on-chain.',
+    group: 'owner',
     path: 'operate',
     accentClass: 'none',
-    capabilities: ['Flota on-chain', 'Pasaporte público', 'Transferencia NFT'],
+    capabilities: ['Flota on-chain', 'Ver pasaporte', 'Transferir dominio'],
   },
   {
     key: 'registrador',
@@ -218,3 +234,23 @@ export function operativeSectionToRole(key: AdminOperativeSectionKey): Operative
   const section = getAdminSection(key)
   return section.roleClass ?? null
 }
+
+export function getAdminPathLabel(path: AdminPath): string {
+  return ADMIN_PATH_LABELS[path].label
+}
+
+export function isOwnerGarageSection(key: AdminSectionKey): boolean {
+  return key === 'propietario'
+}
+
+export function isOperativeRoleSection(key: AdminOperativeSectionKey): boolean {
+  return key !== 'inicio' && key !== 'propietario'
+}
+
+export const ADMIN_OPERATIVE_GARAGE_SECTIONS = ADMIN_OPERATIVE_SECTIONS.filter(
+  (section) => section.key === 'inicio' || section.key === 'propietario',
+)
+
+export const ADMIN_OPERATIVE_ROLE_SECTIONS = ADMIN_OPERATIVE_SECTIONS.filter(
+  (section) => section.key !== 'inicio' && section.key !== 'propietario',
+)

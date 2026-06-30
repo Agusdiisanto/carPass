@@ -1,4 +1,4 @@
-import type { AdminPath } from '../domain/carpass/adminSections'
+import { ADMIN_PATH_LABELS, type AdminPath } from '../domain/carpass/adminSections'
 import { shortAddress } from '../hooks/useWallet'
 
 type AdminPathSwitcherProps = {
@@ -44,8 +44,8 @@ export function AdminPathSwitcher({ path, address, wrongNetwork, onChange }: Adm
         >
           <ShieldIcon />
           <span>
-            <strong>Administración</strong>
-            <small>Vehículos y roles</small>
+            <strong>{ADMIN_PATH_LABELS.manage.label}</strong>
+            <small>{ADMIN_PATH_LABELS.manage.tabSubtitle}</small>
           </span>
         </button>
         <button
@@ -57,8 +57,8 @@ export function AdminPathSwitcher({ path, address, wrongNetwork, onChange }: Adm
         >
           <WrenchIcon />
           <span>
-            <strong>Operar por rol</strong>
-            <small>Formulario según rol</small>
+            <strong>{ADMIN_PATH_LABELS.operate.label}</strong>
+            <small>{ADMIN_PATH_LABELS.operate.tabSubtitle}</small>
           </span>
         </button>
       </div>

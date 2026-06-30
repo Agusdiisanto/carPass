@@ -41,7 +41,8 @@ export function AdminView({
   const sectionMeta = getAdminSection(activeSection)
   const sectionAccent = sectionMeta.accentClass ?? (sectionMeta.roleClass ? ROLE_BADGE_CLASS[sectionMeta.roleClass] : 'admin')
   const showSectionHeader = activeSection !== 'hub' && activeSection !== 'inicio'
-  const isOperativeForm = path === 'operate' && operativeSection !== 'inicio'
+  const isOperativeForm =
+    path === 'operate' && operativeSection !== 'inicio' && operativeSection !== 'propietario'
 
   function switchPath(next: AdminPath) {
     setPath(next)

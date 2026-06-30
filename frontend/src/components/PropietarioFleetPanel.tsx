@@ -21,7 +21,7 @@ export function PropietarioFleetPanel({
     <div className="propietario-fleet-panel">
       {onGoToMisAutos ? (
         <button type="button" className="propietario-fleet-panel__expand" onClick={onGoToMisAutos}>
-          Abrir Mis vehículos en pantalla completa →
+          Abrir garaje en pantalla completa →
         </button>
       ) : null}
       <MisAutosView

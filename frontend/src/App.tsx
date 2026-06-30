@@ -332,6 +332,7 @@ export default function App() {
           onGoToPanel={handleGoToPanel}
           onGoToMisAutos={goToMisAutos}
           onGoToMisAutosWithVin={handleGoToMisAutosWithVin}
+          onGoToTransfer={goToTransfer}
           onConnectWallet={handleConnect}
           onSwitchNetwork={() => { void switchToSepolia() }}
         />
@@ -355,6 +356,7 @@ export default function App() {
           onGoToPanel={handleGoToPanel}
           onGoToMisAutos={goToMisAutos}
           onGoToMisAutosWithVin={handleGoToMisAutosWithVin}
+          onGoToTransfer={goToTransfer}
           onConnectWallet={handleConnect}
           onSwitchNetwork={() => { void switchToSepolia() }}
         />
@@ -447,6 +449,7 @@ export default function App() {
           onMisAutos={goToMisAutos}
           onPanel={handleGoToPanel}
           onViewContextVin={goToPassport}
+          onTransferContextVin={goToTransfer}
         />
       ) : null}
 

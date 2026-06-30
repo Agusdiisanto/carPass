@@ -38,6 +38,10 @@ export function shortAddress(address: string) {
   return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''
 }
 
+export function isSameWalletAddress(left: string, right: string) {
+  return Boolean(left && right && left.toLowerCase() === right.toLowerCase())
+}
+
 function wasManuallyDisconnected(): boolean {
   try {
     return localStorage.getItem(WALLET_DISCONNECTED_KEY) === '1'
