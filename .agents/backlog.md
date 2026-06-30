@@ -33,6 +33,7 @@ El trabajo pendiente principal no es agregar mas alcance a ciegas, sino ordenar 
 | EPIC-11 | Role-Based Forms | Frontend | 10 | MVP alta + service, Fase 2 resto | DONE |
 | EPIC-12 | Public QR Verification | Frontend | 10 | Fuera de alcance | OUT |
 | EPIC-13 | IPFS Document Storage | Frontend / Servicio | 05, 11 | Fuera de alcance | OUT |
+| EPIC-14 | Public Read Orchestration & Defense Mode | Frontend / Infra | 08, 10, 11 | Defensa online | PENDING |
 
 ## Camino de Cierre Recomendado
 
@@ -293,6 +294,27 @@ Decision:
 
 - Queda fuera del alcance actual.
 - No se agregan proveedores de pinning, variables nuevas ni adjuntos documentales.
+
+### EPIC-14 - Public Read Orchestration & Defense Mode
+
+Estado: `PENDING`.
+
+Objetivo:
+
+- Mantener la defensa online y en tiempo real usando Sepolia como fuente primaria.
+- Agregar una capa de lectura publica con fallback a snapshot sincronizado si el RPC falla.
+- Mostrar en UI si el dato viene de `Live Sepolia`, `Snapshot Sepolia` o `Demo local`.
+
+Alcance recomendado:
+
+- `VehicleReadService` con fuentes `OnChainVehicleSource`, `SnapshotVehicleSource` y `DemoVehicleSource`.
+- Hook `usePublicVehicleLookup` para que la vista publica deje de depender directamente de `useCarPass`.
+- Script `npm run sync:public-snapshot` para exportar los VINs oficiales de defensa desde Sepolia.
+- Indicadores en `RuntimeStrip` sobre contrato, RPC, snapshot y fuente de lectura.
+
+Spec:
+
+- `docs/sdd/EPIC-14-public-read-orchestration-defense-mode.md`.
 
 ## Decisiones de Equipo
 
