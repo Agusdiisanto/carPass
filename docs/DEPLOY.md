@@ -86,8 +86,14 @@ y address al frontend en:
 `hasRole` cross-contract: no hace falta otorgar roles nuevos, solo los mismos
 que ya administra `CarPass`.
 
-Deployment actual: `0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15`, enlazado a
+Deployment actual: `0x3d13C42B7a7755Df78189553f2a194c9D289B446`, enlazado a
 `CarPass` `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D`.
+
+> Nota: el primer deploy (`0xAfBcC113...`) quedo inutilizable porque dependia
+> de una funcion `vehiculoExiste` agregada solo en el codigo fuente de
+> `CarPass`, nunca desplegada on-chain. Se redeployo `VehicleParts` validando
+> existencia con `ownerOf` (ya presente en el `CarPass` real), sin tocar
+> `CarPass`. Ver `docs/sdd/EPIC-22-token-autopartes-grabadas.md`.
 
 ## CarPassOracle (oraculos / atestaciones externas)
 

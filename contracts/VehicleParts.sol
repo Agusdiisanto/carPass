@@ -12,7 +12,9 @@ interface ICarPass {
 /**
  * @title VehicleParts
  * @notice NFT que representa cada autoparte grabada de un vehiculo CarPass.
- * @dev EPIC-18: roles delegados a CarPass via hasRole, sin AccessControl propio.
+ * @dev EPIC-22: roles delegados a CarPass via hasRole, sin AccessControl propio.
+ *      Valida existencia de vehiculo via try/catch sobre ownerOf (ERC-721 estandar),
+ *      sin depender de funciones custom que requieran redeployar CarPass.
  */
 contract VehicleParts is ERC721, ReentrancyGuard {
 

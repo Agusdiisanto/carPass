@@ -3,5 +3,5 @@
 
 export const VEHICLEPARTS_DEPLOYMENT = {
   network: "sepolia",
-  address: "0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15",
+  address: "0x3d13C42B7a7755Df78189553f2a194c9D289B446",
 } as const

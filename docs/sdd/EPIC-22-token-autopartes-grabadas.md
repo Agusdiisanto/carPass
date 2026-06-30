@@ -20,17 +20,23 @@ Orden fijo de `enum TipoParte`: `MOTOR`, `CAJA_CAMBIOS`, `PUERTA_DELANTERA_IZQUI
 
 Asuncion documentada: esta lista sigue el criterio habitual del sistema de identificacion de autopartes antirrobo (motor/block, caja de velocidades y paneles con numero de serie propio). Si la catedra/empresa define otra lista oficial, el enum se ajusta sin tocar el resto del modelo.
 
-## Cambio menor requerido en `contracts/core/CarPassVehicleRegistry.sol`
+## Sin cambios requeridos en `CarPass`
 
-Tras EPIC-19, `CarPass.sol` compone modulos abstractos bajo `contracts/core/`. La existencia de vehiculo ya se resuelve ahi via el hook `_carPassOwnerOf`, asi que se agrega una funcion de solo lectura, no destructiva, junto a `getVehiculoInfo`/`vinToTokenId`, para que `VehicleParts` pueda validar existencia sin depender de que `ownerOf` revierta:
+Version anterior de esta spec proponia agregar `vehiculoExiste(uint256)` a `CarPassVehicleRegistry.sol`. Se descarto: el `CarPass` real en Sepolia ya estaba desplegado sin esa funcion, y agregarla solo en el codigo fuente sin redeployar dejaba a `VehicleParts.registrarPartes` reventando siempre con "missing revert data" (selector inexistente en el bytecode on-chain).
+
+En vez de eso, `VehicleParts` valida existencia con `ownerOf` (ERC-721 estandar, presente desde el primer deploy de `CarPass`) envuelto en `try/catch`:
 
 ```solidity
-function vehiculoExiste(uint256 tokenId) external view returns (bool) {
-    return _carPassOwnerOf(tokenId) != address(0);
+function _requireVehicleOwner(uint256 vehicleTokenId) private view returns (address owner) {
+    try carPass.ownerOf(vehicleTokenId) returns (address result) {
+        owner = result;
+    } catch {
+        revert VehiculoInexistente(vehicleTokenId);
+    }
 }
 ```
 
-No cambia ABI existente, no rompe consumidores actuales del contrato.
+Esto evita cualquier dependencia de una funcion nueva en `CarPass`, asi que un cambio futuro en `VehicleParts` nunca vuelve a requerir tocar el contrato principal ya desplegado.
 
 ## Interfaces publicas (`VehicleParts.sol`)
 
@@ -44,7 +50,7 @@ Mintea las 6 autopartes iniciales de un vehiculo. Solo `REGISTRADOR_ROLE` en `Ca
 
 Reglas:
 
-- `vehicleTokenId` debe existir en `CarPass` (`vehiculoExiste`).
+- `vehicleTokenId` debe existir en `CarPass` (`ownerOf` no revierte).
 - El vehiculo no puede tener partes registradas previamente.
 - Cada `numeroGrabado` debe ser no vacio.
 - `partTokenId` por parte = `uint256(keccak256(abi.encodePacked(vehicleTokenId, tipo, numeroGrabado)))`.
@@ -130,11 +136,11 @@ event ParteReemplazada(
 ## Impacto en ABI y frontend
 
 - Nuevo contrato, nuevo ABI: `scripts/export-frontend-artifacts.mjs` se extendio para exportar tambien `vehiclePartsAbi.ts` y `vehiclePartsDeployment.ts`, ademas de los archivos de `CarPass`.
-- No afecta el ABI ni el comportamiento existente de `CarPass`, salvo el agregado no disruptivo de `vehiculoExiste`.
+- No afecta el ABI ni el comportamiento existente de `CarPass`: no se le agrego ni se le quito ninguna funcion.
 - Frontend: `frontend/src/hooks/useVehicleParts.ts` (espejo de `useCarPass.ts`), `frontend/src/domain/carpass/vehicleParts.ts` (enum `TIPOS_PARTE` y normalizacion del struct `Parte`) y `frontend/src/domain/carpass/errors.ts` extendido con `parseVehiclePartsError`.
-- `RegistradorView`: panel para buscar un vehiculo ya registrado por VIN y cargar los 6 numeros de grabado (`registrarPartes`).
-- `TallerView`: panel para reemplazar una autoparte del vehiculo ya identificado (`reemplazarParte`), reutilizando el mismo lookup que el alta de service.
-- No se agrega lectura de partes en `PublicView`; queda como follow-up si se necesita mostrar el historial de autopartes en la consulta publica.
+- `RegistradorView`: al registrar un vehiculo se mintean automaticamente las 6 autopartes en la misma accion (sin paso manual), con numeros de grabado autogenerados (`idGenerators.ts`).
+- `TallerView`: panel para reemplazar una autoparte del vehiculo ya identificado (`reemplazarParte`), reutilizando el mismo lookup que el alta de service, con numero de grabado autogenerado.
+- `PublicView`: `VehiclePartsStatusDiagram` muestra un auto generico en verde (autopartes originales), amarillo (alguna reemplazada) o gris (sin registrar) para el vehiculo consultado.
 
 ## Riesgos y decisiones
 
@@ -154,6 +160,10 @@ npm run export:frontend
 
 ## Estado de deploy
 
-Desplegado en Sepolia: `VehicleParts` en `0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15`, enlazado a `CarPass` `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D` (verificado on-chain via `carPass()`). Detalle operativo en `docs/DEPLOY.md`.
+Desplegado en Sepolia: `VehicleParts` en `0x3d13C42B7a7755Df78189553f2a194c9D289B446`, enlazado a `CarPass` `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D` (verificado on-chain via `carPass()`). Detalle operativo en `docs/DEPLOY.md`.
 
-Pendiente: otorgar `REGISTRADOR_ROLE`/`MECANICO_ROLE` a las wallets de demo que vayan a probar `registrarPartes`/`reemplazarParte` (los mismos roles que ya usan para `CarPass`, no hace falta un grant nuevo si la wallet ya los tiene).
+Flujo completo verificado on-chain (registrarVehiculo -> registrarPartes -> reemplazarParte) con el deployer, que ya tiene `REGISTRADOR_ROLE` y `MECANICO_ROLE` en `CarPass`. No hace falta otorgar roles nuevos para wallets que ya operan `CarPass`.
+
+### Incidente de deploy resuelto
+
+El primer deploy (`0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15`) quedo inutilizable: `registrarPartes` llamaba a `carPass.vehiculoExiste(...)`, una funcion que solo existia en el codigo fuente local de `CarPass`, nunca desplegada on-chain. Toda llamada a `registrarPartes` revertia con "missing revert data" (selector inexistente), por lo que ningun vehiculo llegaba a tener autopartes y la UI mostraba "Autopartes no registradas todavia" siempre. Se corrigio reemplazando esa dependencia por `ownerOf` + `try/catch` (ver seccion "Sin cambios requeridos en CarPass") y se redeployo solo `VehicleParts`.
