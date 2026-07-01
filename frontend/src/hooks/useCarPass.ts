@@ -136,7 +136,7 @@ export async function resolveVinByTokenId(tokenId: bigint): Promise<string | nul
   }
 }
 
-async function emitVehicleChainUpdateFromToken(tokenId: bigint, reason: VehicleChainRefreshReason) {
+export async function emitVehicleChainUpdateFromToken(tokenId: bigint, reason: VehicleChainRefreshReason) {
   const vin = await resolveVinByTokenId(tokenId)
   if (vin) notifyVehicleChainUpdate(vin, reason)
 }

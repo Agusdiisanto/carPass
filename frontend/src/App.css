@@ -5656,6 +5656,236 @@ main:has(.public-view) {
   color: #8b95a1;
 }
 
+/* ── Vehicle Parts Viewer (VPV) ─────────────────────────────────────────── */
+
+.vpv {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.vpv-canvas-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #080f1a 0%, #1e293b 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.vpv-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+
+.vpv-canvas:active { cursor: grabbing; }
+
+.vpv-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #8b95a1;
+  background: rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.vpv-hint {
+  margin: 0;
+  font-size: 10px;
+  color: #4b5563;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+/* Legend */
+.vpv-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.vpv-leg {
+  font-size: 10px;
+  color: #8b95a1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vpv-leg::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.vpv-leg--original::before    { background: #16a34a; }
+.vpv-leg--reemplazada::before { background: #d97706; }
+.vpv-leg--none::before        { background: #374151; border: 1px solid rgba(255,255,255,0.2); }
+
+/* 6-part grid – 3 cols default, 2 cols on narrow containers */
+.vpv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+@container (max-width: 320px) {
+  .vpv-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 360px) {
+  .vpv-grid { grid-template-columns: repeat(2, 1fr); }
+  .vpv-canvas-wrap { aspect-ratio: 4 / 3; }
+}
+
+.vpv-card {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.12s;
+  min-width: 0;
+}
+
+.vpv-card:hover               { background: rgba(255,255,255,0.07); transform: translateY(-1px); }
+.vpv-card--sel                { border-color: rgba(96,165,250,0.55) !important; background: rgba(96,165,250,0.08) !important; }
+.vpv-card--original           { border-color: rgba(22,163,74,0.35); }
+.vpv-card--reemplazada        { border-color: rgba(217,119,6,0.4); }
+
+.vpv-card-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.vpv-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vpv-card-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: #eef2f6;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpv-card-num {
+  font-size: 9px;
+  color: #8b95a1;
+  font-family: ui-monospace, monospace;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpv-card-num--empty { color: #374151; }
+
+.vpv-card-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-top: 3px;
+  background: rgba(217,119,6,0.2);
+  color: #fbbf24;
+}
+
+/* Detail panel */
+.vpv-detail {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.vpv-detail--original    { border-color: rgba(22,163,74,0.35);  background: rgba(22,163,74,0.06); }
+.vpv-detail--reemplazada { border-color: rgba(217,119,6,0.4);   background: rgba(217,119,6,0.06); }
+
+.vpv-detail-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.vpv-detail-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #eef2f6;
+}
+
+.vpv-detail-empty {
+  margin: 0;
+  font-size: 11px;
+  color: #8b95a1;
+}
+
+.vpv-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.vpv-detail-row:last-child { border-bottom: none; }
+
+.vpv-detail-k {
+  font-size: 10px;
+  color: #8b95a1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vpv-detail-v {
+  font-size: 11px;
+  color: #eef2f6;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpv-detail-v--mono { font-family: ui-monospace, monospace; font-size: 10px; }
+.vpv-detail-v--addr { color: #93c5fd; }
+
+.vpv-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.vpv-badge--original    { background: rgba(22,163,74,0.18);  color: #4ade80; }
+.vpv-badge--reemplazada { background: rgba(217,119,6,0.2);   color: #fbbf24; }
+
 .sqc-fallback {
   margin: 8px 0 0;
   color: #b45309;

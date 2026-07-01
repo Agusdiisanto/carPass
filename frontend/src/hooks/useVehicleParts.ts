@@ -6,6 +6,7 @@ import { parseVehiclePartsError } from '../domain/carpass/errors'
 import { normalizeParte, normalizePartes, type Parte } from '../domain/carpass/vehicleParts'
 import { getPublicProvider } from '../lib/publicProvider'
 import { getActiveEthereum, type EthereumProvider } from '../lib/ethereumProvider'
+import { emitVehicleChainUpdateFromToken } from './useCarPass'
 
 function resolveContractAddress() {
   const envAddress = import.meta.env.VITE_VEHICLEPARTS_CONTRACT_ADDRESS
@@ -39,7 +40,23 @@ async function getReadContract() {
 export async function getPartesVehiculo(vehicleTokenId: bigint): Promise<Parte[]> {
   const c = await getReadContract()
   const raw = (await c.getPartesVehiculo(vehicleTokenId)) as unknown[]
-  return normalizePartes(raw)
+  const partes = normalizePartes(raw)
+
+  // Determinar qué partes son reemplazos: si el historial tiene más de 1 entrada,
+  // la parte activa fue instalada como reemplazo de la original.
+  const [h0, h1, h2, h3, h4, h5] = await Promise.all(
+    [0, 1, 2, 3, 4, 5].map(tipo =>
+      (c.getHistorialParte(vehicleTokenId, tipo) as Promise<unknown[]>)
+        .then(r => r.length)
+        .catch(() => 0),
+    ),
+  )
+  const historialLen = [h0, h1, h2, h3, h4, h5]
+
+  return partes.map((p, i) => ({
+    ...p,
+    reemplazada: historialLen[i] > 1,
+  }))
 }
 
 export async function getHistorialParte(vehicleTokenId: bigint, tipo: number): Promise<Parte[]> {
@@ -77,6 +94,7 @@ export function useVehicleParts() {
       const c = await getSignerContract()
       const tx = await c.registrarPartes(vehicleTokenId, numerosGrabado)
       await tx.wait()
+      void emitVehicleChainUpdateFromToken(vehicleTokenId, 'autopartes')
       return 'Autopartes registradas en la blockchain'
     })
   }
@@ -86,6 +104,7 @@ export function useVehicleParts() {
       const c = await getSignerContract()
       const tx = await c.reemplazarParte(vehicleTokenId, tipo, nuevoNumeroGrabado)
       await tx.wait()
+      void emitVehicleChainUpdateFromToken(vehicleTokenId, 'autopartes')
       return 'Autoparte reemplazada en la blockchain'
     })
   }

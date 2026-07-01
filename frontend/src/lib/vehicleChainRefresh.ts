@@ -7,6 +7,7 @@ export type VehicleChainRefreshReason =
   | 'service'
   | 'vtv'
   | 'siniestro'
+  | 'autopartes'
   | 'generic'
 
 export type VehicleChainRefreshDetail = {

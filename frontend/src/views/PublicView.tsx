@@ -106,11 +106,13 @@ function VehicleHeroCard({
   connected = false,
   role = null,
   onGoToPanel,
+  partsRefreshKey = 0,
 }: {
   data: Historial
   connected?: boolean
   role?: Role | null
   onGoToPanel?: () => void
+  partsRefreshKey?: number
 }) {
   const lastKm = data.services.length
     ? Number(data.services[data.services.length - 1].kilometraje)
@@ -189,7 +191,7 @@ function VehicleHeroCard({
         </div>
       </div>
 
-      <VehiclePartsStatusDiagram tokenId={data.tokenId} />
+      <VehiclePartsStatusDiagram tokenId={data.tokenId} refreshKey={partsRefreshKey} />
     </div>
   )
 }
@@ -337,6 +339,7 @@ export function PublicView({
   const [qrOpen, setQrOpen] = useState(false)
   const [qrReceiveMode, setQrReceiveMode] = useState(false)
   const [relayVin, setRelayVin] = useState<string | null>(null)
+  const [partsRefreshKey, setPartsRefreshKey] = useState(0)
   const [companionSession, setCompanionSession] = useState(
     () => isMobileDevice() && isCompanionScanMode(),
   )
@@ -399,10 +402,11 @@ export function PublicView({
   }, [data?.info.vin])
 
   useEffect(() => {
-    return subscribeVehicleChainUpdates(({ vin }) => {
+    return subscribeVehicleChainUpdates(({ vin, reason }) => {
       const openVin = openVinRef.current
       if (!openVin || normalizeVin(vin) !== normalizeVin(openVin)) return
       void lookup.refresh(vin)
+      if (reason === 'autopartes') setPartsRefreshKey(k => k + 1)
     })
   }, [lookup.refresh])
 
@@ -643,6 +647,7 @@ export function PublicView({
             connected={connected}
             role={role}
             onGoToPanel={connected ? handleGoToPanel : undefined}
+            partsRefreshKey={partsRefreshKey}
           />
         </div>
         <SealQualityCard data={data} />
