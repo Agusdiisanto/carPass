@@ -5,13 +5,15 @@ import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
 import { parseContractError } from '../domain/carpass/errors'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { normalizeSelloCalidad, normalizeVehiculoInfo } from '../domain/carpass/vehicleInfo'
-import { isValidVin } from '../domain/carpass/validators'
+import { isValidVin, normalizeWalletAddress } from '../domain/carpass/validators'
 import type { Role } from '../domain/carpass/roles'
 import {
   notifyVehicleChainUpdate,
   type VehicleChainRefreshReason,
 } from '../lib/vehicleChainRefresh'
+import { requestFleetSync } from '../lib/fleetSync'
 import { getPublicProvider } from '../lib/publicProvider'
+import { resolveVehicleByVin } from '../lib/vehicleLookup'
 import {
   recordChainActivity,
   updateChainActivity,
@@ -143,9 +145,7 @@ export async function emitVehicleChainUpdateFromToken(tokenId: bigint, reason: V
 
 export async function getVehiculoPorVin(vin: string) {
   const c = await getReadContract()
-  const tokenId: bigint = await c.vinToTokenId(vin)
-  const info = normalizeVehiculoInfo(await c.getVehiculoInfo(tokenId))
-  return { tokenId, info }
+  return resolveVehicleByVin(c, vin)
 }
 
 export async function getHistorial(tokenId: bigint) {
@@ -332,7 +332,8 @@ export function useCarPass() {
       },
       async () => {
         const c = await getSignerContract()
-        const tx = await c.registrarVehiculo(info, propietario)
+        const payload = { ...info, vin: normalizeVin(info.vin) }
+        const tx = await c.registrarVehiculo(payload, propietario)
         const receipt = await tx.wait()
         return {
           summary: 'Vehiculo registrado correctamente',
@@ -497,7 +498,13 @@ export function useCarPass() {
     )
   }
 
-  async function transferirVehiculo(from: string, to: string, tokenId: bigint, vin?: string) {
+  async function transferirVehiculo(_from: string, to: string, tokenId: bigint, vin?: string) {
+    const destinatario = normalizeWalletAddress(to)
+    if (!destinatario) {
+      setMessage('Direccion de destino invalida')
+      return false
+    }
+
     const ok = await run(
       'Transfiriendo vehiculo',
       {
@@ -505,15 +512,19 @@ export function useCarPass() {
         method: 'transferFrom',
         title: 'Transferencia de NFT',
         detail: vin ? `VIN ${normalizeVin(vin)}` : `Token #${String(tokenId)}`,
-        counterparty: to,
+        counterparty: destinatario,
         vin: vin ? normalizeVin(vin) : undefined,
       },
       async () => {
+        const signerAddress = await getConnectedAddress()
+        if (_from.toLowerCase() !== signerAddress.toLowerCase()) {
+          throw new Error('La cuenta activa de MetaMask no coincide con el propietario del vehiculo.')
+        }
         const c = await getSignerContract()
-        const tx = await c.transferFrom(from, to, tokenId)
+        const tx = await c.transferFrom(signerAddress, destinatario, tokenId)
         const receipt = await tx.wait()
         return {
-          summary: `Vehiculo transferido a ${to.slice(0, 8)}...`,
+          summary: `Vehiculo transferido a ${destinatario.slice(0, 8)}...`,
           txHash: receipt?.hash ?? tx.hash,
           blockNumber: receipt?.blockNumber,
         }
@@ -524,6 +535,7 @@ export function useCarPass() {
       if (resolvedVin && isValidVin(resolvedVin)) {
         notifyVehicleChainUpdate(resolvedVin, 'transfer')
       }
+      requestFleetSync()
     }
     return ok
   }

@@ -4,12 +4,22 @@ import { VEHICLEPARTS_ABI } from '../../contracts/vehiclePartsAbi'
 import { formatKm } from './formatters'
 
 export function getRevertData(error: unknown): string | undefined {
-  const raw = error as Record<string, unknown>
-  return (
-    (raw?.data as string) ??
-    ((raw?.error as Record<string, unknown>)?.data as string) ??
-    ((raw?.info as Record<string, unknown>)?.error as Record<string, unknown>)?.data as string
-  )
+  const visited = new Set<unknown>()
+
+  function walk(err: unknown): string | undefined {
+    if (err == null || visited.has(err)) return undefined
+    visited.add(err)
+
+    const raw = err as Record<string, unknown>
+    const data = raw.data
+    if (typeof data === 'string' && data.startsWith('0x') && data.length > 2) {
+      return data
+    }
+
+    return walk(raw.error) ?? walk(raw.info)
+  }
+
+  return walk(error)
 }
 
 export function parseContractError(error: unknown): string {
@@ -43,9 +53,12 @@ export function parseContractError(error: unknown): string {
     if (msg.includes('cuenta activa')) return msg
     if (msg.includes('user rejected')) return 'Transaccion cancelada por el usuario'
     if (msg.includes('insufficient funds')) return 'Fondos insuficientes para pagar el gas'
+    if (msg.includes('missing revert data')) {
+      return 'El contrato rechazó la operación pero el nodo no devolvió el motivo. Revisá rol Concesionaria, que el vehículo exista y que las autopartes no estén ya registradas.'
+    }
     if (msg.includes('execution reverted')) return 'El contrato rechazo la operacion'
     if (msg.includes('network')) return 'No se pudo conectar a la red'
-    return msg.slice(0, 120)
+    return msg.slice(0, 160)
   }
 
   return 'Transaccion rechazada'
@@ -64,6 +77,11 @@ export function parseVehiclePartsError(error: unknown): string {
         if (parsed.name === 'NumeroGrabadoInvalido') return 'El numero de grabado no puede estar vacio'
         if (parsed.name === 'RolInsuficiente') return 'Tu wallet no tiene permisos para esta operacion'
         if (parsed.name === 'TransferenciaNoPermitida') return 'El token de autoparte no es transferible'
+        if (parsed.name === 'ERC721InvalidReceiver') {
+          return 'El propietario del vehículo no acepta NFTs (wallet contrato). Transferí el pasaporte a una EOA.'
+        }
+        if (parsed.name === 'ERC721InvalidOwner') return 'Propietario del vehículo inválido para mintear autopartes'
+        if (parsed.name === 'ERC721InvalidSender') return 'No se pudo mintear la autoparte: sender inválido'
         return `Error del contrato: ${parsed.name}`
       }
     } catch {
@@ -75,10 +93,25 @@ export function parseVehiclePartsError(error: unknown): string {
     const msg = error.message.split('\n')[0]
     if (msg.includes('user rejected')) return 'Transaccion cancelada por el usuario'
     if (msg.includes('insufficient funds')) return 'Fondos insuficientes para pagar el gas'
+    if (msg.includes('token already minted') || msg.includes('ERC721')) {
+      return 'Ese número de grabado ya fue registrado. Generá otros números e intentá de nuevo.'
+    }
+    if (msg.includes('missing revert data')) {
+      return 'El contrato rechazó la operación pero el nodo no devolvió el motivo. Revisá rol Concesionaria, que el vehículo exista y que las autopartes no estén ya registradas.'
+    }
     if (msg.includes('execution reverted')) return 'El contrato rechazo la operacion'
     if (msg.includes('network')) return 'No se pudo conectar a la red'
-    return msg.slice(0, 120)
+    return msg.slice(0, 160)
   }
 
   return 'Transaccion rechazada'
+}
+
+export function isGenericVehiclePartsRejection(message: string): boolean {
+  const normalized = message.trim().toLowerCase()
+  return (
+    normalized === 'el contrato rechazo la operacion' ||
+    normalized.startsWith('missing revert data') ||
+    normalized === 'transaccion rechazada'
+  )
 }

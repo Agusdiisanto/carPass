@@ -20,6 +20,13 @@ export function generateNumeroGrabado(tipo: number): string {
   return `${prefix}-${random}`
 }
 
-export function generateNumerosGrabado(): string[] {
+/** Deterministicos por VIN — mismos criterios que el seed on-chain. */
+export function generateNumerosGrabadoForVin(vin: string): string[] {
+  const suffix = vin.trim().toUpperCase().slice(-6)
+  return TIPO_PARTE_PREFIX.map((prefix, index) => `${prefix}-${suffix}-${index + 1}`)
+}
+
+export function generateNumerosGrabado(vin?: string): string[] {
+  if (vin?.trim()) return generateNumerosGrabadoForVin(vin)
   return Array.from({ length: TOTAL_TIPOS_PARTE }, (_, tipo) => generateNumeroGrabado(tipo))
 }

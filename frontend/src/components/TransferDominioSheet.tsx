@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { normalizeVin, safeUpperCase } from '../domain/carpass/formatters'
-import { isValidWalletAddress } from '../domain/carpass/validators'
+import { isTransferWalletAddress, normalizeWalletAddress } from '../domain/carpass/validators'
 import type { MiVehiculo } from '../hooks/useMisVehiculos'
 import type { TransferenciaVehiculo } from '../hooks/useCarPass'
 import { CONTRACT_ADDRESS, useCarPass } from '../hooks/useCarPass'
+import { getPartesFleetStatus, type PartesFleetStatus } from '../hooks/useVehiclePartsStatus'
 import { shortAddress } from '../hooks/useWallet'
 import { BrandLogo } from './BrandLogo'
 import { CarPassOperationNotice } from './CarPassOperationNotice'
 import { useVehicleMedia } from '../hooks/useVehicleMedia'
 import { subscribeFleetTransferUpdates } from '../lib/fleetRead'
+import { subscribeVehicleChainUpdates } from '../lib/vehicleChainRefresh'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -20,6 +22,7 @@ type TransferDominioSheetProps = {
   wrongNetwork?: boolean
   onClose: () => void
   onTransferred?: () => void
+  onViewPassport?: (vin: string) => void
 }
 
 function CloseIcon() {
@@ -30,12 +33,20 @@ function CloseIcon() {
   )
 }
 
+function partesStatusLabel(status: PartesFleetStatus): string {
+  if (status === 'complete') return '6 autopartes grabadas incluidas'
+  if (status === 'pending') return 'Autopartes pendientes — el historial técnico queda incompleto'
+  if (status === 'loading') return 'Verificando autopartes...'
+  return 'Estado de autopartes no disponible'
+}
+
 export function TransferDominioSheet({
   vehicle,
   walletAddress,
   wrongNetwork = false,
   onClose,
   onTransferred,
+  onViewPassport,
 }: TransferDominioSheetProps) {
   const { busy, message, lastOp, getPropietario, getTransferenciasVehiculo, transferirVehiculo } = useCarPass()
   const [owner, setOwner] = useState<string | null>(null)
@@ -43,6 +54,8 @@ export function TransferDominioSheet({
   const [ownerError, setOwnerError] = useState('')
   const [transferencias, setTransferencias] = useState<TransferenciaVehiculo[]>([])
   const [destinatario, setDestinatario] = useState('')
+  const [destinatarioConfirmado, setDestinatarioConfirmado] = useState('')
+  const [partesStatus, setPartesStatus] = useState<PartesFleetStatus>('loading')
   const [step, setStep] = useState<TransferStep>('form')
   const [showHistory, setShowHistory] = useState(false)
 
@@ -54,7 +67,8 @@ export function TransferDominioSheet({
     anio: info.anio,
   })
 
-  const destinatarioValido = isValidWalletAddress(destinatario)
+  const destinatarioValido = isTransferWalletAddress(destinatario)
+  const destinatarioNormalizado = destinatarioValido ? normalizeWalletAddress(destinatario) : null
   const destinatarioPropio = destinatario.toLowerCase() === walletAddress.toLowerCase()
   const walletEsPropietaria = owner?.toLowerCase() === walletAddress.toLowerCase()
   const puedeContinuar = Boolean(
@@ -65,6 +79,12 @@ export function TransferDominioSheet({
       !busy &&
       !loadingOwner,
   )
+
+  const loadPartesStatus = useCallback(async () => {
+    setPartesStatus('loading')
+    const status = await getPartesFleetStatus(vehicle.tokenId)
+    setPartesStatus(status)
+  }, [vehicle.tokenId])
 
   const loadOwner = useCallback(async () => {
     setLoadingOwner(true)
@@ -89,7 +109,18 @@ export function TransferDominioSheet({
 
   useEffect(() => {
     void loadOwner()
-  }, [loadOwner])
+    void loadPartesStatus()
+  }, [loadOwner, loadPartesStatus])
+
+  useEffect(() => {
+    return subscribeVehicleChainUpdates(({ vin, reason }) => {
+      if (normalizeVin(vin) !== normalizeVin(info.vin)) return
+      if (reason === 'autopartes' || reason === 'transfer') {
+        void loadPartesStatus()
+        if (reason === 'transfer') void loadOwner()
+      }
+    })
+  }, [info.vin, loadOwner, loadPartesStatus])
 
   useEffect(() => {
     return subscribeFleetTransferUpdates(CONTRACT_ADDRESS, walletAddress, (updates) => {
@@ -101,14 +132,15 @@ export function TransferDominioSheet({
   }, [loadOwner, onTransferred, vehicle.tokenId, walletAddress])
 
   async function handleTransferir() {
-    if (!owner || !walletEsPropietaria) return
+    if (!owner || !walletEsPropietaria || !destinatarioNormalizado) return
     const ok = await transferirVehiculo(
       walletAddress,
-      destinatario,
+      destinatarioNormalizado,
       vehicle.tokenId,
       normalizeVin(info.vin),
     )
     if (!ok) return
+    setDestinatarioConfirmado(destinatarioNormalizado)
     setStep('done')
     onTransferred?.()
   }
@@ -154,13 +186,34 @@ export function TransferDominioSheet({
 
         {step === 'done' ? (
           <div className="transfer-sheet__done">
-            <p className="transfer-sheet__done-title">Transferencia enviada</p>
+            <p className="transfer-sheet__done-title">Transferencia confirmada</p>
             <p className="transfer-sheet__done-text">
-              El dominio CarPass pasó a <code>{shortAddress(destinatario)}</code>. La flota se actualizará sola.
+              El dominio CarPass pasó a <code>{shortAddress(destinatarioConfirmado || destinatario)}</code>.
+              El comprador lo verá en su garaje al conectar la wallet en Sepolia.
             </p>
-            <button type="button" className="transfer-sheet__btn transfer-sheet__btn--primary full-width" onClick={onClose}>
-              Volver a mis vehículos
-            </button>
+            {partesStatus === 'complete' ? (
+              <p className="transfer-sheet__parts-note transfer-sheet__parts-note--ok">
+                Las 6 autopartes grabadas siguen vinculadas al pasaporte y viajan con el historial técnico.
+              </p>
+            ) : partesStatus === 'pending' ? (
+              <p className="transfer-sheet__parts-note transfer-sheet__parts-note--warn">
+                Este vehículo aún no tiene autopartes registradas. El comprador deberá pedir a la concesionaria que complete el grabado.
+              </p>
+            ) : null}
+            <div className="transfer-sheet__done-actions">
+              {onViewPassport ? (
+                <button
+                  type="button"
+                  className="transfer-sheet__btn transfer-sheet__btn--ghost full-width"
+                  onClick={() => onViewPassport(normalizeVin(info.vin))}
+                >
+                  Ver pasaporte público
+                </button>
+              ) : null}
+              <button type="button" className="transfer-sheet__btn transfer-sheet__btn--primary full-width" onClick={onClose}>
+                Volver a mis vehículos
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -177,6 +230,14 @@ export function TransferDominioSheet({
                   Titular: <code>{shortAddress(owner)}</code>
                 </span>
               ) : null}
+            </div>
+
+            <div
+              className={`transfer-sheet__parts-banner transfer-sheet__parts-banner--${
+                partesStatus === 'complete' ? 'ok' : partesStatus === 'pending' ? 'warn' : 'muted'
+              }`}
+            >
+              {partesStatusLabel(partesStatus)}
             </div>
 
             {ownerError ? <p className="error-msg">{ownerError}</p> : null}
@@ -198,7 +259,11 @@ export function TransferDominioSheet({
                   />
                 </label>
                 {destinatario && !destinatarioValido ? (
-                  <p className="error-msg">Dirección inválida</p>
+                  <p className="error-msg">
+                    {destinatario.startsWith('0x') && destinatario.length >= 42
+                      ? 'No podés transferir a la dirección cero'
+                      : 'Dirección inválida'}
+                  </p>
                 ) : null}
                 {destinatario && destinatarioValido && destinatarioPropio ? (
                   <p className="error-msg">No podés transferirte a vos mismo</p>
@@ -217,8 +282,14 @@ export function TransferDominioSheet({
               <div className="transfer-sheet__confirm">
                 <p className="transfer-sheet__confirm-text">
                   Vas a transferir el NFT de <strong>{info.marca} {info.modelo}</strong> a{' '}
-                  <code>{shortAddress(destinatario)}</code>. Esta acción es irreversible desde CarPass.
+                  <code>{shortAddress(destinatarioNormalizado ?? destinatario)}</code>.
+                  Esta acción es irreversible desde CarPass.
                 </p>
+                {partesStatus === 'complete' ? (
+                  <p className="transfer-sheet__confirm-note">
+                    Incluye el historial técnico y las 6 autopartes grabadas asociadas al VIN.
+                  </p>
+                ) : null}
                 <div className="transfer-sheet__confirm-actions">
                   <button
                     type="button"

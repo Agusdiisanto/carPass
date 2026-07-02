@@ -3,8 +3,8 @@
   "network": "sepolia",
   "chainId": 11155111,
   "contractAddress": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
-  "syncedAt": "2026-06-30T13:01:43.494Z",
-  "blockNumber": 11172825,
+  "syncedAt": "2026-07-02T01:02:40.578Z",
+  "blockNumber": 11183607,
   "source": "sepolia",
   "vehicles": {
     "1HGBH41JXMN109186": {
@@ -37,6 +37,13 @@
           "kilometraje": "30000",
           "taller": "0xdF1e04Ed8A3eD3bfA19B33fCc8082Cd6fa4dA988",
           "descripcion": "Service mayor: frenos, suspension y liquidos"
+        },
+        {
+          "timestamp": "1782834012",
+          "tipoServicio": "Service oficial",
+          "kilometraje": "48500",
+          "taller": "0xdF1e04Ed8A3eD3bfA19B33fCc8082Cd6fa4dA988",
+          "descripcion": "se hizo un service normal"
         }
       ],
       "siniestros": [],

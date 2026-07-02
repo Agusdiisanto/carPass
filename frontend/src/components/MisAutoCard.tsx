@@ -1,4 +1,5 @@
 import type { MiVehiculo } from '../hooks/useMisVehiculos'
+import type { PartesFleetStatus } from '../hooks/useVehiclePartsStatus'
 import { safeUpperCase } from '../domain/carpass/formatters'
 import { useVehicleMedia } from '../hooks/useVehicleMedia'
 import { VehicleMediaHero } from './VehicleMediaHero'
@@ -7,14 +8,22 @@ type MisAutoCardProps = {
   vehicle: MiVehiculo
   selected?: boolean
   wrongNetwork?: boolean
+  partesStatus?: PartesFleetStatus
   onViewPassport: (vin: string) => void
   onTransfer: (vin: string) => void
+}
+
+function partesChipLabel(status: PartesFleetStatus | undefined): string | null {
+  if (status === 'complete') return 'Autopartes OK'
+  if (status === 'pending') return 'Autopartes pendientes'
+  return null
 }
 
 export function MisAutoCard({
   vehicle,
   selected = false,
   wrongNetwork = false,
+  partesStatus,
   onViewPassport,
   onTransfer,
 }: MisAutoCardProps) {
@@ -51,6 +60,15 @@ export function MisAutoCard({
         <div className="mis-auto-card__chips">
           <span className="mis-auto-card__chip">{info.color}</span>
           <span className="mis-auto-card__chip">Token #{String(vehicle.tokenId)}</span>
+          {partesChipLabel(partesStatus) ? (
+            <span
+              className={`mis-auto-card__chip mis-auto-card__chip--${
+                partesStatus === 'pending' ? 'warn' : 'ok'
+              }`}
+            >
+              {partesChipLabel(partesStatus)}
+            </span>
+          ) : null}
         </div>
 
         <code className="mis-auto-card__vin">{info.vin}</code>

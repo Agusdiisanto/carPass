@@ -5,6 +5,7 @@ import { MisAutoCard } from '../components/MisAutoCard'
 import { TransferDominioSheet } from '../components/TransferDominioSheet'
 import type { MiVehiculo } from '../hooks/useMisVehiculos'
 import { useMisVehiculos } from '../hooks/useMisVehiculos'
+import { useFleetPartesStatus } from '../hooks/useVehiclePartsStatus'
 import { getVehiculoPorVin } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
 
@@ -38,6 +39,7 @@ export function MisAutosView({
   onTransfer,
 }: MisAutosViewProps) {
   const { vehiculos, cargando, sincronizando, error, reload } = useMisVehiculos(address)
+  const { getStatus: getPartesStatus } = useFleetPartesStatus(vehiculos)
   const [transferTarget, setTransferTarget] = useState<MiVehiculo | null>(null)
   const [pendingVin, setPendingVin] = useState<string | null>(transferVin)
   const [vinLookup, setVinLookup] = useState('')
@@ -216,6 +218,7 @@ export function MisAutosView({
                 vehicle={vehicle}
                 selected={transferTarget?.tokenId === vehicle.tokenId}
                 wrongNetwork={wrongNetwork}
+                partesStatus={getPartesStatus(vehicle.tokenId)}
                 onViewPassport={onViewPassport}
                 onTransfer={() => openTransfer(vehicle)}
               />
@@ -230,6 +233,7 @@ export function MisAutosView({
           walletAddress={address}
           wrongNetwork={wrongNetwork}
           onClose={closeTransfer}
+          onViewPassport={onViewPassport}
           onTransferred={() => {
             void reload({ silent: true })
           }}

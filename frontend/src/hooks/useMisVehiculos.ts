@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { CONTRACT_ADDRESS, getMisVehiculosSafe, type VehiculoInfo } from './useCarPass'
 import { subscribeVehicleChainUpdates } from '../lib/vehicleChainRefresh'
 import { subscribeFleetTransferUpdates } from '../lib/fleetRead'
+import { subscribeFleetSyncRequests } from '../lib/fleetSync'
 
 export type MiVehiculo = { tokenId: bigint; info: VehiculoInfo }
 
@@ -51,6 +52,12 @@ export function useMisVehiculos(address: string) {
 
   useEffect(() => {
     return subscribeVehicleChainUpdates(() => {
+      void reload({ silent: true })
+    })
+  }, [reload])
+
+  useEffect(() => {
+    return subscribeFleetSyncRequests(() => {
       void reload({ silent: true })
     })
   }, [reload])

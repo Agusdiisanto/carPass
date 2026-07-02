@@ -1,4 +1,4 @@
-import { isAddress } from 'ethers'
+import { getAddress, isAddress, ZeroAddress } from 'ethers'
 import type { VehiculoInfo } from '../../hooks/useCarPass'
 
 export const VIN_LENGTH = 17
@@ -13,6 +13,28 @@ export function isValidMileage(km: number, lastKm: number): boolean {
 
 export function isValidWalletAddress(address: string): boolean {
   return isAddress(address)
+}
+
+/** Wallet destino de transferencia: formato válido y distinta de zero-address. */
+export function isTransferWalletAddress(address: string): boolean {
+  if (!isAddress(address)) return false
+  try {
+    return getAddress(address) !== ZeroAddress
+  } catch {
+    return false
+  }
+}
+
+export function normalizeWalletAddress(address: string): string | null {
+  const trimmed = address.trim()
+  if (!trimmed) return null
+  try {
+    const normalized = getAddress(trimmed)
+    if (normalized === ZeroAddress) return null
+    return normalized
+  } catch {
+    return null
+  }
 }
 
 export function isValidVehicleInfo(info: VehiculoInfo): boolean {

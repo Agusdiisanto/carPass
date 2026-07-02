@@ -96,6 +96,15 @@ async function testRejectsNonOwnerTransfer() {
   );
 }
 
+async function testOwnerCanTransferVehicle() {
+  const { owner, buyer, carPass } = await deployCarPass();
+  const { tokenId } = await mintVehicle(carPass, owner);
+
+  await carPass.connect(owner).transferFrom(owner.address, buyer.address, tokenId);
+
+  assert.equal(await carPass.ownerOf(tokenId), buyer.address);
+}
+
 async function testRevocationPreservesHistoryAndBlocksFutureWrites() {
   const { owner, workshop, carPass, roles } = await deployCarPass();
   const { tokenId } = await mintVehicle(carPass, owner);
@@ -158,6 +167,7 @@ await testRejectsLowerMileage();
 await testRejectsDuplicateVin();
 await testRejectsUnauthorizedService();
 await testRejectsNonOwnerTransfer();
+await testOwnerCanTransferVehicle();
 await testRevocationPreservesHistoryAndBlocksFutureWrites();
 await testQualitySealActive();
 await testQualitySealWarnsWithoutVtv();

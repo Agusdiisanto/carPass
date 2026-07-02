@@ -6,7 +6,10 @@ import { parseVehiclePartsError } from '../domain/carpass/errors'
 import { normalizeParte, normalizePartes, type Parte } from '../domain/carpass/vehicleParts'
 import { getPublicProvider } from '../lib/publicProvider'
 import { getActiveEthereum, type EthereumProvider } from '../lib/ethereumProvider'
+import { ensureSepoliaWalletReady } from '../lib/sepoliaGate'
 import { emitVehicleChainUpdateFromToken } from './useCarPass'
+import { requestFleetSync } from '../lib/fleetSync'
+import { assertCanRegistrarPartes, explainRegistrarPartesFailure } from '../lib/vehiclePartsPreflight'
 
 function resolveContractAddress() {
   const envAddress = import.meta.env.VITE_VEHICLEPARTS_CONTRACT_ADDRESS
@@ -18,6 +21,12 @@ export const ABI = VEHICLEPARTS_ABI
 export const CONTRACT_ADDRESS = resolveContractAddress()
 export const hasContractAddress = isAddress(CONTRACT_ADDRESS)
 
+export type VehiclePartsLastOp = {
+  txHash: string | null
+  blockNumber: number | null
+  failed: boolean
+}
+
 export type { Parte } from '../domain/carpass/vehicleParts'
 
 function getProvider() {
@@ -28,6 +37,7 @@ function getProvider() {
 
 async function getSignerContract() {
   if (!hasContractAddress) throw new Error('Contrato de autopartes no configurado')
+  await ensureSepoliaWalletReady()
   const signer = await getProvider().getSigner()
   return new Contract(CONTRACT_ADDRESS, ABI, signer)
 }
@@ -42,8 +52,6 @@ export async function getPartesVehiculo(vehicleTokenId: bigint): Promise<Parte[]
   const raw = (await c.getPartesVehiculo(vehicleTokenId)) as unknown[]
   const partes = normalizePartes(raw)
 
-  // Determinar qué partes son reemplazos: si el historial tiene más de 1 entrada,
-  // la parte activa fue instalada como reemplazo de la original.
   const [h0, h1, h2, h3, h4, h5] = await Promise.all(
     [0, 1, 2, 3, 4, 5].map(tipo =>
       (c.getHistorialParte(vehicleTokenId, tipo) as Promise<unknown[]>)
@@ -70,19 +78,47 @@ export async function getParteActual(vehicleTokenId: bigint, tipo: number): Prom
   return normalizeParte(await c.getParteActual(vehicleTokenId, tipo))
 }
 
+export async function tienePartesRegistradas(vehicleTokenId: bigint): Promise<boolean> {
+  const c = await getReadContract()
+  const [historialMotor, rawPartes] = await Promise.all([
+    c.getHistorialParte(vehicleTokenId, 0) as Promise<unknown[]>,
+    c.getPartesVehiculo(vehicleTokenId) as Promise<unknown[]>,
+  ])
+  if (historialMotor.length > 0) return true
+  return normalizePartes(rawPartes).some(parte => parte.numeroGrabado.trim().length > 0)
+}
+
 export function useVehicleParts() {
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
+  const [lastOp, setLastOp] = useState<VehiclePartsLastOp>({
+    txHash: null,
+    blockNumber: null,
+    failed: false,
+  })
 
-  async function run(label: string, action: () => Promise<string>) {
+  async function run(
+    label: string,
+    action: () => Promise<{ summary: string; txHash?: string; blockNumber?: number }>,
+    onError?: (error: unknown) => Promise<string>,
+  ) {
     try {
       setBusy(label)
       setMessage(`${label}...`)
+      setLastOp({ txHash: null, blockNumber: null, failed: false })
+
       const result = await action()
-      setMessage(result)
+      setLastOp({
+        txHash: result.txHash ?? null,
+        blockNumber: result.blockNumber ?? null,
+        failed: false,
+      })
+      setMessage(result.summary)
       return true
     } catch (error) {
-      setMessage(parseVehiclePartsError(error))
+      setLastOp({ txHash: null, blockNumber: null, failed: true })
+      const message = onError ? await onError(error) : parseVehiclePartsError(error)
+      setMessage(message)
       return false
     } finally {
       setBusy('')
@@ -90,28 +126,48 @@ export function useVehicleParts() {
   }
 
   async function registrarPartes(vehicleTokenId: bigint, numerosGrabado: string[]) {
-    return run('Registrando autopartes', async () => {
-      const c = await getSignerContract()
-      const tx = await c.registrarPartes(vehicleTokenId, numerosGrabado)
-      await tx.wait()
-      void emitVehicleChainUpdateFromToken(vehicleTokenId, 'autopartes')
-      return 'Autopartes registradas en la blockchain'
-    })
+    let numerosUsados = numerosGrabado
+    return run(
+      'Registrando autopartes',
+      async () => {
+        setMessage('Validando permisos y estado on-chain...')
+        const numeros = await assertCanRegistrarPartes(vehicleTokenId, numerosGrabado)
+        numerosUsados = numeros
+        setMessage('Registrando autopartes... (confirmá en MetaMask)')
+        const c = await getSignerContract()
+        const tx = await c.registrarPartes(vehicleTokenId, numeros)
+        const receipt = await tx.wait()
+        void emitVehicleChainUpdateFromToken(vehicleTokenId, 'autopartes')
+        requestFleetSync()
+        return {
+          summary: 'Autopartes registradas en la blockchain',
+          txHash: receipt?.hash ?? tx.hash,
+          blockNumber: receipt?.blockNumber,
+        }
+      },
+      async (error) => explainRegistrarPartesFailure(vehicleTokenId, numerosUsados, error),
+    )
   }
 
   async function reemplazarParte(vehicleTokenId: bigint, tipo: number, nuevoNumeroGrabado: string) {
     return run('Reemplazando autoparte', async () => {
       const c = await getSignerContract()
       const tx = await c.reemplazarParte(vehicleTokenId, tipo, nuevoNumeroGrabado)
-      await tx.wait()
+      const receipt = await tx.wait()
       void emitVehicleChainUpdateFromToken(vehicleTokenId, 'autopartes')
-      return 'Autoparte reemplazada en la blockchain'
+      requestFleetSync()
+      return {
+        summary: 'Autoparte reemplazada en la blockchain',
+        txHash: receipt?.hash ?? tx.hash,
+        blockNumber: receipt?.blockNumber,
+      }
     })
   }
 
   return {
     busy,
     message,
+    lastOp,
     registrarPartes,
     reemplazarParte,
     getPartesVehiculo,

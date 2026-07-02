@@ -372,7 +372,7 @@ export default function App() {
       />
     )
     if (role === 'registrador') {
-      return <RegistradorView address={address} wrongNetwork={wrongNetwork} />
+      return <RegistradorView address={address} wrongNetwork={wrongNetwork} onViewPassport={goToPassport} />
     }
     if (role === 'mecanico') {
       return <TallerView address={address} wrongNetwork={wrongNetwork} />

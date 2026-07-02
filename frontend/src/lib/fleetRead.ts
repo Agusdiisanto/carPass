@@ -14,7 +14,7 @@ function resolveLogFromBlock(): number {
 }
 
 const LOG_FROM_BLOCK = resolveLogFromBlock()
-const TRANSFER_SYNC_POLL_MS = 18_000
+const TRANSFER_SYNC_POLL_MS = 6_000
 
 function getLogProviders(): Provider[] {
   const providers: Provider[] = []

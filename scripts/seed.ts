@@ -1,6 +1,7 @@
 import { network } from "hardhat";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { demoNumerosGrabado, partesYaRegistradas } from "./lib/demoParts.ts";
 
 const { ethers } = await network.create();
 
@@ -16,32 +17,56 @@ function readJson(path: string) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
-function resolveContractAddress() {
-  const envAddress =
-    process.env.CARPASS_CONTRACT_ADDRESS ??
-    process.env.VITE_CARPASS_CONTRACT_ADDRESS;
-  if (envAddress) return envAddress;
+function isPlaceholder(value: string | undefined) {
+  return value === undefined || value.trim() === "";
+}
 
-  const deploymentPath = join(process.cwd(), "deployments", "sepolia", "CarPass.json");
+function resolveContractAddress(envKeys: string[], deploymentFile: string) {
+  for (const key of envKeys) {
+    const envAddress = process.env[key];
+    if (envAddress && !isPlaceholder(envAddress)) return envAddress;
+  }
+
+  const deploymentPath = join(process.cwd(), "deployments", "sepolia", deploymentFile);
   if (existsSync(deploymentPath)) {
     return readJson(deploymentPath).address as string;
   }
 
+  return "";
+}
+
+const carPassAddress = resolveContractAddress(
+  ["CARPASS_CONTRACT_ADDRESS", "VITE_CARPASS_CONTRACT_ADDRESS"],
+  "CarPass.json",
+);
+if (!ethers.isAddress(carPassAddress)) {
   throw new Error(
     "CarPass address not configured. Set CARPASS_CONTRACT_ADDRESS or run deploy:sepolia first.",
   );
 }
 
-const artifact = readJson(
+const vehiclePartsAddress = resolveContractAddress(
+  ["VEHICLEPARTS_CONTRACT_ADDRESS", "VITE_VEHICLEPARTS_CONTRACT_ADDRESS"],
+  "VehicleParts.json",
+);
+
+const carPassArtifact = readJson(
   join(process.cwd(), "artifacts", "contracts", "CarPass.sol", "CarPass.json"),
 );
-const contractAddress = resolveContractAddress();
-if (!ethers.isAddress(contractAddress)) {
-  throw new Error(`Invalid CarPass address: ${contractAddress}`);
-}
+const vehiclePartsArtifact = existsSync(
+  join(process.cwd(), "artifacts", "contracts", "VehicleParts.sol", "VehicleParts.json"),
+)
+  ? readJson(
+      join(process.cwd(), "artifacts", "contracts", "VehicleParts.sol", "VehicleParts.json"),
+    )
+  : null;
 
 const [deployer] = await ethers.getSigners();
-const carPass = new ethers.Contract(contractAddress, artifact.abi, deployer);
+const carPass = new ethers.Contract(carPassAddress, carPassArtifact.abi, deployer);
+const vehicleParts =
+  vehiclePartsArtifact && ethers.isAddress(vehiclePartsAddress)
+    ? new ethers.Contract(vehiclePartsAddress, vehiclePartsArtifact.abi, deployer)
+    : null;
 
 const now = Math.floor(Date.now() / 1000);
 const oneYear = 365 * 24 * 60 * 60;
@@ -49,6 +74,7 @@ const zero = "0x0000000000000000000000000000000000000000";
 
 async function grantSeedRoles() {
   const roles = await Promise.all([
+    carPass.REGISTRADOR_ROLE(),
     carPass.MECANICO_ROLE(),
     carPass.INSPECTOR_VTV_ROLE(),
     carPass.ASEGURADORA_ROLE(),
@@ -73,6 +99,23 @@ async function registrar(vehicle: DemoVehicle) {
   await (await carPass.registrarVehiculo(vehicle, deployer.address)).wait();
   console.log("Vehicle seeded:", vehicle.vin);
   return tokenId;
+}
+
+async function seedPartes(tokenId: bigint, vin: string) {
+  if (!vehicleParts) {
+    console.log("VehicleParts not configured, skipping parts for:", vin);
+    return;
+  }
+
+  const partes = await vehicleParts.getPartesVehiculo(tokenId);
+  if (partesYaRegistradas(partes)) {
+    console.log("Parts already seeded:", vin);
+    return;
+  }
+
+  const numeros = demoNumerosGrabado(vin);
+  await (await vehicleParts.registrarPartes(tokenId, numeros)).wait();
+  console.log("Parts seeded:", vin, numeros.join(", "));
 }
 
 async function service(tokenId: bigint, km: number, tipo: string, descripcion: string) {
@@ -168,7 +211,8 @@ async function siniestro(
 
 console.log("Seeding CarPass demo data");
 console.log("Deployer:", deployer.address);
-console.log("Contract:", contractAddress);
+console.log("CarPass:", carPassAddress);
+console.log("VehicleParts:", vehiclePartsAddress || "(not configured)");
 console.log("Network:", (await ethers.provider.getNetwork()).name);
 
 await grantSeedRoles();
@@ -181,6 +225,7 @@ const civic = await registrar({
   anio: 2022,
   color: "Gris",
 });
+await seedPartes(civic, "1HGBH41JXMN109186");
 await service(civic, 10000, "Service 10.000 km", "Cambio de aceite y filtros");
 await service(civic, 20000, "Service 20.000 km", "Cambio de aceite, filtros y bujias");
 await service(civic, 30000, "Service 30.000 km", "Service mayor: frenos, suspension y liquidos");
@@ -193,6 +238,7 @@ const focus = await registrar({
   anio: 2020,
   color: "Rojo",
 });
+await seedPartes(focus, "3FADP4EJ8FM123456");
 await service(focus, 15000, "Service 15.000 km", "Cambio de aceite");
 await service(focus, 30000, "Service 30.000 km", "Service completo");
 
@@ -203,6 +249,7 @@ const cruze = await registrar({
   anio: 2019,
   color: "Blanco",
 });
+await seedPartes(cruze, "1G1BE5SM1H7123456");
 await service(cruze, 25000, "Service 25.000 km", "Cambio de aceite y filtros");
 await vtv(cruze, 1, now + oneYear);
 
@@ -213,6 +260,7 @@ const corolla = await registrar({
   anio: 2021,
   color: "Negro",
 });
+await seedPartes(corolla, "2T1BURHE0JC043821");
 await service(corolla, 10000, "Service 10.000 km", "Cambio de aceite");
 await vtv(corolla, 0, now + oneYear);
 await siniestro(
@@ -230,13 +278,14 @@ const logan = await registrar({
   anio: 2018,
   color: "Azul",
 });
+await seedPartes(logan, "8A1FB1AB2JT123456");
 await service(logan, 40000, "Service 40.000 km", "Cambio de aceite y revision general");
 await vtv(logan, 2, 0);
 
 console.log("");
 console.log("Seed complete. Demo VINs:");
-console.log("1HGBH41JXMN109186  Honda Civic 2022       -> ACTIVO");
-console.log("3FADP4EJ8FM123456  Ford Focus 2020        -> VENCIDO (sin VTV)");
-console.log("1G1BE5SM1H7123456  Chevrolet Cruze 2019   -> VENCIDO (VTV con observaciones)");
-console.log("2T1BURHE0JC043821  Toyota Corolla 2021    -> REVOCADO (siniestro grave)");
-console.log("8A1FB1AB2JT123456  Renault Logan 2018     -> REVOCADO (VTV rechazada)");
+console.log("1HGBH41JXMN109186  Honda Civic 2022       -> ACTIVO + 6 autopartes");
+console.log("3FADP4EJ8FM123456  Ford Focus 2020        -> VENCIDO (sin VTV) + 6 autopartes");
+console.log("1G1BE5SM1H7123456  Chevrolet Cruze 2019   -> VENCIDO (VTV con observaciones) + 6 autopartes");
+console.log("2T1BURHE0JC043821  Toyota Corolla 2021    -> REVOCADO (siniestro grave) + 6 autopartes");
+console.log("8A1FB1AB2JT123456  Renault Logan 2018     -> REVOCADO (VTV rechazada) + 6 autopartes");

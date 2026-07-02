@@ -6,7 +6,6 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 interface ICarPass {
     function hasRole(bytes32 role, address account) external view returns (bool);
     function ownerOf(uint256 tokenId) external view returns (address);
-    function vehiculoExiste(uint256 tokenId) external view returns (bool);
 }
 
 /**
@@ -111,6 +110,14 @@ contract VehicleParts is ERC721 {
         _;
     }
 
+    function _ownerVehiculo(uint256 vehicleTokenId) private view returns (address owner) {
+        try carPass.ownerOf(vehicleTokenId) returns (address resolvedOwner) {
+            return resolvedOwner;
+        } catch {
+            revert VehiculoInexistente(vehicleTokenId);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Alta de partes
     // -------------------------------------------------------------------------
@@ -124,14 +131,11 @@ contract VehicleParts is ERC721 {
         onlyCarPassRole(REGISTRADOR_ROLE)
         returns (uint256[TOTAL_TIPOS_PARTE] memory partTokenIds)
     {
-        if (!carPass.vehiculoExiste(vehicleTokenId)) {
-            revert VehiculoInexistente(vehicleTokenId);
-        }
         if (_partesRegistradas[vehicleTokenId]) {
             revert PartesYaRegistradas(vehicleTokenId);
         }
 
-        address vehicleOwner = carPass.ownerOf(vehicleTokenId);
+        address vehicleOwner = _ownerVehiculo(vehicleTokenId);
 
         for (uint8 i = 0; i < TOTAL_TIPOS_PARTE; i++) {
             TipoParte tipo = TipoParte(i);
@@ -159,7 +163,7 @@ contract VehicleParts is ERC721 {
         uint256 parteAnteriorTokenId = _parteActualTokenId[vehicleTokenId][tipo];
         _partes[parteAnteriorTokenId].reemplazada = true;
 
-        address vehicleOwner = carPass.ownerOf(vehicleTokenId);
+        address vehicleOwner = _ownerVehiculo(vehicleTokenId);
         nuevoPartTokenId = _instalarParte(vehicleTokenId, tipo, nuevoNumeroGrabado, vehicleOwner);
 
         emit ParteReemplazada(

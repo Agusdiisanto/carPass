@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { VinQrScanner } from '../components/VinQrScanner'
 import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { normalizeVin } from '../domain/carpass/formatters'
-import { isValidVin, isValidWalletAddress } from '../domain/carpass/validators'
+import { isValidVin, isTransferWalletAddress, normalizeWalletAddress } from '../domain/carpass/validators'
 import { useCarPass } from '../hooks/useCarPass'
 import type { TransferenciaVehiculo, VehiculoInfo } from '../hooks/useCarPass'
 import { shortAddress } from '../hooks/useWallet'
@@ -57,7 +57,7 @@ export function PropietarioView({
     buscarPorVin: async (_vin: string) => {},
   })
 
-  const destinatarioValido = isValidWalletAddress(destinatario)
+  const destinatarioValido = isTransferWalletAddress(destinatario)
   const destinatarioPropio = destinatario.toLowerCase() === address.toLowerCase()
   const walletEsPropietaria = seleccionado?.owner.toLowerCase() === address.toLowerCase()
   const puedeTransferir = Boolean(
@@ -187,17 +187,19 @@ export function PropietarioView({
 
   async function handleTransferir() {
     if (!seleccionado) return
+    const destinatarioNormalizado = normalizeWalletAddress(destinatario)
+    if (!destinatarioNormalizado) return
 
     const ok = await transferirVehiculo(
       address,
-      destinatario,
+      destinatarioNormalizado,
       seleccionado.tokenId,
       seleccionado.info.vin,
     )
     if (!ok) return
 
     setVehiculos((prev) => prev.filter((v) => v.tokenId !== seleccionado.tokenId))
-    setSeleccionado({ ...seleccionado, owner: destinatario })
+    setSeleccionado({ ...seleccionado, owner: destinatarioNormalizado })
     setDestinatario('')
     setConfirmando(false)
 
@@ -334,7 +336,7 @@ export function PropietarioView({
               value={destinatario}
               disabled={!walletEsPropietaria}
               onChange={(e) => {
-                setDestinatario(e.target.value)
+                setDestinatario(e.target.value.trim())
                 setConfirmando(false)
               }}
             />

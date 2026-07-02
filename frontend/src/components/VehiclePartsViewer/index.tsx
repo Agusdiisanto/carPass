@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { Parte } from '../../domain/carpass/vehicleParts'
 import { tipoParteLabel } from '../../domain/carpass/vehicleParts'
-import { getPartesVehiculo, hasContractAddress } from '../../hooks/useVehicleParts'
+import { getPartesVehiculo, getHistorialParte, hasContractAddress } from '../../hooks/useVehicleParts'
 
 // Tipo enum: 0=MOTOR, 1=CAJA_CAMBIOS, 2=PDI, 3=PDR, 4=CAPOT, 5=BAUL
 
@@ -529,20 +529,48 @@ export function VehiclePartsStatusDiagram({
       </div>
 
       {/* ── Detail panel ──────────────────────────────────────────────────── */}
-      {selected !== null && <PartDetail tipo={selected} parte={parteMap.get(selected)} />}
+      {selected !== null && (
+        <PartDetail tokenId={tokenId} tipo={selected} parte={parteMap.get(selected)} refreshKey={refreshKey} />
+      )}
     </div>
   )
 }
 
 // ── Part detail ───────────────────────────────────────────────────────────────
 
-function PartDetail({ tipo, parte }: { tipo: number; parte: Parte | undefined }) {
+function PartDetail({
+  tokenId,
+  tipo,
+  parte,
+  refreshKey,
+}: {
+  tokenId: bigint
+  tipo: number
+  parte: Parte | undefined
+  refreshKey: number
+}) {
+  const [historial, setHistorial] = useState<Parte[]>([])
+
+  useEffect(() => {
+    if (!hasContractAddress) {
+      setHistorial([])
+      return
+    }
+    let cancelled = false
+    getHistorialParte(tokenId, tipo)
+      .then((items) => { if (!cancelled) setHistorial(items) })
+      .catch(() => { if (!cancelled) setHistorial([]) })
+    return () => { cancelled = true }
+  }, [tokenId, tipo, refreshKey])
+
   const registrada = parte && parte.numeroGrabado.trim().length > 0
   const fecha = parte && parte.timestamp > 0n
     ? new Date(Number(parte.timestamp) * 1000).toLocaleDateString('es-AR',
         { day: '2-digit', month: 'short', year: 'numeric' })
     : '—'
   const cls = `vpv-detail${!registrada ? '' : parte!.reemplazada ? ' vpv-detail--reemplazada' : ' vpv-detail--original'}`
+  const historialAnterior = historial.length > 1 ? historial.slice(0, -1).reverse() : []
+
   return (
     <div className={cls}>
       <div className="vpv-detail-hdr">
@@ -571,6 +599,25 @@ function PartDetail({ tipo, parte }: { tipo: number; parte: Parte | undefined })
               {parte!.instalador.slice(0, 6)}…{parte!.instalador.slice(-4)}
             </span>
           </div>
+          {historialAnterior.length > 0 ? (
+            <div className="vpv-detail-history">
+              <p className="vpv-detail-history-title">Instalaciones anteriores</p>
+              <ul className="vpv-detail-history-list">
+                {historialAnterior.map((entry) => (
+                  <li key={`${entry.numeroGrabado}-${String(entry.timestamp)}`}>
+                    <code>#{entry.numeroGrabado}</code>
+                    <span>
+                      {new Date(Number(entry.timestamp) * 1000).toLocaleDateString('es-AR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </>
       )}
     </div>

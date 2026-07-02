@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
 import { OperativeShell } from '../components/OperativeShell'
 import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
@@ -8,7 +8,7 @@ import { isValidMileage } from '../domain/carpass/validators'
 import { TIPOS_PARTE } from '../domain/carpass/vehicleParts'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
-import { useVehicleParts } from '../hooks/useVehicleParts'
+import { tienePartesRegistradas, useVehicleParts } from '../hooks/useVehicleParts'
 import { shortAddress } from '../hooks/useWallet'
 
 export function TallerView({
@@ -29,6 +29,24 @@ export function TallerView({
   const [desc, setDesc] = useState('')
   const [tipoParte, setTipoParte] = useState(0)
   const [nuevoNumeroGrabado, setNuevoNumeroGrabado] = useState(() => generateNumeroGrabado(0))
+  const [partesInstaladas, setPartesInstaladas] = useState<boolean | null>(null)
+  const [chequeandoPartes, setChequeandoPartes] = useState(false)
+
+  useEffect(() => {
+    if (!lookup.tokenId || !lookup.found) {
+      setPartesInstaladas(null)
+      return
+    }
+
+    let cancelled = false
+    setChequeandoPartes(true)
+    tienePartesRegistradas(lookup.tokenId)
+      .then((ok) => { if (!cancelled) setPartesInstaladas(ok) })
+      .catch(() => { if (!cancelled) setPartesInstaladas(false) })
+      .finally(() => { if (!cancelled) setChequeandoPartes(false) })
+
+    return () => { cancelled = true }
+  }, [lookup.tokenId, lookup.found, parteMessage])
 
   const kmValido = isValidMileage(km, lookup.lastKm)
   const numeroGrabadoValido = nuevoNumeroGrabado.trim().length > 0
@@ -148,39 +166,53 @@ export function TallerView({
             </div>
           </div>
 
-          <label className="field">
-            Autoparte
-            <select
-              className="select-input"
-              value={tipoParte}
-              onChange={(e) => handleTipoParteChange(Number(e.target.value))}
-            >
-              {TIPOS_PARTE.map((parteTipo) => (
-                <option key={parteTipo.value} value={parteTipo.value}>
-                  {parteTipo.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {chequeandoPartes ? (
+            <p className="panel-desc">Verificando autopartes del vehículo...</p>
+          ) : partesInstaladas === false ? (
+            <div>
+              <p className="error-msg">
+                Este vehículo aún no tiene las 6 autopartes registradas. Pedile a la concesionaria que complete el grabado antes de reemplazar piezas.
+              </p>
+            </div>
+          ) : (
+            <>
+              <label className="field">
+                Autoparte
+                <select
+                  className="select-input"
+                  value={tipoParte}
+                  disabled={partesInstaladas !== true}
+                  onChange={(e) => handleTipoParteChange(Number(e.target.value))}
+                >
+                  {TIPOS_PARTE.map((parteTipo) => (
+                    <option key={parteTipo.value} value={parteTipo.value}>
+                      {parteTipo.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-          <label className="field">
-            Nuevo número de grabado <span className="field-hint">generado automáticamente</span>
-            <input readOnly value={nuevoNumeroGrabado} />
-          </label>
-          <button
-            className="btn-secondary full-width"
-            onClick={() => setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))}
-          >
-            Regenerar número
-          </button>
+              <label className="field">
+                Nuevo número de grabado <span className="field-hint">generado automáticamente</span>
+                <input readOnly value={nuevoNumeroGrabado} />
+              </label>
+              <button
+                className="btn-secondary full-width"
+                disabled={partesInstaladas !== true}
+                onClick={() => setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))}
+              >
+                Regenerar número
+              </button>
 
-          <button
-            className="btn-primary full-width"
-            disabled={!numeroGrabadoValido || Boolean(parteBusy)}
-            onClick={handleReemplazarParte}
-          >
-            {parteBusy === 'Reemplazando autoparte' ? 'Reemplazando...' : 'Reemplazar autoparte'}
-          </button>
+              <button
+                className="btn-primary full-width"
+                disabled={partesInstaladas !== true || !numeroGrabadoValido || Boolean(parteBusy)}
+                onClick={() => void handleReemplazarParte()}
+              >
+                {parteBusy === 'Reemplazando autoparte' ? 'Reemplazando...' : 'Reemplazar autoparte'}
+              </button>
+            </>
+          )}
 
           {parteMessage ? <p className="panel-desc">{parteMessage}</p> : null}
         </section>

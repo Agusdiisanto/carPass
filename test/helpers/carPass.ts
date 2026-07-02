@@ -1,53 +1,15 @@
 import assert from "node:assert/strict";
 import { network } from "hardhat";
+import { expectCustomError } from "./contracts.js";
+
+export { expectCustomError };
 
 export const { ethers } = await network.create();
 
 export type CarPassContract = Awaited<ReturnType<typeof ethers.deployContract>>;
 
-type RevertError = Error & {
-  data?: string;
-  error?: RevertError;
-  info?: {
-    error?: RevertError;
-  };
-};
-
 export const ZERO = ethers.ZeroAddress;
 export const YEAR = 365 * 24 * 60 * 60;
-
-function getErrorData(error: unknown): string | undefined {
-  const typedError = error as RevertError;
-  return (
-    typedError.data ??
-    typedError.error?.data ??
-    typedError.info?.error?.data ??
-    typedError.info?.error?.error?.data
-  );
-}
-
-export async function expectCustomError(
-  action: () => Promise<unknown>,
-  contract: CarPassContract,
-  expectedName: string,
-  expectedArgs?: readonly unknown[],
-) {
-  try {
-    await action();
-  } catch (error) {
-    const errorData = getErrorData(error);
-    assert.ok(errorData, `Expected ${expectedName}, but revert data was not found`);
-
-    const parsedError = contract.interface.parseError(errorData);
-    assert.equal(parsedError?.name, expectedName);
-    if (expectedArgs !== undefined) {
-      assert.deepEqual([...parsedError!.args], [...expectedArgs]);
-    }
-    return;
-  }
-
-  assert.fail(`Expected ${expectedName} revert`);
-}
 
 export function vehicleInfo(vin: string, marca = "Toyota", modelo = "Corolla") {
   return {

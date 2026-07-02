@@ -38,6 +38,8 @@ const DEMO_EXPECTATIONS = [
   },
 ];
 
+const GRABADO_PREFIXES = ["MOT", "CAJ", "PDI", "PDD", "CAP", "BAU"];
+
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -50,33 +52,25 @@ function isPlaceholder(value) {
   );
 }
 
-function resolveContractAddress() {
-  const envAddress =
-    process.env.CARPASS_CONTRACT_ADDRESS ??
-    process.env.VITE_CARPASS_CONTRACT_ADDRESS;
-  if (envAddress && !isPlaceholder(envAddress)) return envAddress;
-
-  const deploymentPath = join(process.cwd(), "deployments", "sepolia", "CarPass.json");
-  if (existsSync(deploymentPath)) {
-    const address = readJson(deploymentPath).address;
-    if (address && !isPlaceholder(address)) return address;
+function resolveAddress(envKeys, deploymentFile, field = "address") {
+  for (const key of envKeys) {
+    const envAddress = process.env[key];
+    if (envAddress && !isPlaceholder(envAddress)) return envAddress;
   }
 
-  throw new Error(
-    "CarPass address not configured. Set CARPASS_CONTRACT_ADDRESS or run deploy:sepolia first.",
-  );
+  const deploymentPath = join(process.cwd(), "deployments", "sepolia", deploymentFile);
+  if (existsSync(deploymentPath)) {
+    const value = readJson(deploymentPath)[field];
+    if (value && !isPlaceholder(value)) return value;
+  }
+
+  return "";
 }
 
-function loadAbi() {
-  const artifactPath = join(
-    process.cwd(),
-    "artifacts",
-    "contracts",
-    "CarPass.sol",
-    "CarPass.json",
-  );
+function loadAbi(contractPath) {
+  const artifactPath = join(process.cwd(), "artifacts", "contracts", contractPath);
   if (!existsSync(artifactPath)) {
-    throw new Error("Missing CarPass artifact. Run npm run compile first.");
+    throw new Error(`Missing artifact at ${artifactPath}. Run npm run compile first.`);
   }
   return readJson(artifactPath).abi;
 }
@@ -86,39 +80,71 @@ function report(name, ok, detail) {
   return ok;
 }
 
+function partesYaRegistradas(partes) {
+  return partes.some((parte) => String(parte.numeroGrabado ?? "").trim().length > 0);
+}
+
+function demoNumerosGrabado(vin) {
+  const suffix = vin.slice(-6).toUpperCase();
+  return GRABADO_PREFIXES.map((prefix, index) => `${prefix}-${suffix}-${index + 1}`);
+}
+
 const rpcUrl = process.env.SEPOLIA_RPC_URL;
 if (isPlaceholder(rpcUrl)) {
   console.log("FAIL SEPOLIA_RPC_URL: missing or placeholder");
-  console.log("");
-  console.log("Set SEPOLIA_RPC_URL in .env before running verify.");
   process.exitCode = 1;
   process.exit();
 }
 
-let contractAddress;
+let carPassAddress;
+let vehiclePartsAddress;
 try {
-  contractAddress = resolveContractAddress();
+  carPassAddress = resolveAddress(
+    ["CARPASS_CONTRACT_ADDRESS", "VITE_CARPASS_CONTRACT_ADDRESS"],
+    "CarPass.json",
+  );
+  vehiclePartsAddress = resolveAddress(
+    ["VEHICLEPARTS_CONTRACT_ADDRESS", "VITE_VEHICLEPARTS_CONTRACT_ADDRESS"],
+    "VehicleParts.json",
+  );
+  if (!ethers.isAddress(carPassAddress)) {
+    throw new Error("CarPass address missing or invalid");
+  }
 } catch (error) {
   console.log(`FAIL Contract address: ${error instanceof Error ? error.message : "unknown"}`);
   process.exitCode = 1;
   process.exit();
 }
 
-let abi;
+let carPassAbi;
+let vehiclePartsAbi = null;
 try {
-  abi = loadAbi();
+  carPassAbi = loadAbi("CarPass.sol/CarPass.json");
+  if (vehiclePartsAddress && ethers.isAddress(vehiclePartsAddress)) {
+    vehiclePartsAbi = loadAbi("VehicleParts.sol/VehicleParts.json");
+  }
 } catch (error) {
-  console.log(`FAIL CarPass artifact: ${error instanceof Error ? error.message : "unknown"}`);
+  console.log(`FAIL Artifacts: ${error instanceof Error ? error.message : "unknown"}`);
   process.exitCode = 1;
   process.exit();
 }
 
 const provider = new ethers.JsonRpcProvider(rpcUrl);
-const carPass = new ethers.Contract(contractAddress, abi, provider);
+const carPass = new ethers.Contract(carPassAddress, carPassAbi, provider);
+const vehicleParts =
+  vehiclePartsAbi && vehiclePartsAddress
+    ? new ethers.Contract(vehiclePartsAddress, vehiclePartsAbi, provider)
+    : null;
 
 let failed = false;
 
-failed ||= !report("Contract address", ethers.isAddress(contractAddress), contractAddress);
+failed ||= !report("CarPass address", ethers.isAddress(carPassAddress), carPassAddress);
+
+if (vehicleParts) {
+  failed ||= !report("VehicleParts address", ethers.isAddress(vehiclePartsAddress), vehiclePartsAddress);
+} else {
+  failed ||= !report("VehicleParts address", false, "not configured");
+}
 
 try {
   const network = await provider.getNetwork();
@@ -133,11 +159,30 @@ try {
 
 if (!failed) {
   try {
-    const code = await provider.getCode(contractAddress);
-    failed ||= !report("Contract bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
+    const code = await provider.getCode(carPassAddress);
+    failed ||= !report("CarPass bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
   } catch (error) {
     failed ||= !report(
-      "Contract bytecode",
+      "CarPass bytecode",
+      false,
+      error instanceof Error ? error.message : "lookup failed",
+    );
+  }
+}
+
+if (vehicleParts && !failed) {
+  try {
+    const code = await provider.getCode(vehiclePartsAddress);
+    failed ||= !report("VehicleParts bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
+    const linkedCarPass = await vehicleParts.carPass();
+    failed ||= !report(
+      "VehicleParts linked CarPass",
+      linkedCarPass.toLowerCase() === carPassAddress.toLowerCase(),
+      linkedCarPass,
+    );
+  } catch (error) {
+    failed ||= !report(
+      "VehicleParts bytecode",
       false,
       error instanceof Error ? error.message : "lookup failed",
     );
@@ -169,7 +214,19 @@ for (const demo of DEMO_EXPECTATIONS) {
       ? `${SEAL_NAMES[demo.seal]} — ${motivo}`
       : `expected ${SEAL_NAMES[demo.seal]} (${demo.reasonHint}), got ${SEAL_NAMES[Number(estado)] ?? estado} — ${motivo}`;
 
-    failed ||= !report(prefix, ok, detail);
+    failed ||= !report(`${prefix} · sello`, ok, detail);
+
+    if (vehicleParts) {
+      const partes = await vehicleParts.getPartesVehiculo(tokenId);
+      const partsOk = partesYaRegistradas(partes);
+      const expectedMotor = demoNumerosGrabado(demo.vin)[0];
+      const motorOk = partsOk && partes[0]?.numeroGrabado === expectedMotor;
+      failed ||= !report(
+        `${prefix} · autopartes`,
+        motorOk,
+        partsOk ? `motor ${partes[0]?.numeroGrabado}` : "6 autopartes pendientes — correr npm run seed:sepolia",
+      );
+    }
   } catch (error) {
     failed ||= !report(
       prefix,
@@ -182,9 +239,9 @@ for (const demo of DEMO_EXPECTATIONS) {
 console.log("");
 if (failed) {
   console.log("Deployment verification failed.");
-  console.log("If VINs are missing, run: npm run seed:sepolia");
-  console.log("If address is stale, run: npm run deploy:sepolia && npm run export:frontend");
+  console.log("If VINs or autopartes faltan: npm run seed:sepolia");
+  console.log("Si cambio la address: npm run export:frontend");
   process.exitCode = 1;
 } else {
-  console.log("Deployment verification OK. Contract and demo data match expectations.");
+  console.log("Deployment verification OK. CarPass, VehicleParts and demo data match expectations.");
 }
