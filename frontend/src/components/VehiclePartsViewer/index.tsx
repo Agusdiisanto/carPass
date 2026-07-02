@@ -307,6 +307,7 @@ export function VehiclePartsStatusDiagram({
     const wrap   = wrapRef.current
     const canvas = canvasRef.current
     if (!wrap || !canvas) return
+    const canvasEl: HTMLCanvasElement = canvas
 
     const { width: W0, height: H0 } = wrap.getBoundingClientRect()
     const W = W0 || 380
@@ -378,7 +379,7 @@ export function VehiclePartsStatusDiagram({
     function onPointerDown(e: PointerEvent) {
       dragging = true; ctx.autoRotate = false
       prevX = downX = e.clientX; prevY = downY = e.clientY
-      canvas.setPointerCapture(e.pointerId)
+      canvasEl.setPointerCapture(e.pointerId)
       // Snap lerp targets to current state so drag doesn't fight fly-to
       ctx.camEye.copy(camera.position)
       ctx.camAt.copy(lookNow)
@@ -398,7 +399,7 @@ export function VehiclePartsStatusDiagram({
       if (!dragging) return
       dragging = false
       if (Math.hypot(e.clientX - downX, e.clientY - downY) < 6) {
-        const r2 = canvas.getBoundingClientRect()
+        const r2 = canvasEl.getBoundingClientRect()
         const ndc = new THREE.Vector2(
           ((e.clientX - r2.left) / r2.width) * 2 - 1,
           -((e.clientY - r2.top) / r2.height) * 2 + 1,
@@ -415,9 +416,9 @@ export function VehiclePartsStatusDiagram({
       }
     }
 
-    canvas.addEventListener('pointerdown', onPointerDown)
-    canvas.addEventListener('pointermove', onPointerMove)
-    canvas.addEventListener('pointerup',   onPointerUp)
+    canvasEl.addEventListener('pointerdown', onPointerDown)
+    canvasEl.addEventListener('pointermove', onPointerMove)
+    canvasEl.addEventListener('pointerup',   onPointerUp)
 
     // ── Responsive ─────────────────────────────────────────────────────────
     const ro = new ResizeObserver(entries => {
@@ -435,9 +436,9 @@ export function VehiclePartsStatusDiagram({
     return () => {
       cancelAnimationFrame(ctx.raf)
       ro.disconnect()
-      canvas.removeEventListener('pointerdown', onPointerDown)
-      canvas.removeEventListener('pointermove', onPointerMove)
-      canvas.removeEventListener('pointerup',   onPointerUp)
+      canvasEl.removeEventListener('pointerdown', onPointerDown)
+      canvasEl.removeEventListener('pointermove', onPointerMove)
+      canvasEl.removeEventListener('pointerup',   onPointerUp)
       scene.traverse(obj => {
         if (obj instanceof THREE.Mesh) {
           obj.geometry.dispose()
