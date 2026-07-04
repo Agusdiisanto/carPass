@@ -74,3 +74,15 @@ npm run seed:sepolia
 - Hardhat 3 requiere Node `22.13.0+`.
 - Sepolia y Etherscan requieren red externa y credenciales locales.
 - El ABI manual en frontend debe evitarse para que no diverja del contrato.
+
+## Actualizacion (2026-07-03): verificacion real en Etherscan
+
+`npm run verify:deployment` (`scripts/verify-deployment.mjs`) nunca verifico
+source code en Etherscan: solo confirma bytecode presente, chain id y sello
+esperado de los VINs demo. Se agrego `@nomicfoundation/hardhat-verify` como
+plugin (`hardhat.config.ts`, seccion `verify.etherscan.apiKey` via
+`configVariable("ETHERSCAN_API_KEY")`) y el script `npm run verify:etherscan
+-- <address>` que corre `hardhat verify --network sepolia`. Sigue
+requiriendo `ETHERSCAN_API_KEY` y una address ya desplegada; no se ejecuto
+en esta pasada porque no hay deploy final confirmado (bloqueo existente de
+EPIC-08, ver backlog).

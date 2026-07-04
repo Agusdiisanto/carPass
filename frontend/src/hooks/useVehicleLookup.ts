@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { parseContractError } from '../domain/carpass/errors'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { isValidVin } from '../domain/carpass/validators'
-import { useCarPass } from './useCarPass'
+import { getVehiculoPorVin, getUltimoKm } from './useCarPass'
 import type { VehiculoInfo } from './useCarPass'
 
 type LookupOptions = {
@@ -15,7 +16,6 @@ export type VehicleLookupResult = {
 }
 
 export function useVehicleLookup(options: LookupOptions = {}) {
-  const { getVehiculoPorVin, getUltimoKm } = useCarPass()
   const [vin, setVinValue] = useState('')
   const [tokenId, setTokenId] = useState<bigint | null>(null)
   const [vehicle, setVehicle] = useState<VehiculoInfo | null>(null)
@@ -68,11 +68,11 @@ export function useVehicleLookup(options: LookupOptions = {}) {
       setLastKm(nextLastKm)
       setFound(true)
       return { tokenId: nextTokenId, info, lastKm: nextLastKm }
-    } catch {
+    } catch (err) {
       setTokenId(null)
       setVehicle(null)
       setLastKm(0)
-      setError('No se pudo consultar el contrato')
+      setError(parseContractError(err))
       return null
     } finally {
       setLoading(false)

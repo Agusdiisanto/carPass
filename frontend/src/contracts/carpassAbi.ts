@@ -326,25 +326,6 @@ export const CARPASS_ABI = [
       },
       {
         "indexed": false,
-        "internalType": "enum CarPassTypes.SelloEstado",
-        "name": "nuevoEstado",
-        "type": "uint8"
-      }
-    ],
-    "name": "SelloActualizado",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
         "internalType": "uint256",
         "name": "timestamp",
         "type": "uint256"
@@ -615,9 +596,9 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPassTypes.SiniestroGravedad",
-            "name": "gravedad",
-            "type": "uint8"
+            "internalType": "uint256",
+            "name": "costoEstimado",
+            "type": "uint256"
           },
           {
             "internalType": "string",
@@ -625,14 +606,14 @@ export const CARPASS_ABI = [
             "type": "string"
           },
           {
+            "internalType": "enum CarPassTypes.SiniestroGravedad",
+            "name": "gravedad",
+            "type": "uint8"
+          },
+          {
             "internalType": "bool",
             "name": "reparado",
             "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "costoEstimado",
-            "type": "uint256"
           },
           {
             "internalType": "address",
@@ -665,14 +646,14 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPassTypes.VTVResultado",
-            "name": "resultado",
-            "type": "uint8"
-          },
-          {
             "internalType": "uint256",
             "name": "vencimiento",
             "type": "uint256"
+          },
+          {
+            "internalType": "enum CarPassTypes.VTVResultado",
+            "name": "resultado",
+            "type": "uint8"
           },
           {
             "internalType": "address",
@@ -725,19 +706,6 @@ export const CARPASS_ABI = [
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "calcularSello",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -842,9 +810,9 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPassTypes.SiniestroGravedad",
-            "name": "gravedad",
-            "type": "uint8"
+            "internalType": "uint256",
+            "name": "costoEstimado",
+            "type": "uint256"
           },
           {
             "internalType": "string",
@@ -852,14 +820,14 @@ export const CARPASS_ABI = [
             "type": "string"
           },
           {
+            "internalType": "enum CarPassTypes.SiniestroGravedad",
+            "name": "gravedad",
+            "type": "uint8"
+          },
+          {
             "internalType": "bool",
             "name": "reparado",
             "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "costoEstimado",
-            "type": "uint256"
           },
           {
             "internalType": "address",
@@ -893,14 +861,14 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "enum CarPassTypes.VTVResultado",
-            "name": "resultado",
-            "type": "uint8"
-          },
-          {
             "internalType": "uint256",
             "name": "vencimiento",
             "type": "uint256"
+          },
+          {
+            "internalType": "enum CarPassTypes.VTVResultado",
+            "name": "resultado",
+            "type": "uint8"
           },
           {
             "internalType": "address",

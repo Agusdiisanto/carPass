@@ -38,17 +38,17 @@ abstract contract CarPassTypes {
 
     struct RegistroSiniestro {
         uint256 timestamp;
-        SiniestroGravedad gravedad;
-        string descripcion;
-        bool reparado;
         uint256 costoEstimado;
+        string descripcion;
+        SiniestroGravedad gravedad;
+        bool reparado;
         address declarante;
     }
 
     struct RegistroVTV {
         uint256 timestamp;
-        VTVResultado resultado;
         uint256 vencimiento;
+        VTVResultado resultado;
         address planta;
     }
 

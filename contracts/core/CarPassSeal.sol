@@ -4,25 +4,12 @@ pragma solidity ^0.8.28;
 import {CarPassHistory} from "./CarPassHistory.sol";
 
 abstract contract CarPassSeal is CarPassHistory {
-    event SelloActualizado(
-        uint256 indexed tokenId,
-        SelloEstado nuevoEstado
-    );
-
     function getSelloEstado(uint256 tokenId)
         external
         view
         returns (SelloEstado)
     {
         return _calcularSello(tokenId).estado;
-    }
-
-    function calcularSello(uint256 tokenId) external {
-        SelloEstado nuevoEstado = _calcularSello(tokenId).estado;
-        if (_sellos[tokenId] != nuevoEstado) {
-            _sellos[tokenId] = nuevoEstado;
-            emit SelloActualizado(tokenId, nuevoEstado);
-        }
     }
 
     function getSelloCalidad(uint256 tokenId)

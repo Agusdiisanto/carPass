@@ -58,17 +58,17 @@ export type RegistroService = {
 
 export type RegistroSiniestro = {
   timestamp: bigint
-  gravedad: number
-  descripcion: string
-  reparado: boolean
   costoEstimado: bigint
+  descripcion: string
+  gravedad: number
+  reparado: boolean
   declarante: string
 }
 
 export type RegistroVTV = {
   timestamp: bigint
-  resultado: number
   vencimiento: bigint
+  resultado: number
   planta: string
 }
 

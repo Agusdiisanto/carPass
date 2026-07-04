@@ -71,21 +71,23 @@ struct RegistroService {
 // Registro de un siniestro declarado
 struct RegistroSiniestro {
     uint256           timestamp;
-    SiniestroGravedad gravedad;
-    string            descripcion;
-    bool              reparado;       // ¿el daño fue reparado?
     uint256           costoEstimado;  // en centavos (uint para evitar decimales)
+    string            descripcion;
+    SiniestroGravedad gravedad;
+    bool              reparado;       // ¿el daño fue reparado?
     address           declarante;      // msg.sender con ASEGURADORA_ROLE
 }
 
 // Registro de una inspección VTV
 struct RegistroVTV {
     uint256      timestamp;
-    VTVResultado resultado;
     uint256      vencimiento;  // timestamp en el que expira la VTV aprobada
+    VTVResultado resultado;
     address      planta;       // dirección on-chain de la planta verificadora (msg.sender, verificado por INSPECTOR_VTV_ROLE)
 }
 ```
+
+> Nota (hardening de gas, 2026-07-03): el orden de campos se reordenó respecto al original para mejorar el packing de storage — agrupar los campos chicos (`gravedad`+`reparado`+`declarante`, o `resultado`+`planta`) al final permite que compartan un slot de 32 bytes en vez de ocupar uno cada uno. `RegistroSiniestro` pasó de 6 a 4 slots por registro y `RegistroVTV` de 4 a 3. Es un cambio de ABI (el orden del tuple retornado por los getters de historial cambia); el frontend accede a los campos por nombre vía ethers, así que no requirió cambios funcionales, solo re-exportar el ABI (`npm run export:frontend`).
 
 ---
 

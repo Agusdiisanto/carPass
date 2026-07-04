@@ -8,7 +8,7 @@ import {
 } from '../domain/carpass/publicRead'
 import { normalizeVehiculoInfo, normalizeSelloCalidad } from '../domain/carpass/vehicleInfo'
 import { isValidVin } from '../domain/carpass/validators'
-import { useCarPass } from './useCarPass'
+import { getVehiculoPorVin, getHistorial, getPropietario } from './useCarPass'
 
 const DEFAULT_TIMEOUT_MS = 4500
 
@@ -41,7 +41,6 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 export function usePublicVehicleLookup() {
-  const { getVehiculoPorVin, getHistorial, getPropietario } = useCarPass()
   const [state, setState] = useState<LookupState>({
     data: null,
     error: '',

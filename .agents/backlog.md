@@ -360,9 +360,16 @@ Pendiente recomendado:
 
 - Limpiar mojibake restante en textos de UI/docs.
 - Dividir `PublicView.tsx` en componentes mas chicos.
-- Agregar `scripts/verify-deployment.mjs`.
 - Sumar tests puntuales de VIN invalido, km igual, autoria VTV/siniestro y VTV rechazada.
 - Definir address final Sepolia y cerrar EPIC-08.
+
+### Hardening de gas y limpieza (2026-07-03)
+
+- Eliminado `calcularSello(uint256)`, evento `SelloActualizado` y mapping `_sellos`: la cache nunca era leida por ningun getter. Cambio de ABI documentado en `docs/sdd/EPIC-06-decision-engine-quality-seal.md`.
+- Reordenados campos de `RegistroSiniestro` y `RegistroVTV` (`contracts/core/CarPassTypes.sol`) para mejorar el packing de storage (6→4 y 4→3 slots por registro respectivamente). Cambio de ABI documentado en `docs/sdd/EPIC-02-core-data-model-contract-skeleton.md`. ABI re-exportado a `frontend/src/contracts/` con `npm run export:frontend`.
+- Evaluado bajar `VehicleMinted` a 2 `indexed` (de 3): descartado porque `frontend/src/lib/chainActivity.ts` filtra por `registrar` como tercer topic indexado para detectar mints hechos por la wallet conectada actuando como registrador.
+- `frontend/src/hooks/useVehicleLookup.ts` y `usePublicVehicleLookup.ts` dejaron de instanciar `useCarPass()` completo (evitaba estado de React sin usar) y usan directamente las funciones de lectura exportadas a nivel de modulo; `useVehicleLookup` ahora usa `parseContractError` para mensajes de error consistentes con el resto de la app.
+- `npm run compile` y `npm run test:contracts` verificados en verde despues de los cambios de contrato.
 
 ## EPIC-20 · Feed de actividad on-chain
 

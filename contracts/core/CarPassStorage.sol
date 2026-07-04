@@ -9,7 +9,6 @@ abstract contract CarPassStorage is CarPassTypes, CarPassErrors {
     mapping(uint256 => RegistroService[]) internal _services;
     mapping(uint256 => RegistroSiniestro[]) internal _siniestros;
     mapping(uint256 => RegistroVTV[]) internal _vtv;
-    mapping(uint256 => SelloEstado) internal _sellos;
 
     // 0 = nunca revocada. No se resetea si el rol es re-otorgado.
     mapping(address => uint256) public revocadoEn;

@@ -19,6 +19,7 @@
     "seed:sepolia": "hardhat run scripts/seed.ts --network sepolia",
     "grant:registrador:sepolia": "hardhat run scripts/grant-registrador.ts --network sepolia",
     "verify:deployment": "node scripts/verify-deployment.mjs",
+    "verify:etherscan": "hardhat verify --network sepolia",
     "node": "hardhat node",
     "test:contracts": "hardhat run test/contracts.defense.ts",
     "dev": "npm --prefix frontend run dev",
@@ -39,6 +40,7 @@
   "homepage": "https://github.com/Agusdiisanto/carPass#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.13",
+    "@nomicfoundation/hardhat-verify": "^3.0.21",
     "@types/node": "^26.0.0",
     "dotenv": "^17.4.2",
     "ethers": "^6.17.0",

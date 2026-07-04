@@ -12,9 +12,11 @@ CarPass necesita diferenciarse de un historial crudo: un comprador debe poder co
   - `ACTIVO`: valido.
   - `VENCIDO`: con observaciones.
   - `REVOCADO`: no valido.
-- Mantener `calcularSello(uint256)` como cache opcional que actualiza `_sellos` y emite `SelloActualizado` si cambia.
-- No modificar structs de services, VTV ni siniestros.
 - No agregar tests en esta epica.
+
+### Actualizacion (hardening de gas, 2026-07-03)
+
+- Se elimino `calcularSello(uint256)`, el evento `SelloActualizado` y el mapping `_sellos`. La cache nunca era leida por ningun getter (`getSelloEstado`/`getSelloCalidad` siempre recalculan desde `_calcularSello`), asi que la funcion solo gastaba una SSTORE y un evento para poblar una variable muerta. Cambio de ABI: se eliminan `calcularSello` y el evento `SelloActualizado` de la interfaz publica. Confirmado que ningun consumidor de frontend los usaba (`grep` sobre `frontend/src` solo encontraba el ABI generado).
 
 ## Interfaces publicas
 
@@ -39,13 +41,9 @@ Reglas, en orden de prioridad:
 
 Devuelve solo el estado calculado, para lecturas publicas simples.
 
-### `calcularSello(uint256 tokenId)`
-
-Recalcula el sello y guarda el estado en `_sellos[tokenId]`. Emite `SelloActualizado` solo si el estado cambia.
-
 ## Eventos
 
-- `SelloActualizado(uint256 indexed tokenId, SelloEstado nuevoEstado)`.
+- Ninguno propio de esta epica. `calcularSello(uint256)` y `SelloActualizado` se eliminaron (ver "Actualizacion" arriba): no habia getter que leyera la cache que escribian.
 
 ## Errores esperados
 
@@ -55,7 +53,6 @@ Recalcula el sello y guarda el estado en `_sellos[tokenId]`. Emite `SelloActuali
 
 - Se agrega `getSelloCalidad(uint256)` como lectura publica principal.
 - `getSelloEstado(uint256)` deja de revertir y pasa a calcular el estado.
-- `calcularSello(uint256)` deja de revertir y puede ser llamado por cualquier cuenta para refrescar el cache.
 - La interfaz puede mostrar el sello sin pedir wallet si el contrato esta configurado.
 
 ## Riesgos de seguridad y privacidad

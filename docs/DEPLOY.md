@@ -30,6 +30,23 @@ hash de transaccion y bloque. El export copia la address y ABI al frontend en:
 - `frontend/src/contracts/carpassAbi.ts`
 - `frontend/src/contracts/carpassDeployment.ts`
 
+## Verificacion en Etherscan
+
+`npm run verify:deployment` (ver arriba) **no verifica el source code en
+Etherscan**: solo chequea que haya bytecode en la address, el chain id y que
+los VINs demo devuelvan el sello esperado. Para verificar el source real:
+
+```bash
+npm run verify:etherscan -- <address desplegada>
+```
+
+Requiere `ETHERSCAN_API_KEY` en `.env` (ver `.env.example`). `CarPass` no
+tiene argumentos de constructor. `VehicleParts` si (`address carPass_`):
+
+```bash
+npm run verify:etherscan -- <address de VehicleParts> <address de CarPass>
+```
+
 ## VehicleParts (autopartes grabadas)
 
 `VehicleParts` (EPIC-22) es un contrato independiente que se vincula al
