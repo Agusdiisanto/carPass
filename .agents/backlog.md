@@ -40,6 +40,9 @@ El trabajo pendiente principal no es agregar mas alcance a ciegas, sino ordenar 
 | EPIC-26 | Oracle Attestations & Blockchain Ops Health | Contrato / Infra | 08, 22, 25 | Cierre | DONE |
 | EPIC-27 | Public Oracle Evidence UX | Frontend / Integracion | 14, 26 | Cierre | DONE |
 | EPIC-28 | Blockchain Defense Pack | Contrato / Frontend / Infra | 26, 27 | Cierre | DONE |
+| EPIC-29 | Demo Scenarios: Transfer + Autopartes | Frontend / Datos demo | 22, 24 | Cierre | DONE |
+| EPIC-30 | Siniestro / Reparacion en Taller | Contrato / Frontend | 06, 22 | Cierre | DONE |
+| EPIC-31 | UI Simple: Step Pipelines | Frontend | 10, 24 | Cierre | DONE |
 
 ## Camino de Cierre Recomendado
 
@@ -520,6 +523,34 @@ Tres correcciones de diseno sobre la primera version del pack:
 
 `npm run compile` y `npm run export:frontend` verificados en verde despues de los
 cambios de contrato.
+
+## EPIC-29 - Demo Scenarios: Transfer + Autopartes
+
+Suma 3 vehiculos demo (Volkswagen Amarok, Volkswagen Vento, Peugeot 208) con
+historial de transferencia de dueno y reemplazo de autopartes, para mostrar en
+la demo los tres flujos operativos juntos (services, autopartes reemplazadas y
+cambio de owner del NFT).
+
+Spec: `docs/sdd/EPIC-29-demo-scenarios-transfer-parts.md`.
+
+## EPIC-30 - Siniestro / Reparacion en Taller
+
+Mueve la confirmacion de "vehiculo reparado" desde `AseguradoraView` (que solo
+declara el siniestro) hacia `TallerView` (que ejecuta la reparacion real via
+`reemplazarParte`). La UI cruza el siniestro con el reemplazo de autoparte
+posterior para mostrar "Reparado" en el timeline publico sin depender de un
+campo `reparado` mutable on-chain.
+
+Spec: `docs/sdd/EPIC-30-siniestro-reparacion-taller.md`.
+
+## EPIC-31 - UI Simple: Step Pipelines
+
+Componente `StepPipeline` reutilizable para mostrar el progreso de flujos que
+disparan varias transacciones encadenadas (alta de vehiculo, service +
+reemplazo de autoparte) con pasos numerados, spinner y estado por paso, en vez
+de un boton cuyo texto cambia.
+
+Spec: `docs/sdd/EPIC-31-ui-simple-step-pipelines.md`.
 
 ## Regla de Trabajo
 
