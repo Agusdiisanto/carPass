@@ -14,7 +14,7 @@ Mapa rapido para leer y defender CarPass.
 - `contracts/core/CarPassSeal.sol`: calculo y cache opcional del sello de calidad.
 - `contracts/core/CarPassTransfers.sol`: restriccion owner-only para transferencias.
 - `contracts/VehicleParts.sol`: NFT de autopartes grabadas (EPIC-22), vinculado a `CarPass` por direccion inmutable; reutiliza `REGISTRADOR_ROLE`/`MECANICO_ROLE` via `hasRole` cross-contract.
-- `contracts/CarPassOracle.sol`: atestaciones externas/oracle (EPIC-26), vinculado a `CarPass`; usa `ORACLE_ROLE` y firmas EIP-712.
+- `contracts/CarPassOracle.sol`: atestaciones externas/oracle (EPIC-26), vinculado a `CarPass`; usa `ORACLE_ROLE`, firmas EIP-712 y batches Merkle verificables con `verifyEvidenceLeaf` (EPIC-28).
 - Responsabilidades: VIN unico, roles, services, siniestros, VTV, transferencias owner-only, revocacion trazable y sello de calidad.
 - Invariantes clave:
   - `tokenId` se deriva de `keccak256(vin)`.
@@ -28,7 +28,8 @@ Mapa rapido para leer y defender CarPass.
 
 - `scripts/deploy.ts`: despliega `CarPass` y escribe metadata de despliegue.
 - `scripts/deploy-carpass-oracle.ts`: despliega `CarPassOracle` enlazado al `CarPass` configurado.
-- `scripts/seed-oracle.ts`: carga atestaciones oracle y batch Merkle demo de forma idempotente.
+- `scripts/grant-oracle.ts`: otorga `ORACLE_ROLE` a una wallet (VTV/taller/aseguradora) fuera de la wallet deployer.
+- `scripts/seed-oracle.ts`: carga atestaciones oracle y batch Merkle demo de forma idempotente; manda las hojas del batch (no un root pre-calculado) y verifica una proof de ejemplo on-chain contra `verifyEvidenceLeaf`.
 - `scripts/check-deploy-readiness.mjs`: valida entorno antes de Sepolia.
 - `scripts/export-frontend-artifacts.mjs`: exporta ABI/address al frontend.
 - `scripts/write-deployment-registry.mjs`: consolida addresses y hashes ABI en `deployments/sepolia/registry.json`.
@@ -49,7 +50,7 @@ Mapa rapido para leer y defender CarPass.
 - `frontend/src/domain/carpass/eventLabels.ts`: labels de VTV y siniestros.
 - `frontend/src/domain/carpass/errors.ts`: parsing de errores del contrato.
 - `frontend/src/domain/carpass/validators.ts`: validaciones compartidas.
-- `frontend/src/domain/carpass/oracleEvidence.ts`: labels, normalizacion y helpers de evidencia oracle.
+- `frontend/src/domain/carpass/oracleEvidence.ts`: labels, normalizacion y helpers de evidencia oracle; incluye `computeMerkleRoot` (mismo algoritmo que `_merkleRoot` en el contrato) para verificar batches del lado del cliente.
 
 ## Frontend Hooks
 

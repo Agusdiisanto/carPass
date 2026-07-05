@@ -38,21 +38,44 @@ function hashText(value: string) {
   return ethers.keccak256(ethers.toUtf8Bytes(value));
 }
 
+// Mismo algoritmo que _merkleRoot en CarPassOracle.sol: par ordenado + keccak256
+// conmutativo por nivel, promoviendo sin hashear el nodo impar. Debe quedar en sync
+// con el contrato para poder predecir el root y generar proofs validas para verifyEvidenceLeaf.
+function hashPair(a: string, b: string) {
+  const [left, right] = BigInt(a) < BigInt(b) ? [a, b] : [b, a];
+  return ethers.keccak256(ethers.concat([left, right]));
+}
+
+function nextLevel(level: string[]) {
+  const next: string[] = [];
+  for (let i = 0; i < level.length; i += 2) {
+    next.push(i + 1 < level.length ? hashPair(level[i], level[i + 1]) : level[i]);
+  }
+  return next;
+}
+
 function merkleRoot(leaves: string[]) {
   if (leaves.length === 0) return ethers.ZeroHash;
-  let level = leaves.map(leaf => hashText(leaf)).sort();
-
+  let level = leaves;
   while (level.length > 1) {
-    const next: string[] = [];
-    for (let i = 0; i < level.length; i += 2) {
-      const left = level[i];
-      const right = level[i + 1] ?? left;
-      next.push(ethers.keccak256(ethers.concat([left, right])));
-    }
-    level = next.sort();
+    level = nextLevel(level);
   }
-
   return level[0];
+}
+
+function merkleProof(leaves: string[], leafIndex: number) {
+  const proof: string[] = [];
+  let level = leaves;
+  let index = leafIndex;
+  while (level.length > 1) {
+    const pairIndex = index % 2 === 0 ? index + 1 : index - 1;
+    if (pairIndex < level.length) {
+      proof.push(level[pairIndex]);
+    }
+    level = nextLevel(level);
+    index = Math.floor(index / 2);
+  }
+  return proof;
 }
 
 const carPassAddress = resolveContractAddress(
@@ -135,24 +158,38 @@ for (const item of evidence) {
 }
 
 const civicTokenId = await carPass.vinToTokenId("1HGBH41JXMN109186");
-const civicMerkleRoot = merkleRoot([
+const civicPartLabels = [
   "MOT-109186-1",
   "CAJ-109186-2",
   "PDI-109186-3",
   "PDD-109186-4",
   "CAP-109186-5",
   "BAU-109186-6",
-]);
+];
+const civicLeaves = civicPartLabels.map(hashText);
+const civicMerkleRoot = merkleRoot(civicLeaves);
 const civicBatchMetadataHash = hashText("Batch Merkle Demo: 6 autopartes grabadas Honda Civic 2022");
 const existingBatchId = await oracle.getEvidenceBatchId(civicTokenId, 4, civicMerkleRoot);
 
+let civicBatchId = existingBatchId;
 if (existingBatchId === ethers.ZeroHash) {
-  await (
-    await oracle.submitEvidenceBatch(civicTokenId, 4, civicMerkleRoot, civicBatchMetadataHash)
-  ).wait();
+  const tx = await oracle.submitEvidenceBatch(civicTokenId, 4, civicLeaves, civicBatchMetadataHash);
+  await tx.wait();
+  civicBatchId = await oracle.getEvidenceBatchId(civicTokenId, 4, civicMerkleRoot);
   console.log("Oracle Merkle batch seeded: Honda Civic autopartes");
+  console.log("Merkle root:", civicMerkleRoot);
 } else {
   console.log("Oracle Merkle batch already seeded: Honda Civic autopartes");
+}
+
+const sampleProof = merkleProof(civicLeaves, 0);
+const verified = await oracle.verifyEvidenceLeaf(civicBatchId, civicLeaves[0], sampleProof);
+console.log(
+  `On-chain verification for leaf "${civicPartLabels[0]}" against published batch:`,
+  verified ? "OK" : "FAILED",
+);
+if (!verified) {
+  throw new Error("verifyEvidenceLeaf did not confirm the seeded leaf against its own batch root.");
 }
 
 console.log("Oracle seed complete.");

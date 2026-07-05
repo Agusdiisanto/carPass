@@ -1,4 +1,4 @@
-import { ZeroAddress, isAddress } from 'ethers'
+import { ZeroAddress, ZeroHash, concat, isAddress, keccak256 } from 'ethers'
 import { CARPASS_ORACLE_DEPLOYMENT } from '../../contracts/carPassOracleDeployment'
 import { formatDate, formatMonthYear } from './formatters'
 
@@ -40,6 +40,8 @@ export type OracleEvidenceBatch = {
   reportedAt: bigint
   kind: number
   status: number
+  leafCount: number | null
+  rootVerified: boolean | null
 }
 
 export type OracleEvidenceItem = OracleAttestation | OracleEvidenceBatch
@@ -82,7 +84,38 @@ export function normalizeOracleEvidenceBatch(id: string, raw: unknown): OracleEv
     reportedAt: BigInt(row.reportedAt as bigint | string | number),
     kind: Number(row.kind ?? 0),
     status: Number(row.status ?? 0),
+    leafCount: null,
+    rootVerified: null,
   }
+}
+
+// Mismo algoritmo que _merkleRoot en CarPassOracle.sol (par ordenado + keccak256
+// conmutativo, nodo impar promovido sin hashear). Permite recomputar el root
+// publicamente a partir de las hojas emitidas en EvidenceBatchSubmitted, sin
+// confiar en la palabra del oracle.
+function hashPair(a: string, b: string) {
+  const [left, right] = BigInt(a) < BigInt(b) ? [a, b] : [b, a]
+  return keccak256(concat([left, right]))
+}
+
+export function computeMerkleRoot(leaves: string[]) {
+  if (leaves.length === 0) return ZeroHash
+  let level = leaves
+  while (level.length > 1) {
+    const next: string[] = []
+    for (let i = 0; i < level.length; i += 2) {
+      next.push(i + 1 < level.length ? hashPair(level[i], level[i + 1]) : level[i])
+    }
+    level = next
+  }
+  return level[0]
+}
+
+export function batchVerificationLabel(batch: OracleEvidenceBatch) {
+  if (batch.leafCount === null) return 'Hojas no disponibles para verificar (evento no encontrado)'
+  return batch.rootVerified
+    ? `${batch.leafCount} hojas verificadas contra el root publicado`
+    : 'El root no coincide con las hojas publicadas'
 }
 
 export function oracleKindLabel(kind: number) {

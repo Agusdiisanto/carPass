@@ -2,10 +2,12 @@ import { Contract } from 'ethers'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CARPASS_ORACLE_ABI } from '../contracts/carPassOracleAbi'
 import {
+  computeMerkleRoot,
   hasOracleAddress,
   normalizeOracleAttestation,
   normalizeOracleEvidenceBatch,
   resolveOracleAddress,
+  type OracleEvidenceBatch,
   type OracleEvidenceItem,
 } from '../domain/carpass/oracleEvidence'
 import { getPublicProvider } from '../lib/publicProvider'
@@ -17,6 +19,24 @@ type OracleEvidenceState = {
   items: OracleEvidenceItem[]
 }
 
+async function withLeafVerification(contract: Contract, batch: OracleEvidenceBatch): Promise<OracleEvidenceBatch> {
+  try {
+    const logs = await contract.queryFilter(contract.filters.EvidenceBatchSubmitted(batch.id))
+    const args = (logs[0] as { args?: { leaves?: string[] } } | undefined)?.args
+    if (!args?.leaves) return batch
+
+    const leaves = Array.from(args.leaves)
+    const recomputedRoot = computeMerkleRoot(leaves)
+    return {
+      ...batch,
+      leafCount: leaves.length,
+      rootVerified: recomputedRoot.toLowerCase() === batch.merkleRoot.toLowerCase(),
+    }
+  } catch {
+    return batch
+  }
+}
+
 async function readOracleAttestations(vehicleTokenId: bigint, address: string) {
   const contract = new Contract(address, CARPASS_ORACLE_ABI, getPublicProvider())
   const [attestationIds, batchIds] = await Promise.all([
@@ -25,7 +45,10 @@ async function readOracleAttestations(vehicleTokenId: bigint, address: string) {
   ])
   const rows = await Promise.all([
     ...attestationIds.map(async id => normalizeOracleAttestation(id, await contract.attestations(id))),
-    ...batchIds.map(async id => normalizeOracleEvidenceBatch(id, await contract.evidenceBatches(id))),
+    ...batchIds.map(async id => {
+      const batch = normalizeOracleEvidenceBatch(id, await contract.evidenceBatches(id))
+      return withLeafVerification(contract, batch)
+    }),
   ])
   return rows.sort((a, b) => Number(b.reportedAt - a.reportedAt))
 }

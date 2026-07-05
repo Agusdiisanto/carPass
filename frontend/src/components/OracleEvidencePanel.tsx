@@ -1,4 +1,5 @@
 import {
+  batchVerificationLabel,
   formatOracleDate,
   formatOracleValidity,
   oracleEvidenceModeLabel,
@@ -32,6 +33,11 @@ function OracleEvidenceRow({ item }: { item: OracleEvidenceItem }) {
             {oracleEvidenceModeLabel(item)} · Reportado {formatOracleDate(item.reportedAt)}
             {validity}
           </p>
+          {item.evidenceType === 'batch' && (
+            <p className={`oracle-row__meta oracle-row__meta--${item.rootVerified ? 'ok' : 'warn'}`}>
+              {batchVerificationLabel(item)}
+            </p>
+          )}
         </div>
         <span className={`oracle-row__status oracle-row__status--${statusClass}`}>
           {oracleStatusLabel(item.status)}

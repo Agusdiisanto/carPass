@@ -108,14 +108,22 @@ El deploy escribe `deployments/sepolia/CarPassOracle.json` y actualiza
 - valida que el vehiculo exista en `CarPass`;
 - permite atestaciones directas de wallets con `ORACLE_ROLE`;
 - permite atestaciones firmadas EIP-712 con nonce y deadline;
-- permite lotes Merkle para agrupar muchas evidencias en un solo root;
+- permite lotes Merkle para agrupar muchas evidencias en un solo root, calculado
+  on-chain a partir de las hojas recibidas (el oracle no puede declarar un root
+  arbitrario sin evidencia detras);
+- expone `verifyEvidenceLeaf` (lectura publica, sin gas) para probar que una
+  evidencia puntual pertenece a un batch publicado;
 - guarda hashes (`externalIdHash`, `payloadHash`) en vez de documentos o datos
   privados completos;
-- permite marcar atestaciones como `VIGENTE`, `OBSERVADA` o `REVOCADA`.
+- permite marcar atestaciones como `VIGENTE`, `OBSERVADA` o `REVOCADA`; solo el
+  admin o el oracle original mientras siga activo (rol no revocado) puede hacerlo.
 
-El deployer recibe `DEFAULT_ADMIN_ROLE` y `ORACLE_ROLE` inicialmente. Para una
-demo real, el admin puede otorgar `ORACLE_ROLE` a una wallet de VTV, taller o
-aseguradora desde el contrato verificado o una consola Hardhat.
+El deployer recibe `DEFAULT_ADMIN_ROLE` y `ORACLE_ROLE` inicialmente. Para dar de
+alta una wallet real de VTV, taller o aseguradora como oracle:
+
+```bash
+ORACLE_TARGET_WALLET=0x... npm run grant:oracle:sepolia
+```
 
 Para cargar evidencia demo:
 
@@ -124,7 +132,10 @@ npm run seed:oracle:sepolia
 ```
 
 Ese seed es idempotente. Agrega atestaciones demo de VTV/autopartes y un batch
-Merkle de autopartes para que el panel publico muestre evidencia externa real.
+Merkle de autopartes (mandando las hojas, no un root pre-calculado) para que el
+panel publico muestre evidencia externa real. El seed tambien genera una proof de
+ejemplo y llama `verifyEvidenceLeaf` on-chain para confirmar que la verificacion
+funciona antes de darlo por terminado.
 
 ## Health operativo
 

@@ -1,6 +1,6 @@
 {
   "network": "sepolia",
-  "generatedAt": "2026-07-05T16:25:57.557Z",
+  "generatedAt": "2026-07-05T17:02:16.055Z",
   "contracts": {
     "CarPass": {
       "contractName": "CarPass",
@@ -42,7 +42,7 @@
       "carPassAddress": "",
       "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\CarPassOracle.sol\\CarPassOracle.json",
       "artifactPresent": true,
-      "abiSha256": "7ece1ab6404a980374b2c2e55dce87ea4d985f575620af07c6ea9c441ee2134d"
+      "abiSha256": "0e1b62193658e82c8027e9fe3def37d8384cf82dfd2368f88306e0b80a2ee872"
     }
   }
 }

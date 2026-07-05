@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {Hashes} from "@openzeppelin/contracts/utils/cryptography/Hashes.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 interface ICarPassOracleTarget {
     function vehiculoExiste(uint256 tokenId) external view returns (bool);
@@ -93,7 +95,8 @@ contract CarPassOracle is AccessControl, EIP712 {
         address oracle,
         bytes32 merkleRoot,
         bytes32 metadataHash,
-        uint64 reportedAt
+        uint64 reportedAt,
+        bytes32[] leaves
     );
 
     event EvidenceBatchStatusUpdated(
@@ -109,6 +112,7 @@ contract CarPassOracle is AccessControl, EIP712 {
     error AttestationNoEncontrada(bytes32 attestationId);
     error EvidenceBatchDuplicado(bytes32 dedupeKey);
     error EvidenceBatchNoEncontrado(bytes32 batchId);
+    error EvidenceSinHojas();
     error FirmaExpirada(uint256 deadline);
     error FirmaInvalida(address recovered, address expected);
 
@@ -177,7 +181,8 @@ contract CarPassOracle is AccessControl, EIP712 {
         if (attestation.oracle == address(0)) {
             revert AttestationNoEncontrada(attestationId);
         }
-        if (msg.sender != attestation.oracle && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+        bool isActiveOriginalOracle = msg.sender == attestation.oracle && hasRole(ORACLE_ROLE, msg.sender);
+        if (!isActiveOriginalOracle && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OracleNoAutorizado(msg.sender);
         }
 
@@ -188,15 +193,20 @@ contract CarPassOracle is AccessControl, EIP712 {
     function submitEvidenceBatch(
         uint256 vehicleTokenId,
         AttestationKind kind,
-        bytes32 merkleRoot,
+        bytes32[] calldata leaves,
         bytes32 metadataHash
-    ) external onlyRole(ORACLE_ROLE) returns (bytes32 batchId) {
+    ) external onlyRole(ORACLE_ROLE) returns (bytes32 batchId, bytes32 merkleRoot) {
         if (!carPass.vehiculoExiste(vehicleTokenId)) {
             revert VehiculoOracleNoExiste(vehicleTokenId);
         }
-        if (merkleRoot == bytes32(0) || metadataHash == bytes32(0)) {
+        if (leaves.length == 0) {
+            revert EvidenceSinHojas();
+        }
+        if (metadataHash == bytes32(0)) {
             revert HashInvalido();
         }
+
+        merkleRoot = _merkleRoot(leaves);
 
         bytes32 dedupeKey = _dedupeKey(vehicleTokenId, kind, merkleRoot);
         if (_batchByDedupeKey[dedupeKey] != bytes32(0)) {
@@ -237,8 +247,22 @@ contract CarPassOracle is AccessControl, EIP712 {
             msg.sender,
             merkleRoot,
             metadataHash,
-            reportedAt
+            reportedAt,
+            leaves
         );
+    }
+
+    /// @notice Verifica sin wallet que `leaf` forma parte del batch Merkle publicado como `batchId`.
+    function verifyEvidenceLeaf(
+        bytes32 batchId,
+        bytes32 leaf,
+        bytes32[] calldata proof
+    ) external view returns (bool) {
+        EvidenceBatch storage batch = evidenceBatches[batchId];
+        if (batch.oracle == address(0)) {
+            revert EvidenceBatchNoEncontrado(batchId);
+        }
+        return MerkleProof.verifyCalldata(proof, batch.merkleRoot, leaf);
     }
 
     function updateEvidenceBatchStatus(bytes32 batchId, AttestationStatus status) external {
@@ -246,7 +270,8 @@ contract CarPassOracle is AccessControl, EIP712 {
         if (batch.oracle == address(0)) {
             revert EvidenceBatchNoEncontrado(batchId);
         }
-        if (msg.sender != batch.oracle && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+        bool isActiveOriginalOracle = msg.sender == batch.oracle && hasRole(ORACLE_ROLE, msg.sender);
+        if (!isActiveOriginalOracle && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OracleNoAutorizado(msg.sender);
         }
 
@@ -355,5 +380,21 @@ contract CarPassOracle is AccessControl, EIP712 {
         bytes32 externalIdHash
     ) private pure returns (bytes32) {
         return keccak256(abi.encode(vehicleTokenId, kind, externalIdHash));
+    }
+
+    /// @dev Arbol Merkle estandar (par ordenado + keccak256 conmutativo), compatible con
+    /// {MerkleProof-verify}. El nodo sin par de cada nivel se promueve sin hashear.
+    function _merkleRoot(bytes32[] calldata leaves) private pure returns (bytes32) {
+        bytes32[] memory level = leaves;
+        uint256 n = level.length;
+        while (n > 1) {
+            uint256 next = 0;
+            for (uint256 i = 0; i < n; i += 2) {
+                level[next] = (i + 1 < n) ? Hashes.commutativeKeccak256(level[i], level[i + 1]) : level[i];
+                next++;
+            }
+            n = next;
+        }
+        return level[0];
     }
 }

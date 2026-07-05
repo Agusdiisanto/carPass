@@ -106,6 +106,11 @@ export const CARPASS_ORACLE_ABI = [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "EvidenceSinHojas",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -330,6 +335,12 @@ export const CARPASS_ORACLE_ABI = [
         "internalType": "uint64",
         "name": "reportedAt",
         "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "leaves",
+        "type": "bytes32[]"
       }
     ],
     "name": "EvidenceBatchSubmitted",
@@ -878,9 +889,9 @@ export const CARPASS_ORACLE_ABI = [
         "type": "uint8"
       },
       {
-        "internalType": "bytes32",
-        "name": "merkleRoot",
-        "type": "bytes32"
+        "internalType": "bytes32[]",
+        "name": "leaves",
+        "type": "bytes32[]"
       },
       {
         "internalType": "bytes32",
@@ -893,6 +904,11 @@ export const CARPASS_ORACLE_ABI = [
       {
         "internalType": "bytes32",
         "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
         "type": "bytes32"
       }
     ],
@@ -1006,6 +1022,35 @@ export const CARPASS_ORACLE_ABI = [
     "name": "updateEvidenceBatchStatus",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "leaf",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "proof",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "verifyEvidenceLeaf",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ] as const

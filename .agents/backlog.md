@@ -491,6 +491,36 @@ Nota:
 
 - Para que los datos oracle aparezcan como on-chain reales falta desplegar `CarPassOracle` en Sepolia y correr `seed:oracle:sepolia`.
 
+### Hardening de diseno on-chain (2026-07-05)
+
+Tres correcciones de diseno sobre la primera version del pack:
+
+- `submitEvidenceBatch(uint256, AttestationKind, bytes32[] leaves, bytes32 metadataHash)`
+  ahora recibe las hojas y calcula `merkleRoot` on-chain con
+  `Hashes.commutativeKeccak256` (par ordenado, nodo impar promovido). Antes el oracle
+  mandaba un root ya calculado off-chain sin forma de auditarlo; ahora el root queda
+  matematicamente atado a evidencia publicada (las `leaves` viajan en el evento
+  `EvidenceBatchSubmitted`, no se guardan en storage para no pagar gas redundante).
+- Se agrega `verifyEvidenceLeaf(batchId, leaf, proof)` (`view`, con `MerkleProof.verifyCalldata`
+  de OpenZeppelin) para que cualquiera pruebe sin wallet que una evidencia puntual
+  pertenece a un batch. `seed-oracle.ts` genera una proof de ejemplo y llama esta
+  funcion en el mismo seed para demostrar que la verificacion funciona de punta a
+  punta. `OracleEvidencePanel` recalcula el root en el navegador desde las `leaves`
+  del evento y marca si coincide.
+- `updateAttestationStatus`/`updateEvidenceBatchStatus` exigian solo
+  `msg.sender == oracle original`, sin revisar si ese wallet seguia teniendo
+  `ORACLE_ROLE`. Un oracle con el rol revocado podia seguir tocando el estado de sus
+  propias atestaciones pasadas (incluso reactivar una que el admin habia marcado
+  `REVOCADA`). Ahora tambien se exige `hasRole(ORACLE_ROLE, msg.sender)` para el
+  camino "oracle original"; el admin sigue pudiendo siempre.
+- Nuevo script `npm run grant:oracle:sepolia` (+ `ORACLE_TARGET_WALLET` en
+  `.env.example`) para asignar `ORACLE_ROLE` a una wallet de VTV/taller/aseguradora
+  sin depender de la wallet deployer, siguiendo el mismo patron que
+  `grant-registrador.ts`.
+
+`npm run compile` y `npm run export:frontend` verificados en verde despues de los
+cambios de contrato.
+
 ## Regla de Trabajo
 
 Antes de implementar cambios nuevos:

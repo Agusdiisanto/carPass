@@ -23,6 +23,7 @@
     "seed:sepolia": "hardhat run scripts/seed.ts --network sepolia",
     "seed:oracle:sepolia": "hardhat run scripts/seed-oracle.ts --network sepolia",
     "grant:registrador:sepolia": "hardhat run scripts/grant-registrador.ts --network sepolia",
+    "grant:oracle:sepolia": "hardhat run scripts/grant-oracle.ts --network sepolia",
     "verify:deployment": "node scripts/verify-deployment.mjs",
     "verify:etherscan": "hardhat verify --network sepolia",
     "node": "hardhat node",
