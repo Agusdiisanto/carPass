@@ -3,6 +3,7 @@ import {
   type AdminManageSectionKey,
 } from '../domain/carpass/adminSections'
 import { shortAddress } from '../hooks/useWallet'
+import { BlockchainHealthPanel } from './BlockchainHealthPanel'
 
 type AdminHubProps = {
   address: string
@@ -58,6 +59,8 @@ export function AdminHub({ address, wrongNetwork, onOpen }: AdminHubProps) {
           o VTV, usá el flujo <strong>Garaje y roles</strong>.
         </p>
       </section>
+
+      <BlockchainHealthPanel />
 
       <div className="admin-hub__group">
         <p className="admin-hub__group-label">Gestión central</p>

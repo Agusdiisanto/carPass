@@ -22,7 +22,7 @@ const DEMO_EXPECTATIONS = [
     vin: "1G1BE5SM1H7123456",
     label: "Chevrolet Cruze 2019",
     seal: 1,
-    reasonHint: "VTV con observaciones",
+    reasonHint: "observaciones",
   },
   {
     vin: "2T1BURHE0JC043821",
@@ -138,19 +138,24 @@ const vehicleParts =
 
 let failed = false;
 
-failed ||= !report("CarPass address", ethers.isAddress(carPassAddress), carPassAddress);
+function check(name, ok, detail) {
+  const passed = report(name, ok, detail);
+  if (!passed) failed = true;
+}
+
+check("CarPass address", ethers.isAddress(carPassAddress), carPassAddress);
 
 if (vehicleParts) {
-  failed ||= !report("VehicleParts address", ethers.isAddress(vehiclePartsAddress), vehiclePartsAddress);
+  check("VehicleParts address", ethers.isAddress(vehiclePartsAddress), vehiclePartsAddress);
 } else {
-  failed ||= !report("VehicleParts address", false, "not configured");
+  check("VehicleParts address", false, "not configured");
 }
 
 try {
   const network = await provider.getNetwork();
-  failed ||= !report("Sepolia chain id", network.chainId === 11155111n, network.chainId.toString());
+  check("Sepolia chain id", network.chainId === 11155111n, network.chainId.toString());
 } catch (error) {
-  failed ||= !report(
+  check(
     "Sepolia RPC connection",
     false,
     error instanceof Error ? error.message : "connection failed",
@@ -160,9 +165,9 @@ try {
 if (!failed) {
   try {
     const code = await provider.getCode(carPassAddress);
-    failed ||= !report("CarPass bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
+    check("CarPass bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
   } catch (error) {
-    failed ||= !report(
+    check(
       "CarPass bytecode",
       false,
       error instanceof Error ? error.message : "lookup failed",
@@ -173,15 +178,15 @@ if (!failed) {
 if (vehicleParts && !failed) {
   try {
     const code = await provider.getCode(vehiclePartsAddress);
-    failed ||= !report("VehicleParts bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
+    check("VehicleParts bytecode", code !== "0x", `${(code.length - 2) / 2} bytes`);
     const linkedCarPass = await vehicleParts.carPass();
-    failed ||= !report(
+    check(
       "VehicleParts linked CarPass",
       linkedCarPass.toLowerCase() === carPassAddress.toLowerCase(),
       linkedCarPass,
     );
   } catch (error) {
-    failed ||= !report(
+    check(
       "VehicleParts bytecode",
       false,
       error instanceof Error ? error.message : "lookup failed",
@@ -201,7 +206,7 @@ for (const demo of DEMO_EXPECTATIONS) {
     const registered = vinOnChain === demo.vin;
 
     if (!registered) {
-      failed ||= !report(prefix, false, "vehicle not registered on-chain");
+      check(prefix, false, "vehicle not registered on-chain");
       continue;
     }
 
@@ -214,21 +219,21 @@ for (const demo of DEMO_EXPECTATIONS) {
       ? `${SEAL_NAMES[demo.seal]} — ${motivo}`
       : `expected ${SEAL_NAMES[demo.seal]} (${demo.reasonHint}), got ${SEAL_NAMES[Number(estado)] ?? estado} — ${motivo}`;
 
-    failed ||= !report(`${prefix} · sello`, ok, detail);
+    check(`${prefix} · sello`, ok, detail);
 
     if (vehicleParts) {
       const partes = await vehicleParts.getPartesVehiculo(tokenId);
       const partsOk = partesYaRegistradas(partes);
       const expectedMotor = demoNumerosGrabado(demo.vin)[0];
       const motorOk = partsOk && partes[0]?.numeroGrabado === expectedMotor;
-      failed ||= !report(
+      check(
         `${prefix} · autopartes`,
         motorOk,
         partsOk ? `motor ${partes[0]?.numeroGrabado}` : "6 autopartes pendientes — correr npm run seed:sepolia",
       );
     }
   } catch (error) {
-    failed ||= !report(
+    check(
       prefix,
       false,
       error instanceof Error ? error.message : "read failed",

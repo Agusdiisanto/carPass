@@ -19,16 +19,27 @@ No commitear `.env` ni claves privadas.
 npm run compile
 npm run deploy:check
 npm run deploy:sepolia
+npm run deploy:vehicleparts:sepolia
+npm run deploy:oracle:sepolia
 npm run export:frontend
+npm run registry:sepolia
+npm run health:sepolia
 npm run seed:sepolia
+npm run seed:oracle:sepolia
 npm run sync:public-snapshot
 ```
 
-El deploy escribe `deployments/sepolia/CarPass.json` con address, chain id,
-hash de transaccion y bloque. El export copia la address y ABI al frontend en:
+Los deploys escriben archivos bajo `deployments/sepolia/` con address, chain
+id, hash de transaccion y bloque. `registry:sepolia` consolida esas addresses
+y hashes de ABI en `deployments/sepolia/registry.json`. El export copia la
+address y ABI al frontend en:
 
 - `frontend/src/contracts/carpassAbi.ts`
 - `frontend/src/contracts/carpassDeployment.ts`
+- `frontend/src/contracts/vehiclePartsAbi.ts`
+- `frontend/src/contracts/vehiclePartsDeployment.ts`
+- `frontend/src/contracts/carPassOracleAbi.ts`
+- `frontend/src/contracts/carPassOracleDeployment.ts`
 
 ## Verificacion en Etherscan
 
@@ -45,6 +56,12 @@ tiene argumentos de constructor. `VehicleParts` si (`address carPass_`):
 
 ```bash
 npm run verify:etherscan -- <address de VehicleParts> <address de CarPass>
+```
+
+`CarPassOracle` tambien tiene constructor con `address carPass_`:
+
+```bash
+npm run verify:etherscan -- <address de CarPassOracle> <address de CarPass>
 ```
 
 ## VehicleParts (autopartes grabadas)
@@ -71,6 +88,58 @@ que ya administra `CarPass`.
 
 Deployment actual: `0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15`, enlazado a
 `CarPass` `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D`.
+
+## CarPassOracle (oraculos / atestaciones externas)
+
+`CarPassOracle` (EPIC-26) es un contrato independiente para registrar evidencia
+externa vinculada al NFT vehicular. Sirve para demostrar integracion tipo
+oracle sin depender de un proveedor externo complejo para la defensa.
+
+```bash
+npm run deploy:oracle:sepolia
+npm run export:frontend
+npm run registry:sepolia
+npm run health:sepolia
+```
+
+El deploy escribe `deployments/sepolia/CarPassOracle.json` y actualiza
+`deployments/sepolia/registry.json`. El contrato:
+
+- valida que el vehiculo exista en `CarPass`;
+- permite atestaciones directas de wallets con `ORACLE_ROLE`;
+- permite atestaciones firmadas EIP-712 con nonce y deadline;
+- permite lotes Merkle para agrupar muchas evidencias en un solo root;
+- guarda hashes (`externalIdHash`, `payloadHash`) en vez de documentos o datos
+  privados completos;
+- permite marcar atestaciones como `VIGENTE`, `OBSERVADA` o `REVOCADA`.
+
+El deployer recibe `DEFAULT_ADMIN_ROLE` y `ORACLE_ROLE` inicialmente. Para una
+demo real, el admin puede otorgar `ORACLE_ROLE` a una wallet de VTV, taller o
+aseguradora desde el contrato verificado o una consola Hardhat.
+
+Para cargar evidencia demo:
+
+```bash
+npm run seed:oracle:sepolia
+```
+
+Ese seed es idempotente. Agrega atestaciones demo de VTV/autopartes y un batch
+Merkle de autopartes para que el panel publico muestre evidencia externa real.
+
+## Health operativo
+
+`npm run health:sepolia` revisa integracion blockchain sin usar claves privadas:
+
+- RPC y chain id Sepolia;
+- bytecode de `CarPass`, `VehicleParts` y `CarPassOracle`;
+- enlace `VehicleParts -> CarPass`;
+- enlace `CarPassOracle -> CarPass`;
+- rol oracle inicial del deployer si el artifact de deploy lo informa;
+- existencia y hashes de ABI en `deployments/sepolia/registry.json`.
+
+Este comando no reemplaza `npm run verify:deployment`: `health:sepolia` valida
+infraestructura y registry; `verify:deployment` valida datos demo, sellos y
+autopartes.
 
 ## Datos demo
 

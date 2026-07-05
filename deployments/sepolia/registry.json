@@ -1,0 +1,48 @@
+{
+  "network": "sepolia",
+  "generatedAt": "2026-07-05T16:25:57.557Z",
+  "contracts": {
+    "CarPass": {
+      "contractName": "CarPass",
+      "network": "sepolia",
+      "chainId": "",
+      "address": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
+      "transactionHash": "",
+      "blockNumber": null,
+      "deployedAt": "",
+      "deployer": "",
+      "carPassAddress": "",
+      "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\CarPass.sol\\CarPass.json",
+      "artifactPresent": true,
+      "abiSha256": "9c97c229c30e7c878548fa2f7eba927ae94445a0544c298c8af1041ab19b8688"
+    },
+    "VehicleParts": {
+      "contractName": "VehicleParts",
+      "network": "sepolia",
+      "chainId": "11155111",
+      "address": "0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15",
+      "transactionHash": "0xa9c5180471e6d12a4d3feba24113c6b29cd2aa6a6e021dbad0e14ccd5d40abc9",
+      "blockNumber": 11175893,
+      "deployedAt": "2026-06-30T23:16:26.339Z",
+      "deployer": "0xdF1e04Ed8A3eD3bfA19B33fCc8082Cd6fa4dA988",
+      "carPassAddress": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
+      "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\VehicleParts.sol\\VehicleParts.json",
+      "artifactPresent": true,
+      "abiSha256": "9dac00b46b845c577ecc30e82ccfce9e7e7ed9967a85707fd13a41907a10517c"
+    },
+    "CarPassOracle": {
+      "contractName": "CarPassOracle",
+      "network": "sepolia",
+      "chainId": "",
+      "address": "",
+      "transactionHash": "",
+      "blockNumber": null,
+      "deployedAt": "",
+      "deployer": "",
+      "carPassAddress": "",
+      "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\CarPassOracle.sol\\CarPassOracle.json",
+      "artifactPresent": true,
+      "abiSha256": "7ece1ab6404a980374b2c2e55dce87ea4d985f575620af07c6ea9c441ee2134d"
+    }
+  }
+}

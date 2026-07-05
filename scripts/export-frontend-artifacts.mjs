@@ -29,6 +29,16 @@ const contracts = [
     deploymentConst: "VEHICLEPARTS_DEPLOYMENT",
     envOverride: "VITE_VEHICLEPARTS_CONTRACT_ADDRESS",
   },
+  {
+    contractName: "CarPassOracle",
+    artifactPath: join(process.cwd(), "artifacts", "contracts", "CarPassOracle.sol", "CarPassOracle.json"),
+    deploymentPath: join(process.cwd(), "deployments", "sepolia", "CarPassOracle.json"),
+    abiFile: "carPassOracleAbi.ts",
+    abiConst: "CARPASS_ORACLE_ABI",
+    deploymentFile: "carPassOracleDeployment.ts",
+    deploymentConst: "CARPASS_ORACLE_DEPLOYMENT",
+    envOverride: "VITE_CARPASS_ORACLE_CONTRACT_ADDRESS",
+  },
 ];
 
 await mkdir(contractsDir, { recursive: true });
