@@ -5,7 +5,6 @@ import { isValidWalletAddress } from '../domain/carpass/validators'
 import { CarPassOperationNotice } from './CarPassOperationNotice'
 
 const ROLES = [
-  { label: 'Administrador', fn: 'DEFAULT_ADMIN_ROLE', desc: 'Control total del contrato' },
   { label: 'Concesionaria', fn: 'REGISTRADOR_ROLE', desc: 'Alta de vehículos' },
   { label: 'Taller mecánico', fn: 'MECANICO_ROLE', desc: 'Services y kilometraje' },
   { label: 'Aseguradora', fn: 'ASEGURADORA_ROLE', desc: 'Siniestros' },
@@ -79,6 +78,13 @@ export function AdminManageRolesPanel({ address }: AdminManageRolesPanelProps) {
           <div className="wallet-info">
             <span>Tu wallet admin</span>
             <code>{shortAddress(address)}</code>
+          </div>
+          <div className="wallet-info wallet-info--security">
+            <span>Custodia de administrador</span>
+            <p>
+              El rol de control total no se asigna desde este panel operativo. Para produccion,
+              usalo desde una multisig o una wallet de custodia separada.
+            </p>
           </div>
         </section>
       </div>
