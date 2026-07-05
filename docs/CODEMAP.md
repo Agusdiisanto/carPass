@@ -14,6 +14,7 @@ Mapa rapido para leer y defender CarPass.
 - `contracts/core/CarPassSeal.sol`: calculo y cache opcional del sello de calidad.
 - `contracts/core/CarPassTransfers.sol`: restriccion owner-only para transferencias.
 - `contracts/VehicleParts.sol`: NFT de autopartes grabadas (EPIC-22), vinculado a `CarPass` por direccion inmutable; reutiliza `REGISTRADOR_ROLE`/`MECANICO_ROLE` via `hasRole` cross-contract.
+- `contracts/CarPassOracle.sol`: atestaciones externas/oracle (EPIC-26), vinculado a `CarPass`; usa `ORACLE_ROLE` y firmas EIP-712.
 - Responsabilidades: VIN unico, roles, services, siniestros, VTV, transferencias owner-only, revocacion trazable y sello de calidad.
 - Invariantes clave:
   - `tokenId` se deriva de `keccak256(vin)`.
@@ -26,8 +27,12 @@ Mapa rapido para leer y defender CarPass.
 ## Scripts
 
 - `scripts/deploy.ts`: despliega `CarPass` y escribe metadata de despliegue.
+- `scripts/deploy-carpass-oracle.ts`: despliega `CarPassOracle` enlazado al `CarPass` configurado.
+- `scripts/seed-oracle.ts`: carga atestaciones oracle y batch Merkle demo de forma idempotente.
 - `scripts/check-deploy-readiness.mjs`: valida entorno antes de Sepolia.
 - `scripts/export-frontend-artifacts.mjs`: exporta ABI/address al frontend.
+- `scripts/write-deployment-registry.mjs`: consolida addresses y hashes ABI en `deployments/sepolia/registry.json`.
+- `scripts/health-sepolia.mjs`: valida RPC, bytecode, links entre contratos y registry.
 - `scripts/seed.ts`: carga VINs demo de forma idempotente.
 
 ## Tests
@@ -44,12 +49,15 @@ Mapa rapido para leer y defender CarPass.
 - `frontend/src/domain/carpass/eventLabels.ts`: labels de VTV y siniestros.
 - `frontend/src/domain/carpass/errors.ts`: parsing de errores del contrato.
 - `frontend/src/domain/carpass/validators.ts`: validaciones compartidas.
+- `frontend/src/domain/carpass/oracleEvidence.ts`: labels, normalizacion y helpers de evidencia oracle.
 
 ## Frontend Hooks
 
 - `frontend/src/hooks/useWallet.ts`: conexion MetaMask (extension, deep link mobile, QR Connect) y red esperada.
 - `frontend/src/hooks/useCarPass.ts`: operaciones de lectura/escritura contra el contrato.
 - `frontend/src/hooks/useVehicleLookup.ts`: busqueda reutilizable por VIN.
+- `frontend/src/hooks/useOracleEvidence.ts`: lectura publica walletless de atestaciones `CarPassOracle`.
+- `frontend/src/hooks/useBlockchainHealth.ts`: health UI de CarPass, VehicleParts, Oracle y ABIs.
 
 ## Frontend Wallet / Mobile
 
@@ -59,6 +67,8 @@ Mapa rapido para leer y defender CarPass.
 - `frontend/src/lib/publicAppUrl.ts`: URL publica para deep links y companion desde localhost.
 - `frontend/src/components/MobileWalletHint.tsx`: banner de conexion segun modo (desktop QR / mobile deeplink).
 - `frontend/src/components/QrCodeImage.tsx`: render local de QR para emparejamiento wallet.
+- `frontend/src/components/OracleEvidencePanel.tsx`: panel publico de evidencia oracle por VIN.
+- `frontend/src/components/BlockchainHealthPanel.tsx`: dashboard admin de salud blockchain.
 
 ## Frontend Views
 

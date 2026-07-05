@@ -34,6 +34,12 @@ El trabajo pendiente principal no es agregar mas alcance a ciegas, sino ordenar 
 | EPIC-12 | Public QR Verification | Frontend | 10 | Fuera de alcance | OUT |
 | EPIC-13 | IPFS Document Storage | Frontend / Servicio | 05, 11 | Fuera de alcance | OUT |
 | EPIC-14 | Public Read Orchestration & Defense Mode | Frontend / Infra | 08, 10, 11 | Defensa online | DONE |
+| EPIC-23 | Gas Optimization Contracts | Contrato | 19, 22 | Cierre | DONE |
+| EPIC-24 | Fast Registration Wizard | Frontend / Integracion | 10, 22 | Cierre | DONE |
+| EPIC-25 | Security Hardening Blockchain Integration | Contrato / Frontend / Infra | 22, 24 | Cierre | DONE |
+| EPIC-26 | Oracle Attestations & Blockchain Ops Health | Contrato / Infra | 08, 22, 25 | Cierre | DONE |
+| EPIC-27 | Public Oracle Evidence UX | Frontend / Integracion | 14, 26 | Cierre | DONE |
+| EPIC-28 | Blockchain Defense Pack | Contrato / Frontend / Infra | 26, 27 | Cierre | DONE |
 
 ## Camino de Cierre Recomendado
 
@@ -386,6 +392,104 @@ Implementado:
 - Integración en `useCarPass.run()` para registrar cada transacción confirmada o fallida.
 - Registro de conexión/desconexión de wallet y aviso de red incorrecta en `App.tsx`.
 - Link a wallet en `RuntimeStrip` cuando hay sesión activa.
+
+## EPIC-23 - Gas Optimization Contracts
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-23-gas-optimization-contracts.md`.
+
+Implementado:
+
+- `VehicleParts` separa el struct publico `Parte` de un struct interno de storage mas compacto.
+- Se elimina storage redundante de `vehicleTokenId` por autoparte instalada; el dato se reconstruye desde la consulta por vehiculo.
+- `timestamp`, `instalador`, `tipo` y `reemplazada` quedan empaquetados en menos slots internos.
+- La ABI publica de consultas se mantiene estable para el frontend.
+- Los ahorros requieren redeploy de `VehicleParts` para aplicar en Sepolia.
+
+## EPIC-24 - Fast Registration Wizard
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-24-fast-registration-wizard.md`.
+
+Implementado:
+
+- Alta de concesionaria presentada como flujo guiado: datos, owner, NFT, autopartes y pasaporte publico.
+- `tokenId` calculado localmente desde VIN despues del mint confirmado para evitar una lectura RPC redundante antes de autopartes.
+- Se mantienen preflight on-chain, Sepolia gate y recuperacion de autopartes pendientes.
+- No cambia ABI ni contratos.
+
+## EPIC-25 - Security Hardening Blockchain Integration
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-25-security-hardening-blockchain-integration.md`.
+
+Implementado:
+
+- `VehicleParts` protege `registrarPartes` y `reemplazarParte` con `ReentrancyGuard`.
+- `vercel.json` define CSP y headers basicos de seguridad para el deploy estatico.
+- El panel de roles deja de ofrecer `DEFAULT_ADMIN_ROLE` como operacion normal y documenta custodia admin.
+
+## EPIC-26 - Oracle Attestations & Blockchain Ops Health
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-26-oracle-attestations-ops-health.md`.
+
+Implementado:
+
+- Nuevo contrato independiente `CarPassOracle` enlazado a `CarPass`.
+- `ORACLE_ROLE` para wallets que pueden atestar evidencia externa.
+- Atestaciones directas roleadas y atestaciones firmadas EIP-712 con nonce y deadline.
+- Deduplicacion por vehiculo, tipo e identificador externo hasheado.
+- Estado de atestacion `VIGENTE`, `OBSERVADA` o `REVOCADA`.
+- Deploy script `npm run deploy:oracle:sepolia`.
+- Export de ABI/address para frontend.
+- Registry consolidado `deployments/sepolia/registry.json`.
+- Health script `npm run health:sepolia` para validar RPC, bytecode, links y hashes de ABI.
+
+Nota:
+
+- El oracle queda listo localmente y documentado; para estar activo en Sepolia requiere deploy real con `DEPLOYER_PRIVATE_KEY` y fondos.
+
+## EPIC-27 - Public Oracle Evidence UX
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-27-public-oracle-evidence-ux.md`.
+
+Implementado:
+
+- Hook walletless `useOracleEvidence` para leer `CarPassOracle` desde provider publico.
+- Panel `OracleEvidencePanel` en la consulta publica por VIN.
+- Estado claro cuando el oracle no esta desplegado/configurado en Sepolia.
+- Listado de atestaciones con tipo, estado, oracle, hashes y vigencia.
+- Copy de producto que explica que el oracle util para CarPass es VTV/taller/aseguradora/registro/autopartes, no un feed generico.
+
+Nota:
+
+- No cambia contratos ni ABI; consume la ABI ya exportada de `CarPassOracle`.
+
+## EPIC-28 - Blockchain Defense Pack
+
+Estado: `DONE`.
+
+Spec: `docs/sdd/EPIC-28-blockchain-defense-pack.md`.
+
+Implementado:
+
+- `CarPassOracle` ahora soporta batches Merkle de evidencia con `submitEvidenceBatch`.
+- Eventos `EvidenceBatchSubmitted` y `EvidenceBatchStatusUpdated`.
+- Script `npm run seed:oracle:sepolia` para cargar atestaciones y Merkle root demo.
+- Panel admin `BlockchainHealthPanel` para ver salud blockchain desde la UI.
+- `OracleEvidencePanel` distingue atestaciones directas/EIP-712 de batches Merkle.
+- El panel publico explica provenance, oracle del dominio y evidencia eficiente por root.
+
+Nota:
+
+- Para que los datos oracle aparezcan como on-chain reales falta desplegar `CarPassOracle` en Sepolia y correr `seed:oracle:sepolia`.
 
 ## Regla de Trabajo
 
