@@ -48,6 +48,9 @@ npm run seed:sepolia
 | `1G1BE5SM1H7123456` | Chevrolet Cruze 2019 | VENCIDO | VTV con observaciones |
 | `2T1BURHE0JC043821` | Toyota Corolla 2021 | REVOCADO | Siniestro grave sin reparar |
 | `8A1FB1AB2JT123456` | Renault Logan 2018 | REVOCADO | VTV rechazada |
+| `WAUZZZ8V5KA123456` | Volkswagen Amarok 2021 | ACTIVO | Transferida, motor y capot reemplazados, 3 services |
+| `9BWZZZ377VT004251` | Volkswagen Vento 2017 | ACTIVO | Transferido, puerta/caja reemplazadas, 4 services |
+| `JHMFA16586S012345` | Peugeot 208 2020 | VENCIDO | Transferido, baul reemplazado, VTV con observaciones |
 
 ## Rechazos para mostrar
 

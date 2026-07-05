@@ -5,6 +5,7 @@ import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { shortAddress } from '../hooks/useWallet'
+import { TIPOS_PARTE, tipoParteLabel } from '../domain/carpass/vehicleParts'
 
 const GRAVEDAD_OPTIONS = [
   { value: 0, label: 'Leve' },
@@ -26,16 +27,22 @@ export function AseguradoraView({
 
   const [gravedad, setGravedad] = useState(0)
   const [desc, setDesc] = useState('')
-  const [reparado, setReparado] = useState(false)
+  const [autoparteAfectada, setAutoparteAfectada] = useState(false)
+  const [tipoParteAfectada, setTipoParteAfectada] = useState(0)
   const [costo, setCosto] = useState(0)
 
   async function handleSiniestro() {
     if (!lookup.tokenId) return
-    const ok = await agregarSiniestro(lookup.tokenId, gravedad, desc, reparado, costo)
+    const descripcion = autoparteAfectada
+      ? `Autoparte afectada: ${tipoParteLabel(tipoParteAfectada)}. ${desc}`.trim()
+      : desc
+    // La reparacion la confirma el taller (VehicleParts.reemplazarParte), no la aseguradora al declarar.
+    const ok = await agregarSiniestro(lookup.tokenId, gravedad, descripcion, false, costo)
     if (ok) {
       setDesc('')
       setCosto(0)
-      setReparado(false)
+      setAutoparteAfectada(false)
+      setTipoParteAfectada(0)
     }
   }
 
@@ -79,9 +86,33 @@ export function AseguradoraView({
           </label>
 
           <label className="field checkbox-field">
-            <input checked={reparado} type="checkbox" onChange={(e) => setReparado(e.target.checked)} />
-            El vehículo ya fue reparado
+            <input
+              checked={autoparteAfectada}
+              type="checkbox"
+              onChange={(e) => setAutoparteAfectada(e.target.checked)}
+            />
+            Se vio afectada una autoparte grabada
           </label>
+
+          {autoparteAfectada ? (
+            <label className="field">
+              Autoparte afectada
+              <select
+                className="select-input"
+                value={tipoParteAfectada}
+                onChange={(e) => setTipoParteAfectada(Number(e.target.value))}
+              >
+                {TIPOS_PARTE.map((parteTipo) => (
+                  <option key={parteTipo.value} value={parteTipo.value}>
+                    {parteTipo.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <p className="panel-desc">
+            La reparación y el reemplazo de autopartes los confirma el taller en su propio registro.
+          </p>
 
           <div className="wallet-info">
             <span>Firmando como</span>

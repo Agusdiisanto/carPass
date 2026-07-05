@@ -8663,6 +8663,105 @@ main:has(.public-view) {
   font-size: 0.75rem;
 }
 
+/* ── Pipeline visual de pasos (alta de vehiculo, service + reemplazo de autoparte) ── */
+
+.step-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.step-pipeline__step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 18px;
+}
+
+.step-pipeline__step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.step-pipeline__step--done:not(:last-child)::before {
+  background: rgba(52, 211, 153, 0.35);
+}
+
+.step-pipeline__num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.step-pipeline__step--active .step-pipeline__num {
+  background: rgba(96, 165, 250, 0.18);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.step-pipeline__step--done .step-pipeline__num {
+  background: rgba(52, 211, 153, 0.18);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.step-pipeline__step--error .step-pipeline__num {
+  background: rgba(248, 113, 113, 0.18);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.step-pipeline__spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(96, 165, 250, 0.25);
+  border-top-color: #60a5fa;
+  animation: step-pipeline-spin 0.7s linear infinite;
+}
+
+@keyframes step-pipeline-spin {
+  to { transform: rotate(360deg); }
+}
+
+.step-pipeline__body {
+  padding-top: 3px;
+}
+
+.step-pipeline__label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.step-pipeline__step--pending .step-pipeline__label {
+  color: var(--muted);
+}
+
+.step-pipeline__desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ── Registrador: recuperación de autopartes pendientes ── */
 
 .panel--parts-recovery {

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { VehicleIdentifyPanel } from '../components/VehicleIdentifyPanel'
 import { OperativeShell } from '../components/OperativeShell'
 import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
+import { VehiclePartsOperationNotice } from '../components/VehiclePartsOperationNotice'
+import { StepPipeline, type PipelineStep, type PipelineStepStatus } from '../components/StepPipeline'
 import { formatKm } from '../domain/carpass/formatters'
 import { generateNumeroGrabado } from '../domain/carpass/idGenerators'
 import { isValidMileage } from '../domain/carpass/validators'
-import { TIPOS_PARTE } from '../domain/carpass/vehicleParts'
+import { TIPOS_PARTE, tipoParteLabel } from '../domain/carpass/vehicleParts'
 import { useCarPass } from '../hooks/useCarPass'
 import { useVehicleLookup } from '../hooks/useVehicleLookup'
 import { tienePartesRegistradas, useVehicleParts } from '../hooks/useVehicleParts'
@@ -22,19 +24,24 @@ export function TallerView({
 }) {
   const { busy, message, lastOp, agregarService } = useCarPass()
   const lookup = useVehicleLookup({ loadMileage: true })
-  const { busy: parteBusy, message: parteMessage, reemplazarParte } = useVehicleParts()
+  const { busy: parteBusy, message: parteMessage, lastOp: parteLastOp, reemplazarParte } = useVehicleParts()
 
   const [km, setKm] = useState(0)
   const [tipo, setTipo] = useState('Service oficial')
   const [desc, setDesc] = useState('')
+  const [cambioAutoparte, setCambioAutoparte] = useState(false)
   const [tipoParte, setTipoParte] = useState(0)
   const [nuevoNumeroGrabado, setNuevoNumeroGrabado] = useState(() => generateNumeroGrabado(0))
   const [partesInstaladas, setPartesInstaladas] = useState<boolean | null>(null)
   const [chequeandoPartes, setChequeandoPartes] = useState(false)
+  const [serviceStatus, setServiceStatus] = useState<PipelineStepStatus>('pending')
+  const [parteStatus, setParteStatus] = useState<PipelineStepStatus>('pending')
 
   useEffect(() => {
     if (!lookup.tokenId || !lookup.found) {
       setPartesInstaladas(null)
+      setServiceStatus('pending')
+      setParteStatus('pending')
       return
     }
 
@@ -48,28 +55,71 @@ export function TallerView({
     return () => { cancelled = true }
   }, [lookup.tokenId, lookup.found, parteMessage])
 
+  useEffect(() => {
+    if (partesInstaladas !== true) setCambioAutoparte(false)
+  }, [partesInstaladas])
+
   const kmValido = isValidMileage(km, lookup.lastKm)
   const numeroGrabadoValido = nuevoNumeroGrabado.trim().length > 0
+  const puedeCambiarAutoparte = partesInstaladas === true
+  const cambioAutoparteListo = !cambioAutoparte || numeroGrabadoValido
+  const incluyeParteEnPipeline = cambioAutoparte || parteStatus !== 'pending'
 
-  async function handleService() {
-    if (!lookup.tokenId) return
-    const ok = await agregarService(lookup.tokenId, km, tipo, desc || 'Service registrado')
-    if (ok) {
-      lookup.setLastKm(km)
-      setKm(km + 1000)
-      setDesc('')
-    }
-  }
+  const pipelineSteps: PipelineStep[] = [
+    {
+      label: 'Registrar service',
+      description: 'Se guarda el kilometraje y el detalle del mantenimiento en la blockchain.',
+      status: serviceStatus,
+    },
+    ...(incluyeParteEnPipeline
+      ? [
+          {
+            label: 'Reemplazar autoparte',
+            description: 'Se graba el nuevo número de la pieza cambiada.',
+            status: parteStatus,
+          },
+        ]
+      : []),
+  ]
 
   function handleTipoParteChange(nuevoTipo: number) {
     setTipoParte(nuevoTipo)
     setNuevoNumeroGrabado(generateNumeroGrabado(nuevoTipo))
   }
 
-  async function handleReemplazarParte() {
+  async function handleService() {
     if (!lookup.tokenId) return
-    const ok = await reemplazarParte(lookup.tokenId, tipoParte, nuevoNumeroGrabado)
-    if (ok) setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))
+
+    const conCambioAutoparte = cambioAutoparte
+    setServiceStatus('active')
+    setParteStatus('pending')
+
+    const descripcion = conCambioAutoparte
+      ? `${desc || 'Service registrado'} Autoparte reemplazada: ${tipoParteLabel(tipoParte)} (${nuevoNumeroGrabado}).`
+      : desc || 'Service registrado'
+
+    const ok = await agregarService(lookup.tokenId, km, tipo, descripcion)
+    if (!ok) {
+      setServiceStatus('error')
+      return
+    }
+    setServiceStatus('done')
+
+    lookup.setLastKm(km)
+    setKm(km + 1000)
+    setDesc('')
+
+    if (conCambioAutoparte) {
+      setParteStatus('active')
+      const parteOk = await reemplazarParte(lookup.tokenId, tipoParte, nuevoNumeroGrabado)
+      if (parteOk) {
+        setParteStatus('done')
+        setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))
+        setCambioAutoparte(false)
+      } else {
+        setParteStatus('error')
+      }
+    }
   }
 
   const panels = (
@@ -90,6 +140,8 @@ export function TallerView({
               <p className="panel-desc">El kilometraje debe superar el último registrado on-chain.</p>
             </div>
           </div>
+
+          <StepPipeline steps={pipelineSteps} />
 
           <label className="field">
             Tipo de service
@@ -138,50 +190,30 @@ export function TallerView({
             />
           </label>
 
-          <div className="wallet-info">
-            <span>Firmando como</span>
-            <code>{shortAddress(address)}</code>
-          </div>
-
-          <button
-            className="btn-primary full-width"
-            disabled={!kmValido || Boolean(busy)}
-            onClick={handleService}
-          >
-            {busy === 'Cargando service' ? 'Registrando...' : 'Registrar service'}
-          </button>
-        </section>
-      ) : null}
-
-      {lookup.found ? (
-        <section className="panel panel--operative">
-          <div className="panel-step">
-            <span className="panel-step__num">3</span>
-            <div>
-              <h3>Reemplazo de autoparte grabada</h3>
-              <p className="panel-desc">
-                Usar solo cuando se cambia una pieza con grabado antirrobo (ej. cambio de motor).
-                La pieza anterior queda en el historial, no se borra.
-              </p>
-            </div>
-          </div>
+          <label className="field checkbox-field">
+            <input
+              checked={cambioAutoparte}
+              disabled={!puedeCambiarAutoparte}
+              type="checkbox"
+              onChange={(e) => setCambioAutoparte(e.target.checked)}
+            />
+            Se cambió una autoparte grabada en este service
+          </label>
 
           {chequeandoPartes ? (
             <p className="panel-desc">Verificando autopartes del vehículo...</p>
-          ) : partesInstaladas === false ? (
-            <div>
-              <p className="error-msg">
-                Este vehículo aún no tiene las 6 autopartes registradas. Pedile a la concesionaria que complete el grabado antes de reemplazar piezas.
-              </p>
-            </div>
-          ) : (
+          ) : !puedeCambiarAutoparte ? (
+            <p className="error-msg">
+              Este vehículo aún no tiene las 6 autopartes registradas. Pedile a la concesionaria que
+              complete el grabado antes de reemplazar piezas.
+            </p>
+          ) : cambioAutoparte ? (
             <>
               <label className="field">
                 Autoparte
                 <select
                   className="select-input"
                   value={tipoParte}
-                  disabled={partesInstaladas !== true}
                   onChange={(e) => handleTipoParteChange(Number(e.target.value))}
                 >
                   {TIPOS_PARTE.map((parteTipo) => (
@@ -197,34 +229,48 @@ export function TallerView({
                 <input readOnly value={nuevoNumeroGrabado} />
               </label>
               <button
+                type="button"
                 className="btn-secondary full-width"
-                disabled={partesInstaladas !== true}
                 onClick={() => setNuevoNumeroGrabado(generateNumeroGrabado(tipoParte))}
               >
                 Regenerar número
               </button>
-
-              <button
-                className="btn-primary full-width"
-                disabled={partesInstaladas !== true || !numeroGrabadoValido || Boolean(parteBusy)}
-                onClick={() => void handleReemplazarParte()}
-              >
-                {parteBusy === 'Reemplazando autoparte' ? 'Reemplazando...' : 'Reemplazar autoparte'}
-              </button>
             </>
-          )}
+          ) : null}
 
-          {parteMessage ? <p className="panel-desc">{parteMessage}</p> : null}
+          <div className="wallet-info">
+            <span>Firmando como</span>
+            <code>{shortAddress(address)}</code>
+          </div>
+
+          <button
+            className="btn-primary full-width"
+            disabled={!kmValido || !cambioAutoparteListo || Boolean(busy) || Boolean(parteBusy)}
+            onClick={() => void handleService()}
+          >
+            {busy === 'Cargando service'
+              ? 'Registrando...'
+              : parteBusy === 'Reemplazando autoparte'
+                ? 'Reemplazando autoparte...'
+                : 'Registrar service'}
+          </button>
         </section>
       ) : null}
     </div>
+  )
+
+  const operationFooter = (
+    <>
+      <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
+      <VehiclePartsOperationNotice busy={parteBusy} message={parteMessage} lastOp={parteLastOp} />
+    </>
   )
 
   if (embedded) {
     return (
       <>
         {panels}
-        <CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />
+        {operationFooter}
       </>
     )
   }
@@ -236,7 +282,7 @@ export function TallerView({
       description="Escaneá el QR del vehículo y registrá el mantenimiento sin tipear el VIN."
       address={address}
       wrongNetwork={wrongNetwork}
-      footer={<CarPassOperationNotice busy={busy} message={message} lastOp={lastOp} />}
+      footer={operationFooter}
     >
       {panels}
     </OperativeShell>

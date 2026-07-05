@@ -82,6 +82,7 @@ export type TransferenciaVehiculo = {
   to: string
   tokenId: bigint
   blockNumber: number
+  timestamp?: number
   txHash: string
 }
 
@@ -203,22 +204,26 @@ export async function getMisVehiculosSafe(address: string) {
 
 export async function getTransferenciasVehiculo(tokenId: bigint): Promise<TransferenciaVehiculo[]> {
   const events = await queryTransferEventsForToken(CONTRACT_ADDRESS, tokenId)
-  return events
-    .map((event) => {
+  const c = await getReadContract()
+  const enriched = await Promise.all(
+    events.map(async (event) => {
       const parsed = event as unknown as {
         args: { from: string; to: string; tokenId: bigint }
         blockNumber: number
         transactionHash: string
       }
+      const block = await c.runner?.provider?.getBlock(parsed.blockNumber).catch(() => null)
       return {
         from: parsed.args.from,
         to: parsed.args.to,
         tokenId: parsed.args.tokenId,
         blockNumber: parsed.blockNumber,
+        timestamp: block?.timestamp,
         txHash: parsed.transactionHash,
       }
-    })
-    .sort((a, b) => b.blockNumber - a.blockNumber)
+    }),
+  )
+  return enriched.sort((a, b) => b.blockNumber - a.blockNumber)
 }
 
 export type CarPassLastOp = {
@@ -540,6 +545,12 @@ export function useCarPass() {
     return ok
   }
 
+  function reset() {
+    setBusy('')
+    setMessage('')
+    setLastOp({ kind: null, txHash: null, blockNumber: null, failed: false })
+  }
+
   return {
     busy,
     message,
@@ -558,5 +569,6 @@ export function useCarPass() {
     transferirVehiculo,
     getMisVehiculos,
     getMisVehiculosSafe,
+    reset,
   }
 }

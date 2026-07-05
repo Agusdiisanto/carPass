@@ -15,6 +15,7 @@ import { VehiclePassportQr } from '../components/VehiclePassportQr'
 import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { VehiclePartsOperationNotice } from '../components/VehiclePartsOperationNotice'
 import { PendingPartsResult, PendingPartsRetry } from '../components/PendingPartsRecovery'
+import { StepPipeline, type PipelineStep } from '../components/StepPipeline'
 import { formatVehicleLookupError } from '../lib/vehicleLookup'
 
 type WizardStatus = 'complete' | 'active' | 'pending' | 'blocked'
@@ -63,6 +64,11 @@ function RegistrationWizard({ steps }: { steps: WizardStep[] }) {
   )
 }
 
+const MARCA_DEFAULT = 'Toyota'
+const MODELO_DEFAULT = 'Corolla'
+const ANIO_DEFAULT = 2024
+const COLOR_DEFAULT = 'Blanco'
+
 export function RegistradorView({
   address,
   wrongNetwork = false,
@@ -74,19 +80,20 @@ export function RegistradorView({
   embedded?: boolean
   onViewPassport?: (vin: string) => void
 }) {
-  const { busy, message, lastOp, registrarVehiculo, getVehiculoPorVin } = useCarPass()
+  const { busy, message, lastOp, registrarVehiculo, getVehiculoPorVin, reset: resetCarPass } = useCarPass()
   const {
     busy: partesBusy,
     message: partesMessage,
     lastOp: partesLastOp,
     registrarPartes,
+    reset: resetVehicleParts,
   } = useVehicleParts()
 
   const [vin, setVin] = useState(generateVin)
-  const [marca, setMarca] = useState('Toyota')
-  const [modelo, setModelo] = useState('Corolla')
-  const [anio, setAnio] = useState(2024)
-  const [color, setColor] = useState('Blanco')
+  const [marca, setMarca] = useState(MARCA_DEFAULT)
+  const [modelo, setModelo] = useState(MODELO_DEFAULT)
+  const [anio, setAnio] = useState(ANIO_DEFAULT)
+  const [color, setColor] = useState(COLOR_DEFAULT)
   const [propietario, setPropietario] = useState(address)
   const [pasaporteEmitido, setPasaporteEmitido] = useState<VehiculoInfo | null>(null)
   const [autopartesEmitidas, setAutopartesEmitidas] = useState<string[] | null>(null)
@@ -102,6 +109,34 @@ export function RegistradorView({
 
   const partesRegistrando = partesBusy === 'Registrando autopartes'
   const partesStatusFailed = partesLastOp.failed
+
+  const pipelineSteps: PipelineStep[] = [
+    {
+      label: 'Crear vehículo',
+      description: 'Alta del pasaporte digital (NFT) con marca, modelo y VIN.',
+      status: busy === 'Registrando vehiculo' ? 'active' : pasaporteEmitido ? 'done' : 'pending',
+    },
+    {
+      label: 'Crear autopartes',
+      description: partesPendientes
+        ? 'Quedó pendiente el grabado. Reintentá más abajo.'
+        : 'Grabado automático de las 6 autopartes del vehículo.',
+      status: partesPendientes
+        ? 'error'
+        : partesRegistrando
+          ? 'active'
+          : autopartesEmitidas
+            ? 'done'
+            : pasaporteEmitido
+              ? 'active'
+              : 'pending',
+    },
+    {
+      label: 'Ver vehículo',
+      description: 'Pasaporte listo: compartí el QR o abrí la vista pública.',
+      status: autopartesEmitidas ? 'active' : 'pending',
+    },
+  ]
 
   const propietarioValido = !propietario.trim() || isTransferWalletAddress(propietario.trim())
   const info: VehiculoInfo = { vin, marca, modelo, anio, color }
@@ -155,6 +190,20 @@ export function RegistradorView({
     }
 
     return numeros
+  }
+
+  function handleNuevoVehiculo() {
+    setPasaporteEmitido(null)
+    setAutopartesEmitidas(null)
+    setPartesPendientes(false)
+    resetCarPass()
+    resetVehicleParts()
+    setVin(generateVin())
+    setMarca(MARCA_DEFAULT)
+    setModelo(MODELO_DEFAULT)
+    setAnio(ANIO_DEFAULT)
+    setColor(COLOR_DEFAULT)
+    setPropietario(address)
   }
 
   async function handleRegistrar() {
@@ -239,6 +288,8 @@ export function RegistradorView({
             </div>
           </div>
 
+          <StepPipeline steps={pipelineSteps} />
+
           <label className="field">
             VIN <span className="field-hint">generado automáticamente, 17 caracteres</span>
             <input readOnly value={vin} />
@@ -303,12 +354,15 @@ export function RegistradorView({
                   {onViewPassport ? (
                     <button
                       type="button"
-                      className="btn-secondary full-width"
+                      className="btn-primary full-width"
                       onClick={() => onViewPassport(pasaporteEmitido.vin)}
                     >
                       Ver pasaporte público
                     </button>
                   ) : null}
+                  <button type="button" className="btn-secondary full-width" onClick={handleNuevoVehiculo}>
+                    Registrar otro vehículo
+                  </button>
                 </>
               ) : partesPendientes ? (
                 <PendingPartsRetry

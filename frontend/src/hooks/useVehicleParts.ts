@@ -164,6 +164,12 @@ export function useVehicleParts() {
     })
   }
 
+  function reset() {
+    setBusy('')
+    setMessage('')
+    setLastOp({ txHash: null, blockNumber: null, failed: false })
+  }
+
   return {
     busy,
     message,
@@ -173,5 +179,6 @@ export function useVehicleParts() {
     getPartesVehiculo,
     getHistorialParte,
     getParteActual,
+    reset,
   }
 }

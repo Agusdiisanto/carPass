@@ -188,6 +188,9 @@ VINs esperados:
 | `1G1BE5SM1H7123456` | Chevrolet Cruze 2019 | VENCIDO, VTV con observaciones |
 | `2T1BURHE0JC043821` | Toyota Corolla 2021 | REVOCADO, siniestro grave |
 | `8A1FB1AB2JT123456` | Renault Logan 2018 | REVOCADO, VTV rechazada |
+| `WAUZZZ8V5KA123456` | Volkswagen Amarok 2021 | ACTIVO, transferida y con motor/capot reemplazados |
+| `9BWZZZ377VT004251` | Volkswagen Vento 2017 | ACTIVO, transferido y con puerta/caja reemplazadas |
+| `JHMFA16586S012345` | Peugeot 208 2020 | VENCIDO, transferido y con baul reemplazado |
 
 ## Problemas comunes
 

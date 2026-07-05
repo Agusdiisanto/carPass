@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { RegistroService, RegistroSiniestro, RegistroVTV } from '../hooks/useCarPass'
+import { getTransferenciasVehiculo } from '../hooks/useCarPass'
+import type { RegistroService, RegistroSiniestro, RegistroVTV, TransferenciaVehiculo } from '../hooks/useCarPass'
 import { DEMO_VEHICLES, filterDemoVehicles } from '../domain/carpass/demoVehicles'
 import {
   applyDemoCatalogFilters,
@@ -17,6 +18,8 @@ import {
 } from '../domain/carpass/eventLabels'
 import { getSealUi } from '../domain/carpass/seal'
 import { isValidVin } from '../domain/carpass/validators'
+import { siniestroFueReparado, type Parte } from '../domain/carpass/vehicleParts'
+import { getPartesVehiculo, hasContractAddress as hasVehiclePartsContract } from '../hooks/useVehicleParts'
 import { DemoVehicleCard } from '../components/DemoVehicleCard'
 import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
 import { BrandLogo } from '../components/BrandLogo'
@@ -34,6 +37,7 @@ import { VinQrScanner } from '../components/VinQrScanner'
 import type { Role } from '../hooks/useCarPass'
 import { shortAddress, isSameWalletAddress } from '../hooks/useWallet'
 import { usePublicVehicleLookup } from '../hooks/usePublicVehicleLookup'
+import { useChainActivities } from '../hooks/useChainActivities'
 import { useVehicleMedia } from '../hooks/useVehicleMedia'
 import { isMobileDevice, prefersPhoneCompanion, canUseCameraScan } from '../lib/deviceProfile'
 import {
@@ -52,20 +56,27 @@ type TimelineEvent =
   | { kind: 'service';   ts: number; data: RegistroService }
   | { kind: 'vtv';       ts: number; data: RegistroVTV }
   | { kind: 'siniestro'; ts: number; data: RegistroSiniestro }
+  | { kind: 'transfer';  ts: number; data: TransferenciaVehiculo }
 
 type Historial = PublicVehicleRecord
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
 function buildTimeline(
   services: RegistroService[],
   siniestros: RegistroSiniestro[],
   vtv: RegistroVTV[],
+  transferencias: TransferenciaVehiculo[] = [],
 ): TimelineEvent[] {
   return [
     ...services.map((d)   => ({ kind: 'service'   as const, ts: Number(d.timestamp), data: d })),
     ...siniestros.map((d) => ({ kind: 'siniestro' as const, ts: Number(d.timestamp), data: d })),
     ...vtv.map((d)        => ({ kind: 'vtv'       as const, ts: Number(d.timestamp), data: d })),
+    ...transferencias
+      .filter((d) => d.from.toLowerCase() !== ZERO_ADDRESS)
+      .map((d) => ({ kind: 'transfer' as const, ts: d.timestamp ?? d.blockNumber, data: d })),
   ].sort((a, b) => b.ts - a.ts)
 }
 
@@ -261,8 +272,9 @@ function VTVCard({ data }: { data: RegistroVTV }) {
   )
 }
 
-function SiniestroCard({ data }: { data: RegistroSiniestro }) {
+function SiniestroCard({ data, partes }: { data: RegistroSiniestro; partes: Parte[] }) {
   const cls = SINIESTRO_GRAVEDAD_CLASSES[data.gravedad] ?? 'sin-leve'
+  const reparado = siniestroFueReparado(data, partes)
   return (
     <>
       <div className="tl-header-row">
@@ -270,16 +282,38 @@ function SiniestroCard({ data }: { data: RegistroSiniestro }) {
         <span className={`tl-badge ${cls}`}>{SINIESTRO_GRAVEDAD_LABELS[data.gravedad]}</span>
       </div>
       {data.descripcion && <p className="tl-desc">{data.descripcion}</p>}
-      <p className="tl-km">{data.reparado ? 'Reparado' : 'Sin reparar'}</p>
+      <p className="tl-km">{reparado ? 'Reparado' : 'Sin reparar'}</p>
     </>
   )
 }
 
-function TimelineItem({ event }: { event: TimelineEvent }) {
+function TransferCard({ data }: { data: TransferenciaVehiculo }) {
+  return (
+    <>
+      <div className="tl-header-row">
+        <p className="tl-title">Transferencia de dominio</p>
+        <span className="tl-badge vtv-ok">NFT</span>
+      </div>
+      <p className="tl-desc">
+        De <code>{shortAddress(data.from)}</code> a <code>{shortAddress(data.to)}</code>
+      </p>
+      {data.txHash ? (
+        <p className="tl-km">
+          <a href={`https://sepolia.etherscan.io/tx/${data.txHash}`} target="_blank" rel="noreferrer">
+            Ver transacción
+          </a>
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+function TimelineItem({ event, partes }: { event: TimelineEvent; partes: Parte[] }) {
   const config = {
     service:   { letter: 'S', cls: 'dot-service' },
     vtv:       { letter: 'V', cls: 'dot-vtv'     },
     siniestro: { letter: '!', cls: 'dot-sin'     },
+    transfer:  { letter: 'T', cls: 'dot-origin'  },
   }[event.kind]
 
   return (
@@ -292,7 +326,8 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
         <span className="tl-date">{formatDate(event.ts)}</span>
         {event.kind === 'service'   && <ServiceCard   data={event.data as RegistroService}   />}
         {event.kind === 'vtv'       && <VTVCard       data={event.data as RegistroVTV}       />}
-        {event.kind === 'siniestro' && <SiniestroCard data={event.data as RegistroSiniestro} />}
+        {event.kind === 'siniestro' && <SiniestroCard data={event.data as RegistroSiniestro} partes={partes} />}
+        {event.kind === 'transfer'  && <TransferCard  data={event.data as TransferenciaVehiculo} />}
       </div>
     </div>
   )
@@ -350,10 +385,35 @@ export function PublicView({
   })
   const lookup = usePublicVehicleLookup()
   const { data: rawData, error, loading, loadingVin, refreshing } = lookup
+  const chainActivities = useChainActivities()
   const data = useMemo(
     () => (rawData ? normalizePublicVehicleRecord(rawData) : null),
     [rawData],
   )
+  const [partes, setPartes] = useState<Parte[]>([])
+  const [transferencias, setTransferencias] = useState<TransferenciaVehiculo[]>([])
+  useEffect(() => {
+    if (!data || !hasVehiclePartsContract) {
+      setPartes([])
+      return
+    }
+    let cancelled = false
+    getPartesVehiculo(data.tokenId)
+      .then((r) => { if (!cancelled) setPartes(r) })
+      .catch(() => { if (!cancelled) setPartes([]) })
+    return () => { cancelled = true }
+  }, [data?.tokenId, partsRefreshKey])
+  useEffect(() => {
+    if (!data) {
+      setTransferencias([])
+      return
+    }
+    let cancelled = false
+    getTransferenciasVehiculo(data.tokenId)
+      .then((historial) => { if (!cancelled) setTransferencias(historial) })
+      .catch(() => { if (!cancelled) setTransferencias([]) })
+    return () => { cancelled = true }
+  }, [data?.tokenId, data?.source])
   const openVinRef = useRef<string | null>(null)
   openVinRef.current = data?.info.vin ?? null
   const isMobile = isMobileDevice()
@@ -408,8 +468,13 @@ export function PublicView({
       if (!openVin || normalizeVin(vin) !== normalizeVin(openVin)) return
       void lookup.refresh(vin)
       if (reason === 'autopartes') setPartsRefreshKey(k => k + 1)
+      if (reason === 'transfer') {
+        void getTransferenciasVehiculo(data?.tokenId ?? 0n)
+          .then(setTransferencias)
+          .catch(() => setTransferencias([]))
+      }
     })
-  }, [lookup.refresh])
+  }, [data?.tokenId, lookup.refresh])
 
   const vinFilteredDemos = useMemo(() => filterDemoVehicles(vin), [vin])
   const filteredDemos = useMemo(
@@ -417,6 +482,37 @@ export function PublicView({
     [vinFilteredDemos, catalogFilters],
   )
   const showCatalogFilters = DEMO_VEHICLES.length > DEMO_CATALOG_FILTER_THRESHOLD
+  const transferenciasVisibles = useMemo(() => {
+    if (!data) return []
+
+    const byTx = new Map<string, TransferenciaVehiculo>()
+    for (const tx of transferencias) {
+      byTx.set(tx.txHash || `${tx.from}-${tx.to}-${tx.blockNumber}`, tx)
+    }
+
+    for (const entry of chainActivities) {
+      if (
+        entry.kind !== 'transfer_nft' ||
+        entry.status !== 'confirmed' ||
+        normalizeVin(entry.vin ?? '') !== normalizeVin(data.info.vin) ||
+        !entry.counterparty
+      ) {
+        continue
+      }
+
+      const localTx: TransferenciaVehiculo = {
+        from: entry.walletAddress,
+        to: entry.counterparty,
+        tokenId: data.tokenId,
+        blockNumber: entry.blockNumber ?? 0,
+        timestamp: Math.floor(entry.at / 1000),
+        txHash: entry.txHash ?? '',
+      }
+      byTx.set(localTx.txHash || `${localTx.from}-${localTx.to}-${localTx.blockNumber}`, localTx)
+    }
+
+    return [...byTx.values()].sort((a, b) => (b.timestamp ?? b.blockNumber) - (a.timestamp ?? a.blockNumber))
+  }, [chainActivities, data, transferencias])
 
   async function buscar(vinToSearch = vin) {
     if (!isValidVin(vinToSearch)) return
@@ -486,7 +582,7 @@ export function PublicView({
     void buscar(detectedVin)
   }
 
-  const timeline = data ? buildTimeline(data.services, data.siniestros, data.vtv) : []
+  const timeline = data ? buildTimeline(data.services, data.siniestros, data.vtv, transferenciasVisibles) : []
 
   // ── Search state ────────────────────────────────────────────────────────────
 
@@ -706,7 +802,7 @@ export function PublicView({
         ) : (
           <div className="timeline">
             {timeline.map((event, i) => (
-              <TimelineItem event={event} key={i} />
+              <TimelineItem event={event} partes={partes} key={i} />
             ))}
             <div className="tl-item">
               <div className="tl-left">

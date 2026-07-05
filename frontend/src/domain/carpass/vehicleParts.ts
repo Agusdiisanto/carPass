@@ -49,3 +49,30 @@ export function normalizePartes(raw: unknown[]): Parte[] {
 export function isPartesInstaladas(partes: Parte[]): boolean {
   return partes.some((parte) => parte.numeroGrabado.trim().length > 0)
 }
+
+const AUTOPARTE_AFECTADA_RE = /^Autoparte afectada:\s*([^.]+)\./i
+
+/** Lee la autoparte afectada que la aseguradora antepuso a la descripcion del siniestro. */
+export function parseAutoparteAfectada(descripcion: string): number | null {
+  const match = AUTOPARTE_AFECTADA_RE.exec(descripcion.trim())
+  if (!match) return null
+  const label = match[1].trim().toLowerCase()
+  const tipo = TIPOS_PARTE.find((t) => t.label.toLowerCase() === label)
+  return tipo ? tipo.value : null
+}
+
+/**
+ * Un siniestro grave nunca vuelve a marcarse `reparado` on-chain (historial append-only,
+ * ver EPIC-24). Si la autoparte que declaro afectada la aseguradora fue reemplazada despues
+ * de esa fecha, se considera reparado a nivel UI aunque el campo on-chain siga en false.
+ */
+export function siniestroFueReparado(
+  siniestro: { descripcion: string; reparado: boolean; timestamp: bigint },
+  partes: Parte[],
+): boolean {
+  if (siniestro.reparado) return true
+  const tipo = parseAutoparteAfectada(siniestro.descripcion)
+  if (tipo === null) return false
+  const parte = partes.find((p) => p.tipo === tipo)
+  return Boolean(parte && parte.reemplazada && parte.timestamp > siniestro.timestamp)
+}

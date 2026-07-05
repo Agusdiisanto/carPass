@@ -25,10 +25,6 @@ function resolveVehiclePartsAddress() {
 const CARPASS_ADDRESS = resolveCarPassAddress()
 const VEHICLEPARTS_ADDRESS = resolveVehiclePartsAddress()
 
-export const LEGACY_VEHICLEPARTS_DEPLOY_MESSAGE =
-  'VehicleParts en Sepolia está desactualizado: intenta usar vehiculoExiste() en CarPass, pero ese método no existe en el deploy actual. ' +
-  'Un admin debe ejecutar npm run deploy:vehicleparts:sepolia y npm run export:frontend, y actualizar VITE_VEHICLEPARTS_CONTRACT_ADDRESS.'
-
 export type NumerosGrabadoTuple = [string, string, string, string, string, string]
 
 export function toNumerosGrabadoTuple(numeros: string[]): NumerosGrabadoTuple {
@@ -65,30 +61,12 @@ async function partTokenExists(partsRead: Contract, tokenId: bigint): Promise<bo
   }
 }
 
-/** Detecta el bug del VehicleParts viejo que llama vehiculoExiste() inexistente en CarPass. */
-export async function isLegacyVehiclePartsDeploy(vehicleTokenId: bigint): Promise<boolean> {
-  const carPass = new Contract(CARPASS_ADDRESS, CARPASS_ABI, getPublicProvider())
-  const existsViaOwner = await vehicleExistsAtToken(carPass, vehicleTokenId)
-  if (!existsViaOwner) return false
-
-  try {
-    await carPass.vehiculoExiste.staticCall(vehicleTokenId)
-    return false
-  } catch {
-    return true
-  }
-}
-
 /** Diagnóstico cuando el RPC no devuelve el motivo del revert. */
 export async function diagnoseRegistrarPartesFailure(
   vehicleTokenId: bigint,
   numerosGrabado: string[],
   caller: string,
 ): Promise<string> {
-  if (await isLegacyVehiclePartsDeploy(vehicleTokenId)) {
-    return LEGACY_VEHICLEPARTS_DEPLOY_MESSAGE
-  }
-
   const partsRead = getVehiclePartsReadContract()
   const carPass = new Contract(CARPASS_ADDRESS, CARPASS_ABI, getPublicProvider())
   const provider = getPublicProvider()
@@ -155,10 +133,6 @@ export async function assertCanRegistrarPartes(
   vehicleTokenId: bigint,
   numerosGrabado: string[],
 ): Promise<NumerosGrabadoTuple> {
-  if (await isLegacyVehiclePartsDeploy(vehicleTokenId)) {
-    throw new Error(LEGACY_VEHICLEPARTS_DEPLOY_MESSAGE)
-  }
-
   let numeros = toNumerosGrabadoTuple(numerosGrabado)
   const partsRead = getVehiclePartsReadContract()
   const carPassOnChain = String(await partsRead.carPass())

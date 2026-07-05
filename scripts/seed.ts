@@ -13,6 +13,12 @@ type DemoVehicle = {
   color: string;
 };
 
+const demoOwners = {
+  martina: "0x1111111111111111111111111111111111111111",
+  federico: "0x2222222222222222222222222222222222222222",
+  concesionariaUsados: "0x3333333333333333333333333333333333333333",
+};
+
 function readJson(path: string) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -118,6 +124,36 @@ async function seedPartes(tokenId: bigint, vin: string) {
   console.log("Parts seeded:", vin, numeros.join(", "));
 }
 
+async function reemplazarParte(
+  tokenId: bigint,
+  vin: string,
+  tipo: number,
+  nuevoNumeroGrabado: string,
+) {
+  if (!vehicleParts) {
+    console.log("VehicleParts not configured, skipping part replacement for:", vin);
+    return;
+  }
+
+  const partes = await vehicleParts.getPartesVehiculo(tokenId);
+  if (!partesYaRegistradas(partes)) {
+    console.log("Part replacement skipped, parts missing:", vin);
+    return;
+  }
+
+  const history = await vehicleParts.getHistorialParte(tokenId, tipo);
+  const exists = history.some(
+    (record: { numeroGrabado: string }) => record.numeroGrabado === nuevoNumeroGrabado,
+  );
+  if (exists) {
+    console.log("Part replacement already seeded:", vin, tipo, nuevoNumeroGrabado);
+    return;
+  }
+
+  await (await vehicleParts.reemplazarParte(tokenId, tipo, nuevoNumeroGrabado)).wait();
+  console.log("Part replaced:", vin, tipo, nuevoNumeroGrabado);
+}
+
 async function service(tokenId: bigint, km: number, tipo: string, descripcion: string) {
   const history = await carPass.getHistorialService(tokenId);
   const exists = history.some(
@@ -209,6 +245,22 @@ async function siniestro(
   console.log("Siniestro seeded:", tokenId.toString(), gravedad, descripcion);
 }
 
+async function transferirVehiculoDemo(tokenId: bigint, vin: string, to: string) {
+  const owner = await carPass.ownerOf(tokenId);
+  if (owner.toLowerCase() === to.toLowerCase()) {
+    console.log("Vehicle transfer already seeded:", vin, to);
+    return;
+  }
+
+  if (owner.toLowerCase() !== deployer.address.toLowerCase()) {
+    console.log("Vehicle transfer skipped, deployer is not current owner:", vin, owner);
+    return;
+  }
+
+  await (await carPass.transferFrom(deployer.address, to, tokenId)).wait();
+  console.log("Vehicle transferred:", vin, to);
+}
+
 console.log("Seeding CarPass demo data");
 console.log("Deployer:", deployer.address);
 console.log("CarPass:", carPassAddress);
@@ -282,6 +334,68 @@ await seedPartes(logan, "8A1FB1AB2JT123456");
 await service(logan, 40000, "Service 40.000 km", "Cambio de aceite y revision general");
 await vtv(logan, 2, 0);
 
+const amarok = await registrar({
+  vin: "WAUZZZ8V5KA123456",
+  marca: "Volkswagen",
+  modelo: "Amarok",
+  anio: 2021,
+  color: "Plata",
+});
+await seedPartes(amarok, "WAUZZZ8V5KA123456");
+await service(amarok, 10000, "Service 10.000 km", "Cambio de aceite, filtro de aire y scanner");
+await service(amarok, 25000, "Service 25.000 km", "Revision de tren delantero y frenos");
+await service(amarok, 40000, "Service 40.000 km", "Service mayor con fluidos de transmision");
+await reemplazarParte(amarok, "WAUZZZ8V5KA123456", 0, "WAUZZZ8V5KA123456-MOTOR-R01");
+await reemplazarParte(amarok, "WAUZZZ8V5KA123456", 4, "WAUZZZ8V5KA123456-CAPOT-R01");
+await vtv(amarok, 0, now + oneYear);
+await transferirVehiculoDemo(amarok, "WAUZZZ8V5KA123456", demoOwners.martina);
+
+const vento = await registrar({
+  vin: "9BWZZZ377VT004251",
+  marca: "Volkswagen",
+  modelo: "Vento",
+  anio: 2017,
+  color: "Azul",
+});
+await seedPartes(vento, "9BWZZZ377VT004251");
+await service(vento, 15000, "Service 15.000 km", "Cambio de aceite y filtros");
+await service(vento, 30000, "Service 30.000 km", "Pastillas delanteras y bujias");
+await service(vento, 45000, "Service 45.000 km", "Cambio de bateria y alineacion");
+await service(vento, 60000, "Service 60.000 km", "Distribucion, refrigerante y control general");
+await siniestro(
+  vento,
+  1,
+  "Golpe lateral leve reparado. Se reemplazo puerta delantera derecha.",
+  true,
+  210000,
+);
+await reemplazarParte(vento, "9BWZZZ377VT004251", 3, "9BWZZZ377VT004251-PDD-R01");
+await reemplazarParte(vento, "9BWZZZ377VT004251", 1, "9BWZZZ377VT004251-CAJA-R01");
+await vtv(vento, 0, now + oneYear);
+await transferirVehiculoDemo(vento, "9BWZZZ377VT004251", demoOwners.federico);
+
+const peugeot = await registrar({
+  vin: "JHMFA16586S012345",
+  marca: "Peugeot",
+  modelo: "208",
+  anio: 2020,
+  color: "Blanco",
+});
+await seedPartes(peugeot, "JHMFA16586S012345");
+await service(peugeot, 8000, "Service 8.000 km", "Primer control y cambio de aceite");
+await service(peugeot, 16000, "Service 16.000 km", "Filtros, frenos y diagnostico electronico");
+await service(peugeot, 32000, "Service 32.000 km", "Cambio de cubiertas y amortiguadores traseros");
+await siniestro(
+  peugeot,
+  1,
+  "Alcance trasero reparado. Se reemplazo baul y paragolpes.",
+  true,
+  320000,
+);
+await reemplazarParte(peugeot, "JHMFA16586S012345", 5, "JHMFA16586S012345-BAUL-R01");
+await vtv(peugeot, 1, now + oneYear);
+await transferirVehiculoDemo(peugeot, "JHMFA16586S012345", demoOwners.concesionariaUsados);
+
 console.log("");
 console.log("Seed complete. Demo VINs:");
 console.log("1HGBH41JXMN109186  Honda Civic 2022       -> ACTIVO + 6 autopartes");
@@ -289,3 +403,6 @@ console.log("3FADP4EJ8FM123456  Ford Focus 2020        -> VENCIDO (sin VTV) + 6 
 console.log("1G1BE5SM1H7123456  Chevrolet Cruze 2019   -> VENCIDO (VTV con observaciones) + 6 autopartes");
 console.log("2T1BURHE0JC043821  Toyota Corolla 2021    -> REVOCADO (siniestro grave) + 6 autopartes");
 console.log("8A1FB1AB2JT123456  Renault Logan 2018     -> REVOCADO (VTV rechazada) + 6 autopartes");
+console.log("WAUZZZ8V5KA123456  Volkswagen Amarok 2021 -> ACTIVO + motor/capot reemplazados + transferida");
+console.log("9BWZZZ377VT004251  Volkswagen Vento 2017  -> ACTIVO + puerta/caja reemplazadas + transferida");
+console.log("JHMFA16586S012345  Peugeot 208 2020       -> VENCIDO + baul reemplazado + transferida");
