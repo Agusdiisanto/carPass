@@ -2569,6 +2569,106 @@ a.runtime-dock-item:focus-visible {
   background: rgba(139, 92, 246, 0.18);
 }
 
+.blockchain-health {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(5, 12, 20, 0.72);
+  border: 1px solid rgba(125, 211, 252, 0.14);
+}
+
+.blockchain-health__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.blockchain-health__eyebrow {
+  margin: 0 0 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.blockchain-health h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #eef2f6;
+}
+
+.blockchain-health__summary {
+  flex-shrink: 0;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.1);
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  color: #bae6fd;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.blockchain-health__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.blockchain-health__item {
+  min-width: 0;
+  padding: 13px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.blockchain-health__item--ok { border-color: rgba(74, 222, 128, 0.18); }
+.blockchain-health__item--warn { border-color: rgba(248, 113, 113, 0.2); }
+.blockchain-health__item--pending { border-color: rgba(250, 204, 21, 0.22); }
+
+.blockchain-health__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.blockchain-health__label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #eef2f6;
+}
+
+.blockchain-health__status {
+  font-size: 10px;
+  font-weight: 800;
+  color: #8b95a1;
+  text-transform: uppercase;
+}
+
+.blockchain-health__item p {
+  margin: 8px 0 0;
+  color: #8b95a1;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.blockchain-health__item a {
+  display: inline-block;
+  margin-top: 10px;
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .admin-vin-received {
   display: flex;
   flex-wrap: wrap;
@@ -3505,6 +3605,22 @@ button:disabled {
   background: var(--code-bg);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 12px;
+}
+
+.wallet-info--security {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(251, 191, 36, 0.24);
+  border-radius: 10px;
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.wallet-info--security p {
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.45;
 }
 
 code {
@@ -5620,6 +5736,221 @@ main:has(.public-view) {
   color: #3a4556;
   border-top: 1px solid rgba(255,255,255,0.05);
   padding-top: 10px;
+}
+
+.oracle-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(14, 24, 34, 0.96), rgba(10, 17, 24, 0.96));
+  border: 1px solid rgba(125, 211, 252, 0.16);
+}
+
+.oracle-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.oracle-panel__eyebrow {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.oracle-panel h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.2;
+  color: #eef2f6;
+}
+
+.oracle-panel__badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.oracle-panel__badge.is-ready {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.22);
+}
+
+.oracle-panel__badge.is-pending {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.22);
+}
+
+.oracle-panel__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #8b95a1;
+}
+
+.oracle-panel__empty {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  font-size: 13px;
+  line-height: 1.45;
+  color: #9aa7b6;
+}
+
+.oracle-panel__empty--pending {
+  color: #f8d66d;
+  border-color: rgba(250, 204, 21, 0.24);
+  background: rgba(250, 204, 21, 0.06);
+}
+
+.oracle-panel__empty--error {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.oracle-panel__list {
+  display: grid;
+  gap: 10px;
+}
+
+.oracle-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.oracle-row--ok { border-color: rgba(74, 222, 128, 0.18); }
+.oracle-row--warn { border-color: rgba(251, 146, 60, 0.2); }
+.oracle-row--bad { border-color: rgba(248, 113, 113, 0.2); }
+
+.oracle-row__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.oracle-row__kind {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #eef2f6;
+}
+
+.oracle-row__meta {
+  margin: 0;
+  font-size: 12px;
+  color: #738198;
+}
+
+.oracle-row__status {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.oracle-row__status--ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.oracle-row__status--warn {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.1);
+}
+
+.oracle-row__status--bad {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.oracle-row__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oracle-row__grid div {
+  min-width: 0;
+}
+
+.oracle-row__grid span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.oracle-row__grid a,
+.oracle-row__grid code {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: #d7e1ee;
+}
+
+.oracle-row__grid a {
+  text-decoration: none;
+}
+
+.oracle-row__grid a:hover {
+  color: #7dd3fc;
+}
+
+@media (max-width: 640px) {
+  .blockchain-health__head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .blockchain-health__summary {
+    align-self: flex-start;
+  }
+
+  .blockchain-health__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oracle-panel__head,
+  .oracle-row__main {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .oracle-panel__badge,
+  .oracle-row__status {
+    align-self: flex-start;
+  }
+
+  .oracle-row__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .vps {
@@ -8133,6 +8464,197 @@ main:has(.public-view) {
   width: min(100%, 252px);
 }
 
+/* ── Registrador: flujo guiado blockchain ── */
+
+.registration-flow {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.registration-layout {
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+}
+
+.registration-wizard {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.registration-wizard__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.registration-wizard__eyebrow {
+  margin: 0 0 4px;
+  color: #93c5fd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.registration-wizard h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.05rem;
+}
+
+.registration-wizard__badge {
+  flex-shrink: 0;
+  min-width: 76px;
+  padding: 5px 10px;
+  border: 1px solid rgba(45, 212, 191, 0.32);
+  border-radius: 999px;
+  color: #99f6e4;
+  background: rgba(45, 212, 191, 0.1);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.registration-wizard__steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.registration-wizard__step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: minmax(42px, auto) 20px;
+  gap: 8px 10px;
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.32);
+}
+
+.registration-wizard__index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.14);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.registration-wizard__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.registration-wizard__copy strong {
+  color: #f8fafc;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.registration-wizard__copy small {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.registration-wizard__state {
+  grid-column: 1 / -1;
+  align-self: end;
+  min-height: 20px;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.registration-wizard__step--complete {
+  border-color: rgba(34, 197, 94, 0.34);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.registration-wizard__step--complete .registration-wizard__index {
+  color: #052e16;
+  background: #86efac;
+}
+
+.registration-wizard__step--complete .registration-wizard__state {
+  color: #86efac;
+}
+
+.registration-wizard__step--active {
+  border-color: rgba(45, 212, 191, 0.42);
+  background: rgba(45, 212, 191, 0.08);
+}
+
+.registration-wizard__step--active .registration-wizard__index {
+  color: #042f2e;
+  background: #5eead4;
+}
+
+.registration-wizard__step--active .registration-wizard__state {
+  color: #5eead4;
+}
+
+.registration-wizard__step--blocked {
+  border-color: rgba(251, 191, 36, 0.36);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.registration-wizard__step--blocked .registration-wizard__state {
+  color: #fde68a;
+}
+
+.registration-wizard__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.registration-wizard__metrics span {
+  min-height: 26px;
+  padding: 5px 9px;
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: 999px;
+  color: #bfdbfe;
+  background: rgba(96, 165, 250, 0.08);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.registration-owner-strip {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.3);
+}
+
+.registration-owner-strip span {
+  color: #bfdbfe;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.registration-owner-strip code {
+  overflow-wrap: anywhere;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+}
+
 /* ── Registrador: recuperación de autopartes pendientes ── */
 
 .panel--parts-recovery {
@@ -8397,7 +8919,30 @@ main:has(.public-view) {
   word-break: break-word;
 }
 
+@media (max-width: 920px) {
+  .registration-layout,
+  .registration-wizard__steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 560px) {
+  .registration-wizard__header {
+    flex-direction: column;
+  }
+
+  .registration-wizard__badge {
+    width: 100%;
+  }
+
+  .registration-wizard__steps {
+    grid-template-columns: 1fr;
+  }
+
+  .registration-wizard__step {
+    min-height: 76px;
+  }
+
   .parts-recovery-search__row {
     flex-direction: column;
   }

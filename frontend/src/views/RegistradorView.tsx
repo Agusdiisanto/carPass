@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCarPass } from '../hooks/useCarPass'
 import type { VehiculoInfo } from '../hooks/useCarPass'
 import { tienePartesRegistradas, useVehicleParts } from '../hooks/useVehicleParts'
-import { generateNumerosGrabado, generateVin } from '../domain/carpass/idGenerators'
+import { generateNumerosGrabado, generateVin, vehicleTokenIdFromVin } from '../domain/carpass/idGenerators'
 import { normalizeVin } from '../domain/carpass/formatters'
 import {
   isTransferWalletAddress,
@@ -16,6 +16,52 @@ import { CarPassOperationNotice } from '../components/CarPassOperationNotice'
 import { VehiclePartsOperationNotice } from '../components/VehiclePartsOperationNotice'
 import { PendingPartsResult, PendingPartsRetry } from '../components/PendingPartsRecovery'
 import { formatVehicleLookupError } from '../lib/vehicleLookup'
+
+type WizardStatus = 'complete' | 'active' | 'pending' | 'blocked'
+
+type WizardStep = {
+  label: string
+  detail: string
+  status: WizardStatus
+}
+
+function statusText(status: WizardStatus) {
+  if (status === 'complete') return 'Listo'
+  if (status === 'active') return 'En curso'
+  if (status === 'blocked') return 'Revisar'
+  return 'Pendiente'
+}
+
+function RegistrationWizard({ steps }: { steps: WizardStep[] }) {
+  return (
+    <section className="registration-wizard" aria-label="Flujo de alta on-chain">
+      <div className="registration-wizard__header">
+        <div>
+          <p className="registration-wizard__eyebrow">Emision blockchain guiada</p>
+          <h3>Alta completa: NFT + autopartes + pasaporte</h3>
+        </div>
+        <span className="registration-wizard__badge">Sepolia</span>
+      </div>
+      <ol className="registration-wizard__steps">
+        {steps.map((step, index) => (
+          <li className={`registration-wizard__step registration-wizard__step--${step.status}`} key={step.label}>
+            <span className="registration-wizard__index">{index + 1}</span>
+            <span className="registration-wizard__copy">
+              <strong>{step.label}</strong>
+              <small>{step.detail}</small>
+            </span>
+            <span className="registration-wizard__state">{statusText(step.status)}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="registration-wizard__metrics" aria-label="Optimizaciones del flujo">
+        <span>2 transacciones maximas</span>
+        <span>TokenId local post-mint</span>
+        <span>Preflight on-chain antes de firmar</span>
+      </div>
+    </section>
+  )
+}
 
 export function RegistradorView({
   address,
@@ -62,6 +108,37 @@ export function RegistradorView({
   const formularioValido = isValidVehicleInfo(info) && propietarioValido
   const registrando = Boolean(busy) || Boolean(partesBusy)
   const vinPendienteValido = isValidVin(normalizeVin(vinPendiente))
+  const ownerFinal = normalizeWalletAddress(propietario) ?? address
+  const ownerPreview = propietario.trim() && !propietarioValido ? propietario.trim() : ownerFinal
+  const ownerUsaWalletConectada = propietarioValido && ownerFinal.toLowerCase() === address.toLowerCase()
+
+  const wizardSteps: WizardStep[] = [
+    {
+      label: 'Datos del vehiculo',
+      detail: formularioValido ? 'VIN y dominio listos' : 'Completa marca, modelo, anio, color y owner',
+      status: formularioValido ? 'complete' : 'blocked',
+    },
+    {
+      label: 'Owner inicial',
+      detail: ownerUsaWalletConectada ? 'Sale a tu wallet conectada' : 'Sale a wallet destino validada',
+      status: propietarioValido ? 'complete' : 'blocked',
+    },
+    {
+      label: 'NFT CarPass',
+      detail: pasaporteEmitido ? 'Pasaporte minteado' : busy === 'Registrando vehiculo' ? 'Esperando confirmacion' : 'Listo para firmar',
+      status: pasaporteEmitido ? 'complete' : busy === 'Registrando vehiculo' ? 'active' : 'pending',
+    },
+    {
+      label: '6 autopartes',
+      detail: autopartesEmitidas ? 'Grabado completo' : partesPendientes ? 'Reintento disponible' : partesBusy ? 'Registrando piezas' : 'Se encadena despues del mint',
+      status: autopartesEmitidas ? 'complete' : partesPendientes ? 'blocked' : partesBusy ? 'active' : 'pending',
+    },
+    {
+      label: 'Pasaporte publico',
+      detail: autopartesEmitidas ? 'Disponible para consulta y QR' : 'Se habilita al cerrar autopartes',
+      status: autopartesEmitidas ? 'complete' : 'pending',
+    },
+  ]
 
   async function grabarAutopartes(tokenId: bigint, vinDestino: string): Promise<string[] | null> {
     const numeros = generateNumerosGrabado(vinDestino)
@@ -82,26 +159,29 @@ export function RegistradorView({
 
   async function handleRegistrar() {
     const infoARegistrar = { ...info }
-    const owner = normalizeWalletAddress(propietario) ?? address
-    const ok = await registrarVehiculo(infoARegistrar, owner)
+    const ok = await registrarVehiculo(infoARegistrar, ownerFinal)
     if (!ok) return
 
     setPasaporteEmitido(infoARegistrar)
     setAutopartesEmitidas(null)
     setPartesPendientes(false)
-    setVin(generateVin())
 
-    const { tokenId } = await getVehiculoPorVin(infoARegistrar.vin)
+    const tokenId = vehicleTokenIdFromVin(infoARegistrar.vin)
     const numeros = await grabarAutopartes(tokenId, infoARegistrar.vin)
-    if (!numeros) setPartesPendientes(true)
+    if (numeros) {
+      setVin(generateVin())
+    } else {
+      setPartesPendientes(true)
+    }
   }
 
   async function handleReintentarPartes() {
     if (!pasaporteEmitido) return
-    const { tokenId } = await getVehiculoPorVin(pasaporteEmitido.vin)
+    const tokenId = vehicleTokenIdFromVin(pasaporteEmitido.vin)
     const yaTiene = await tienePartesRegistradas(tokenId)
     if (yaTiene) {
       setPartesPendientes(false)
+      setAutopartesEmitidas(generateNumerosGrabado(pasaporteEmitido.vin))
       return
     }
     const numeros = await grabarAutopartes(tokenId, pasaporteEmitido.vin)
@@ -142,7 +222,10 @@ export function RegistradorView({
   }
 
   const panels = (
-      <div className="panels-grid single">
+    <div className="registration-flow">
+      <RegistrationWizard steps={wizardSteps} />
+
+      <div className="panels-grid registration-layout">
         <section className="panel">
           <div className="panel-step">
             <span className="panel-step__num panel-step__num--registrador">1</span>
@@ -182,6 +265,10 @@ export function RegistradorView({
             <input placeholder={address} value={propietario} onChange={(e) => setPropietario(e.target.value.trim())} />
           </label>
           {!propietarioValido && <p className="error-msg">Direccion invalida</p>}
+          <div className="registration-owner-strip">
+            <span>{ownerUsaWalletConectada ? 'Owner: wallet conectada' : 'Owner: wallet destino'}</span>
+            <code>{ownerPreview}</code>
+          </div>
 
           <button
             className="btn-primary full-width"
@@ -293,6 +380,7 @@ export function RegistradorView({
           ) : null}
         </section>
       </div>
+    </div>
   )
 
   const operationFooter = (

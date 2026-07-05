@@ -1,5 +1,7 @@
+import { keccak256, toUtf8Bytes } from 'ethers'
 import { VIN_LENGTH } from './validators'
 import { TOTAL_TIPOS_PARTE } from './vehicleParts'
+import { normalizeVin } from './formatters'
 
 // Excluye I, O, Q como el estandar VIN real, para evitar confusion visual.
 const VIN_CHARS = '0123456789ABCDEFGHJKLMNPRSTUVWXYZ'
@@ -29,4 +31,8 @@ export function generateNumerosGrabadoForVin(vin: string): string[] {
 export function generateNumerosGrabado(vin?: string): string[] {
   if (vin?.trim()) return generateNumerosGrabadoForVin(vin)
   return Array.from({ length: TOTAL_TIPOS_PARTE }, (_, tipo) => generateNumeroGrabado(tipo))
+}
+
+export function vehicleTokenIdFromVin(vin: string): bigint {
+  return BigInt(keccak256(toUtf8Bytes(normalizeVin(vin))))
 }
