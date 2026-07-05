@@ -596,9 +596,9 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "uint256",
-            "name": "costoEstimado",
-            "type": "uint256"
+            "internalType": "enum CarPassTypes.SiniestroGravedad",
+            "name": "gravedad",
+            "type": "uint8"
           },
           {
             "internalType": "string",
@@ -606,14 +606,14 @@ export const CARPASS_ABI = [
             "type": "string"
           },
           {
-            "internalType": "enum CarPassTypes.SiniestroGravedad",
-            "name": "gravedad",
-            "type": "uint8"
-          },
-          {
             "internalType": "bool",
             "name": "reparado",
             "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "costoEstimado",
+            "type": "uint256"
           },
           {
             "internalType": "address",
@@ -646,14 +646,14 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "uint256",
-            "name": "vencimiento",
-            "type": "uint256"
-          },
-          {
             "internalType": "enum CarPassTypes.VTVResultado",
             "name": "resultado",
             "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "vencimiento",
+            "type": "uint256"
           },
           {
             "internalType": "address",
@@ -810,9 +810,9 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "uint256",
-            "name": "costoEstimado",
-            "type": "uint256"
+            "internalType": "enum CarPassTypes.SiniestroGravedad",
+            "name": "gravedad",
+            "type": "uint8"
           },
           {
             "internalType": "string",
@@ -820,14 +820,14 @@ export const CARPASS_ABI = [
             "type": "string"
           },
           {
-            "internalType": "enum CarPassTypes.SiniestroGravedad",
-            "name": "gravedad",
-            "type": "uint8"
-          },
-          {
             "internalType": "bool",
             "name": "reparado",
             "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "costoEstimado",
+            "type": "uint256"
           },
           {
             "internalType": "address",
@@ -861,14 +861,14 @@ export const CARPASS_ABI = [
             "type": "uint256"
           },
           {
-            "internalType": "uint256",
-            "name": "vencimiento",
-            "type": "uint256"
-          },
-          {
             "internalType": "enum CarPassTypes.VTVResultado",
             "name": "resultado",
             "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "vencimiento",
+            "type": "uint256"
           },
           {
             "internalType": "address",

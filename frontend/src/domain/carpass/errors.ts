@@ -54,7 +54,7 @@ export function parseContractError(error: unknown): string {
     if (msg.includes('user rejected')) return 'Transaccion cancelada por el usuario'
     if (msg.includes('insufficient funds')) return 'Fondos insuficientes para pagar el gas'
     if (msg.includes('missing revert data')) {
-      return 'El contrato rechazó la operación pero el nodo no devolvió el motivo. Revisá rol Concesionaria, que el vehículo exista y que las autopartes no estén ya registradas.'
+      return 'El contrato rechazó la operación pero el nodo no devolvió el motivo. Revisá que tu wallet tenga el rol correcto y que el vehículo exista.'
     }
     if (msg.includes('execution reverted')) return 'El contrato rechazo la operacion'
     if (msg.includes('network')) return 'No se pudo conectar a la red'
