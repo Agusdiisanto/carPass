@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface ICarPass {
     function hasRole(bytes32 role, address account) external view returns (bool);
@@ -13,7 +14,7 @@ interface ICarPass {
  * @notice NFT que representa cada autoparte grabada de un vehiculo CarPass.
  * @dev EPIC-18: roles delegados a CarPass via hasRole, sin AccessControl propio.
  */
-contract VehicleParts is ERC721 {
+contract VehicleParts is ERC721, ReentrancyGuard {
 
     // -------------------------------------------------------------------------
     // Roles (deben coincidir con los definidos en CarPass)
@@ -61,6 +62,14 @@ contract VehicleParts is ERC721 {
         bool      reemplazada;
     }
 
+    struct ParteStorage {
+        string    numeroGrabado;
+        address   instalador;
+        uint64    timestamp;
+        TipoParte tipo;
+        bool      reemplazada;
+    }
+
     // -------------------------------------------------------------------------
     // Estado
     // -------------------------------------------------------------------------
@@ -69,7 +78,7 @@ contract VehicleParts is ERC721 {
 
     mapping(uint256 => bool) private _partesRegistradas;
     mapping(uint256 => mapping(TipoParte => uint256)) private _parteActualTokenId;
-    mapping(uint256 => Parte) private _partes;
+    mapping(uint256 => ParteStorage) private _partes;
     mapping(uint256 => mapping(TipoParte => uint256[])) private _historialPartes;
 
     // -------------------------------------------------------------------------
@@ -128,6 +137,7 @@ contract VehicleParts is ERC721 {
      */
     function registrarPartes(uint256 vehicleTokenId, string[TOTAL_TIPOS_PARTE] calldata numerosGrabado)
         external
+        nonReentrant
         onlyCarPassRole(REGISTRADOR_ROLE)
         returns (uint256[TOTAL_TIPOS_PARTE] memory partTokenIds)
     {
@@ -153,6 +163,7 @@ contract VehicleParts is ERC721 {
      */
     function reemplazarParte(uint256 vehicleTokenId, TipoParte tipo, string calldata nuevoNumeroGrabado)
         external
+        nonReentrant
         onlyCarPassRole(MECANICO_ROLE)
         returns (uint256 nuevoPartTokenId)
     {
@@ -190,12 +201,11 @@ contract VehicleParts is ERC721 {
 
         _safeMint(vehicleOwner, partTokenId);
 
-        _partes[partTokenId] = Parte({
-            vehicleTokenId: vehicleTokenId,
-            tipo: tipo,
+        _partes[partTokenId] = ParteStorage({
             numeroGrabado: numeroGrabado,
-            timestamp: block.timestamp,
             instalador: msg.sender,
+            timestamp: uint64(block.timestamp),
+            tipo: tipo,
             reemplazada: false
         });
 
@@ -212,7 +222,7 @@ contract VehicleParts is ERC721 {
         view
         returns (Parte memory)
     {
-        return _partes[_parteActualTokenId[vehicleTokenId][tipo]];
+        return _partePublica(vehicleTokenId, _parteActualTokenId[vehicleTokenId][tipo]);
     }
 
     function getPartesVehiculo(uint256 vehicleTokenId)
@@ -222,7 +232,7 @@ contract VehicleParts is ERC721 {
     {
         for (uint8 i = 0; i < TOTAL_TIPOS_PARTE; i++) {
             TipoParte tipo = TipoParte(i);
-            partes[i] = _partes[_parteActualTokenId[vehicleTokenId][tipo]];
+            partes[i] = _partePublica(vehicleTokenId, _parteActualTokenId[vehicleTokenId][tipo]);
         }
     }
 
@@ -234,8 +244,35 @@ contract VehicleParts is ERC721 {
         uint256[] storage tokenIds = _historialPartes[vehicleTokenId][tipo];
         historial = new Parte[](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            historial[i] = _partes[tokenIds[i]];
+            historial[i] = _partePublica(vehicleTokenId, tokenIds[i]);
         }
+    }
+
+    function _partePublica(uint256 vehicleTokenId, uint256 partTokenId)
+        private
+        view
+        returns (Parte memory)
+    {
+        if (partTokenId == 0) {
+            return Parte({
+                vehicleTokenId: 0,
+                tipo: TipoParte.MOTOR,
+                numeroGrabado: "",
+                timestamp: 0,
+                instalador: address(0),
+                reemplazada: false
+            });
+        }
+
+        ParteStorage storage parte = _partes[partTokenId];
+        return Parte({
+            vehicleTokenId: vehicleTokenId,
+            tipo: parte.tipo,
+            numeroGrabado: parte.numeroGrabado,
+            timestamp: parte.timestamp,
+            instalador: parte.instalador,
+            reemplazada: parte.reemplazada
+        });
     }
 
     // -------------------------------------------------------------------------

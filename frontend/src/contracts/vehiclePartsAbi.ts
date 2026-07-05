@@ -144,6 +144,11 @@ export const VEHICLEPARTS_ABI = [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
