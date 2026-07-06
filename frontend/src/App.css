@@ -5851,10 +5851,17 @@ main:has(.public-view) {
 }
 
 .oracle-row__kind {
-  margin: 0 0 3px;
-  font-size: 14px;
+  margin: 0 0 4px;
+  font-size: 15px;
   font-weight: 800;
   color: #eef2f6;
+}
+
+.oracle-row__summary {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #b8c4d4;
 }
 
 .oracle-row__meta {
@@ -5869,6 +5876,46 @@ main:has(.public-view) {
 
 .oracle-row__meta--warn {
   color: #fb923c;
+}
+
+.oracle-row__meta--neutral {
+  color: #8b95a1;
+}
+
+.oracle-row__meta--bad {
+  color: #f87171;
+}
+
+.oracle-row__proof {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
+.oracle-row__proof summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  list-style: none;
+}
+
+.oracle-row__proof summary::-webkit-details-marker {
+  display: none;
+}
+
+.oracle-row__proof summary::before {
+  content: '▸ ';
+  color: #475569;
+}
+
+.oracle-row__proof[open] summary::before {
+  content: '▾ ';
+}
+
+.oracle-row__proof[open] .oracle-row__grid {
+  margin-top: 10px;
 }
 
 .oracle-row__status {

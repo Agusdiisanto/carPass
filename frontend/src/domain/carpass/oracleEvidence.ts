@@ -1,6 +1,7 @@
 import { ZeroAddress, ZeroHash, concat, isAddress, keccak256 } from 'ethers'
 import { CARPASS_ORACLE_DEPLOYMENT } from '../../contracts/carPassOracleDeployment'
 import { formatDate, formatMonthYear } from './formatters'
+import { resolveDemoAttestationLabel, resolveDemoBatchLabel } from './oracleDemoLabels'
 
 export const ORACLE_KIND_LABELS = [
   'VTV',
@@ -45,6 +46,15 @@ export type OracleEvidenceBatch = {
 }
 
 export type OracleEvidenceItem = OracleAttestation | OracleEvidenceBatch
+
+export function resolveOracleLogFromBlock() {
+  const configured = import.meta.env.VITE_CARPASS_ORACLE_DEPLOY_BLOCK
+  if (configured && configured.trim() !== '') {
+    const parsed = Number(configured)
+    if (Number.isFinite(parsed) && parsed > 0) return parsed
+  }
+  return CARPASS_ORACLE_DEPLOYMENT.deployBlock ?? 0
+}
 
 export function resolveOracleAddress() {
   const envAddress = import.meta.env.VITE_CARPASS_ORACLE_CONTRACT_ADDRESS
@@ -112,10 +122,46 @@ export function computeMerkleRoot(leaves: string[]) {
 }
 
 export function batchVerificationLabel(batch: OracleEvidenceBatch) {
-  if (batch.leafCount === null) return 'Hojas no disponibles para verificar (evento no encontrado)'
+  if (batch.leafCount === null) return 'Resumen publicado on-chain'
   return batch.rootVerified
-    ? `${batch.leafCount} hojas verificadas contra el root publicado`
-    : 'El root no coincide con las hojas publicadas'
+    ? `${batch.leafCount} ítems verificados contra el resumen`
+    : 'El resumen no coincide con el detalle publicado'
+}
+
+export function batchVerificationTone(batch: OracleEvidenceBatch) {
+  if (batch.leafCount === null) return 'neutral'
+  if (batch.rootVerified) return 'ok'
+  return 'bad'
+}
+
+export type OracleEvidencePresentation = {
+  title: string
+  summary: string
+  isDemoLabel: boolean
+}
+
+export function resolveOracleEvidencePresentation(item: OracleEvidenceItem): OracleEvidencePresentation {
+  if (item.evidenceType === 'attestation') {
+    const demo = resolveDemoAttestationLabel(item.externalIdHash, item.payloadHash)
+    if (demo) {
+      return { ...demo, isDemoLabel: true }
+    }
+    return {
+      title: oracleKindLabel(item.kind),
+      summary: 'Certificado externo registrado on-chain.',
+      isDemoLabel: false,
+    }
+  }
+
+  const demo = resolveDemoBatchLabel(item.metadataHash)
+  if (demo) {
+    return { ...demo, isDemoLabel: true }
+  }
+  return {
+    title: `${oracleKindLabel(item.kind)} · lote resumido`,
+    summary: 'Varios ítems agrupados bajo un único resumen Merkle.',
+    isDemoLabel: false,
+  }
 }
 
 export function oracleKindLabel(kind: number) {
@@ -151,10 +197,6 @@ export function oracleAddressLabel(address: string) {
   return isAddress(address) ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Oracle'
 }
 
-export function usefulOracleSources() {
-  return ['VTV', 'taller', 'aseguradora', 'registro', 'autopartes']
-}
-
 export function oracleEvidenceModeLabel(item: OracleEvidenceItem) {
-  return item.evidenceType === 'batch' ? 'Merkle batch' : 'EIP-712 / rol'
+  return item.evidenceType === 'batch' ? 'Lote resumido' : 'Certificado'
 }

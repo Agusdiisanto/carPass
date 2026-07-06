@@ -7,6 +7,7 @@ import {
   normalizeOracleAttestation,
   normalizeOracleEvidenceBatch,
   resolveOracleAddress,
+  resolveOracleLogFromBlock,
   type OracleEvidenceBatch,
   type OracleEvidenceItem,
 } from '../domain/carpass/oracleEvidence'
@@ -21,7 +22,13 @@ type OracleEvidenceState = {
 
 async function withLeafVerification(contract: Contract, batch: OracleEvidenceBatch): Promise<OracleEvidenceBatch> {
   try {
-    const logs = await contract.queryFilter(contract.filters.EvidenceBatchSubmitted(batch.id))
+    const fromBlock = resolveOracleLogFromBlock()
+    const filter = contract.filters.EvidenceBatchSubmitted(
+      batch.id,
+      batch.vehicleTokenId,
+      batch.kind,
+    )
+    const logs = await contract.queryFilter(filter, fromBlock > 0 ? fromBlock : undefined)
     const args = (logs[0] as { args?: { leaves?: string[] } } | undefined)?.args
     if (!args?.leaves) return batch
 

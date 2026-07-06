@@ -363,7 +363,6 @@ Implementado:
 - Suite de defensa organizada con helpers.
 - Seed demo idempotente.
 - Guia de deploy en `docs/DEPLOY.md`.
-- Mapa de codigo en `docs/CODEMAP.md`.
 
 Pendiente recomendado:
 

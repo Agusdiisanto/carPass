@@ -73,6 +73,9 @@ for (const contract of contracts) {
       `export const ${contract.deploymentConst} = {`,
       `  network: ${JSON.stringify(deployment.network ?? "sepolia")},`,
       `  address: ${JSON.stringify(deployment.address ?? "")},`,
+      ...(deployment.blockNumber
+        ? [`  deployBlock: ${Number(deployment.blockNumber)},`]
+        : []),
       "} as const",
       "",
     ].join("\n"),
