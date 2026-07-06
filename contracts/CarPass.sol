@@ -7,6 +7,7 @@ import {CarPassSeal} from "./core/CarPassSeal.sol";
 import {CarPassTransfers} from "./core/CarPassTransfers.sol";
 
 /**
+ *
  * @title CarPass
  * @notice ERC-721 vehicular con VIN unico, historial tecnico y sello de calidad.
  * @dev La logica de dominio vive en contratos abstractos bajo contracts/core/.
