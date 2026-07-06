@@ -54,8 +54,7 @@ El contrato principal es `CarPass`. Se modularizo internamente para separar resp
 - `CarPassHistory`: carga de services, siniestros y VTV.
 - `CarPassSeal`: calculo del sello de calidad.
 - `CarPassTransfers`: restriccion de transferencias owner-only.
-- `VehicleParts`: contrato adicional para autopartes grabadas.
-- `CarPassOracle`: contrato adicional para atestaciones externas con hashes, EIP-712 y batches Merkle.
+- `VehicleParts`: contrato adicional para autopartes grabadas, enlazado al NFT del vehiculo.
 
 ## Decisiones tecnicas y de arquitectura
 
@@ -82,7 +81,6 @@ No todas las wallets pueden escribir cualquier dato. Se uso `AccessControl` de O
 | `MECANICO_ROLE` | Cargar services |
 | `ASEGURADORA_ROLE` | Cargar siniestros |
 | `INSPECTOR_VTV_ROLE` | Cargar VTV |
-| `ORACLE_ROLE` | Cargar atestaciones externas en el oracle |
 
 El motivo es reducir superficie de abuso: una aseguradora no deberia cargar una VTV y un taller no deberia registrar un siniestro.
 
@@ -118,6 +116,25 @@ El frontend vive en `frontend/` y consume ABI/address exportados desde los artif
 
 Se eligio Sepolia por ser una testnet ampliamente soportada por wallets, exploradores y proveedores RPC. Permite demostrar transacciones reales sin costos de mainnet.
 
+### Autopartes grabadas como contrato separado
+
+La trazabilidad no termina en el vehiculo completo. En muchos casos tambien interesa saber si fueron reemplazadas piezas criticas, por ejemplo motor, caja de cambios, puertas delanteras, capot o baul. Para eso se agrego `VehicleParts`, un contrato ERC-721 separado que representa cada autoparte grabada como un token propio asociado al `tokenId` del vehiculo en CarPass.
+
+Se decidio implementarlo como contrato independiente para no modificar el ABI del `CarPass` ya desplegado. `VehicleParts` queda enlazado a la address de `CarPass` y reutiliza sus roles mediante llamadas cross-contract a `hasRole`. Asi no se duplica la administracion de permisos: la concesionaria con `REGISTRADOR_ROLE` puede registrar las seis partes iniciales, y un taller con `MECANICO_ROLE` puede reemplazar una parte.
+
+Las seis autopartes cubiertas son:
+
+- Motor.
+- Caja de cambios.
+- Puerta delantera izquierda.
+- Puerta delantera derecha.
+- Capot.
+- Baul.
+
+Cada parte tiene un numero de grabado, timestamp, instalador y estado de reemplazo. Cuando se reemplaza una pieza, la parte anterior no se borra ni se quema: queda marcada como reemplazada y se mintea un nuevo token para la pieza instalada. Esta decision mantiene un historial append-only tambien a nivel de autopartes.
+
+Los tokens de autoparte no son activos comerciables. Sus transferencias estan deshabilitadas porque su objetivo no es crear un mercado de piezas, sino dejar evidencia tecnica asociada al vehiculo.
+
 ## Funcionalidades implementadas
 
 - Registro de vehiculos por VIN.
@@ -130,8 +147,8 @@ Se eligio Sepolia por ser una testnet ampliamente soportada por wallets, explora
 - Transferencia del NFT solo por el propietario directo.
 - Revocacion trazable de wallets.
 - Sello de calidad calculado desde el historial.
-- Autopartes grabadas con contrato `VehicleParts`.
-- Atestaciones externas con `CarPassOracle`.
+- Registro de seis autopartes grabadas por vehiculo con contrato `VehicleParts`.
+- Reemplazo trazable de autopartes por taller autorizado.
 - Frontend con MetaMask, vistas por rol y modo publico.
 
 ## Evidencias de blockchain
@@ -142,21 +159,36 @@ Se eligio Sepolia por ser una testnet ampliamente soportada por wallets, explora
 | --- | --- | --- |
 | CarPass | `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D` | https://sepolia.etherscan.io/address/0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D |
 | VehicleParts | `0x3d13C42B7a7755Df78189553f2a194c9D289B446` | https://sepolia.etherscan.io/address/0x3d13C42B7a7755Df78189553f2a194c9D289B446 |
-| CarPassOracle | `0x2F516df9D6A4059e688Bfe4D1F71110b4FFa67a7` | https://sepolia.etherscan.io/address/0x2F516df9D6A4059e688Bfe4D1F71110b4FFa67a7 |
 
 ### Transacciones de deploy versionadas
 
 | Accion | Hash | Bloque | Fecha registrada |
 | --- | --- | --- | --- |
 | Deploy de VehicleParts | `0x762ec08d33c965e717526ac2d5a492b3b5de4491bbc08b892f857d335dd43f9b` | `11176060` | `2026-06-30T23:49:49.175Z` |
-| Deploy de CarPassOracle | `0x7f6f797ba511dedfc82f793d64a2ff1d73de18db9d798f2597414bb64258cb80` | `11218534` | `2026-07-06T23:14:14.051Z` |
 
 Links directos:
 
 - https://sepolia.etherscan.io/tx/0x762ec08d33c965e717526ac2d5a492b3b5de4491bbc08b892f857d335dd43f9b
-- https://sepolia.etherscan.io/tx/0x7f6f797ba511dedfc82f793d64a2ff1d73de18db9d798f2597414bb64258cb80
 
 Nota: el artifact versionado de `CarPass` conserva la address final usada por la demo, pero no contiene hash de transaccion ni bloque de deploy. Por eso se informa como evidencia de contrato desplegado mediante address de Sepolia, no como hash de deploy versionado.
+
+### Evidencia de autopartes grabadas
+
+`VehicleParts` esta desplegado en Sepolia en `0x3d13C42B7a7755Df78189553f2a194c9D289B446` y enlazado a `CarPass` `0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D`.
+
+El contrato cubre dos operaciones principales:
+
+| Operacion | Funcion | Rol requerido | Evidencia generada |
+| --- | --- | --- | --- |
+| Alta inicial de autopartes | `registrarPartes(vehicleTokenId, numerosGrabado)` | `REGISTRADOR_ROLE` en `CarPass` | Mintea seis tokens de autoparte y emite `PartesRegistradas` |
+| Reemplazo de una pieza | `reemplazarParte(vehicleTokenId, tipo, nuevoNumeroGrabado)` | `MECANICO_ROLE` en `CarPass` | Marca la parte anterior como reemplazada, mintea una nueva y emite `ParteReemplazada` |
+
+Decisiones verificables en el contrato:
+
+- `VehicleParts` valida que el vehiculo exista llamando a `ownerOf(vehicleTokenId)` en `CarPass`.
+- Los permisos se consultan contra `CarPass.hasRole`, por lo que no hay roles duplicados.
+- Cada autoparte tiene `vehicleTokenId`, tipo, numero de grabado, timestamp, instalador y flag `reemplazada`.
+- `transferFrom` y `safeTransferFrom` revierten con `TransferenciaNoPermitida`, porque las piezas no se modelan como activos negociables.
 
 ### Evidencia de estado sincronizado desde Sepolia
 
