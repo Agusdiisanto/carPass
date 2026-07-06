@@ -2,6 +2,7 @@ import { BrowserProvider, Contract, ZeroAddress, isAddress } from 'ethers'
 import { useState } from 'react'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
+import snapshotData from '../data/publicVehicleSnapshot.json'
 import { parseContractError } from '../domain/carpass/errors'
 import { normalizeVin } from '../domain/carpass/formatters'
 import { normalizeSelloCalidad, normalizeVehiculoInfo } from '../domain/carpass/vehicleInfo'
@@ -85,6 +86,18 @@ export type TransferenciaVehiculo = {
   timestamp?: number
   txHash: string
 }
+
+type SnapshotVehicle = {
+  tokenId: string
+  info: VehiculoInfo
+  ownerAddress: string
+}
+
+type PublicSnapshot = {
+  vehicles: Record<string, SnapshotVehicle>
+}
+
+const publicSnapshot = snapshotData as PublicSnapshot
 
 function getProvider() {
   const eth = getActiveEthereum()
@@ -176,7 +189,21 @@ export async function getPropietario(tokenId: bigint): Promise<string> {
 }
 
 export async function getMisVehiculos(address: string): Promise<Array<{ tokenId: bigint; info: VehiculoInfo }>> {
-  const { tokenIds, provider } = await queryTransferEventsToAddress(CONTRACT_ADDRESS, address)
+  const snapshotCandidates = Object.values(publicSnapshot.vehicles)
+    .filter((vehicle) => vehicle.ownerAddress.toLowerCase() === address.toLowerCase())
+    .map((vehicle) => BigInt(vehicle.tokenId))
+
+  let provider = getPublicProvider()
+  let tokenIds = snapshotCandidates
+
+  try {
+    const recent = await queryTransferEventsToAddress(CONTRACT_ADDRESS, address)
+    provider = recent.provider
+    tokenIds = [...new Set([...snapshotCandidates, ...recent.tokenIds])]
+  } catch (error) {
+    if (snapshotCandidates.length === 0) throw error
+  }
+
   const readContract = new Contract(CONTRACT_ADDRESS, ABI, provider)
   const results = await Promise.all(
     tokenIds.map(async (tokenId) => {

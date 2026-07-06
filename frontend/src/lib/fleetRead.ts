@@ -1,5 +1,6 @@
 import { BrowserProvider, Contract, isAddress, type Provider } from 'ethers'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
+import snapshotData from '../data/publicVehicleSnapshot.json'
 import { getActiveEthereum } from './ethereumProvider'
 import { getPublicProvider } from './publicProvider'
 
@@ -10,6 +11,10 @@ function resolveLogFromBlock(): number {
   if (typeof configured === 'string' && /^\d+$/.test(configured.trim())) {
     return Number(configured.trim())
   }
+
+  const snapshotBlock = (snapshotData as { blockNumber?: number | null }).blockNumber
+  if (typeof snapshotBlock === 'number' && snapshotBlock > 0) return snapshotBlock
+
   return 0
 }
 
