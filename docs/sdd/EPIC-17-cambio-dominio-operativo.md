@@ -72,6 +72,7 @@ Fuente de historial de altas y cambios de propietario.
 - Si el usuario esta en red incorrecta, la pantalla permite revisar informacion pero no escribir.
 - Si el usuario transfiere el NFT desde MetaMask u otra wallet fuera de CarPass, el garaje detecta el evento `Transfer`, vuelve a consultar `ownerOf` y deja de mostrar el vehiculo si ya no pertenece a la wallet conectada.
 - Si una transferencia externa ocurre mientras el modal de transferencia esta abierto, el modal revalida titularidad y pasa a modo solo lectura si la wallet ya no es propietaria.
+- Si el nodo RPC rechaza una lectura de logs por rango demasiado amplio, el frontend debe reintentar por ventanas acotadas antes de mostrar error. La deteccion de flota no debe depender de que el RPC acepte consultar desde genesis en una sola llamada.
 
 ## Impacto en frontend y ABI
 
@@ -81,6 +82,7 @@ Fuente de historial de altas y cambios de propietario.
 - La infraestructura EPIC-15 sigue siendo la ruta para operar con celular sin backend.
 - La sincronizacion externa no cambia ABI: usa `Transfer` y `ownerOf`.
 - La fuente de verdad de pertenencia nunca es el estado local; siempre se decide por `ownerOf(tokenId)`.
+- Las lecturas de logs pueden usar MetaMask o RPC publico; las verificaciones posteriores de titularidad e info del vehiculo deben reutilizar el provider que logro leer los eventos cuando este disponible, para evitar mezclar una lectura exitosa con un RPC publico degradado.
 
 ## Comandos de verificacion
 

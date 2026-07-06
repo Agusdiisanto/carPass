@@ -15,13 +15,20 @@ function resolveLogFromBlock(): number {
 
 const LOG_FROM_BLOCK = resolveLogFromBlock()
 const TRANSFER_SYNC_POLL_MS = 6_000
+const LOG_QUERY_WINDOW = 250_000
+const MIN_LOG_QUERY_WINDOW = 5_000
 
-function getLogProviders(): Provider[] {
-  const providers: Provider[] = []
+type FleetLogProvider = {
+  provider: Provider
+  label: 'wallet' | 'rpc'
+}
+
+function getLogProviders(): FleetLogProvider[] {
+  const providers: FleetLogProvider[] = []
   const eth = getActiveEthereum()
-  if (eth) providers.push(new BrowserProvider(eth as never))
+  if (eth) providers.push({ provider: new BrowserProvider(eth as never), label: 'wallet' })
   const publicProvider = getPublicProvider()
-  if (!providers.includes(publicProvider)) providers.push(publicProvider)
+  providers.push({ provider: publicProvider, label: 'rpc' })
   return providers
 }
 
@@ -87,6 +94,48 @@ function uniqueTransferUpdates(events: unknown[], ownerAddress: string): FleetTr
   }
 
   return updates
+}
+
+type QueryFilter = Parameters<Contract['queryFilter']>[0]
+
+async function queryFilterRange(
+  contract: Contract,
+  filter: QueryFilter,
+  fromBlock: number,
+  toBlock: number,
+): Promise<unknown[]> {
+  if (fromBlock > toBlock) return []
+
+  try {
+    return await contract.queryFilter(filter, fromBlock, toBlock)
+  } catch (error) {
+    const range = toBlock - fromBlock + 1
+    if (range <= MIN_LOG_QUERY_WINDOW) throw error
+
+    const midpoint = fromBlock + Math.floor(range / 2) - 1
+    const [left, right] = await Promise.all([
+      queryFilterRange(contract, filter, fromBlock, midpoint),
+      queryFilterRange(contract, filter, midpoint + 1, toBlock),
+    ])
+    return [...left, ...right]
+  }
+}
+
+async function queryFilterWindowed(
+  provider: Provider,
+  contract: Contract,
+  filter: QueryFilter,
+): Promise<unknown[]> {
+  const latestBlock = await provider.getBlockNumber()
+  if (latestBlock < LOG_FROM_BLOCK) return []
+
+  const events: unknown[] = []
+  for (let fromBlock = LOG_FROM_BLOCK; fromBlock <= latestBlock; fromBlock += LOG_QUERY_WINDOW) {
+    const toBlock = Math.min(fromBlock + LOG_QUERY_WINDOW - 1, latestBlock)
+    const windowEvents = await queryFilterRange(contract, filter, fromBlock, toBlock)
+    events.push(...windowEvents)
+  }
+  return events
 }
 
 export function subscribeFleetTransferUpdates(
@@ -159,18 +208,16 @@ export function subscribeFleetTransferUpdates(
 export async function queryTransferEventsToAddress(
   contractAddress: string,
   ownerAddress: string,
-): Promise<{ tokenIds: bigint[]; providerLabel: string }> {
+): Promise<{ tokenIds: bigint[]; provider: Provider; providerLabel: string }> {
   const providers = getLogProviders()
   let lastError: Error | null = null
 
-  for (let index = 0; index < providers.length; index += 1) {
-    const provider = providers[index]
-    const providerLabel = index === 0 && getActiveEthereum() ? 'wallet' : 'rpc'
+  for (const { provider, label } of providers) {
     try {
       const contract = new Contract(contractAddress, ABI, provider)
       const filter = contract.filters.Transfer(null, ownerAddress)
-      const events = await contract.queryFilter(filter, LOG_FROM_BLOCK)
-      return { tokenIds: parseTransferTokenIds(events), providerLabel }
+      const events = await queryFilterWindowed(provider, contract, filter)
+      return { tokenIds: parseTransferTokenIds(events), provider, providerLabel: label }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
     }
@@ -182,15 +229,16 @@ export async function queryTransferEventsToAddress(
 export async function queryTransferEventsForToken(
   contractAddress: string,
   tokenId: bigint,
-): Promise<unknown[]> {
+): Promise<{ events: unknown[]; provider: Provider; providerLabel: string }> {
   const providers = getLogProviders()
   let lastError: Error | null = null
 
-  for (const provider of providers) {
+  for (const { provider, label } of providers) {
     try {
       const contract = new Contract(contractAddress, ABI, provider)
       const filter = contract.filters.Transfer(null, null, tokenId)
-      return await contract.queryFilter(filter, LOG_FROM_BLOCK)
+      const events = await queryFilterWindowed(provider, contract, filter)
+      return { events, provider, providerLabel: label }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
     }

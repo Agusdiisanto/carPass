@@ -176,8 +176,8 @@ export async function getPropietario(tokenId: bigint): Promise<string> {
 }
 
 export async function getMisVehiculos(address: string): Promise<Array<{ tokenId: bigint; info: VehiculoInfo }>> {
-  const { tokenIds } = await queryTransferEventsToAddress(CONTRACT_ADDRESS, address)
-  const readContract = await getReadContract()
+  const { tokenIds, provider } = await queryTransferEventsToAddress(CONTRACT_ADDRESS, address)
+  const readContract = new Contract(CONTRACT_ADDRESS, ABI, provider)
   const results = await Promise.all(
     tokenIds.map(async (tokenId) => {
       try {
@@ -203,8 +203,7 @@ export async function getMisVehiculosSafe(address: string) {
 }
 
 export async function getTransferenciasVehiculo(tokenId: bigint): Promise<TransferenciaVehiculo[]> {
-  const events = await queryTransferEventsForToken(CONTRACT_ADDRESS, tokenId)
-  const c = await getReadContract()
+  const { events, provider } = await queryTransferEventsForToken(CONTRACT_ADDRESS, tokenId)
   const enriched = await Promise.all(
     events.map(async (event) => {
       const parsed = event as unknown as {
@@ -212,7 +211,7 @@ export async function getTransferenciasVehiculo(tokenId: bigint): Promise<Transf
         blockNumber: number
         transactionHash: string
       }
-      const block = await c.runner?.provider?.getBlock(parsed.blockNumber).catch(() => null)
+      const block = await provider.getBlock(parsed.blockNumber).catch(() => null)
       return {
         from: parsed.args.from,
         to: parsed.args.to,
