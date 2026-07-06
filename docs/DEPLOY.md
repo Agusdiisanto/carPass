@@ -2,6 +2,20 @@
 
 Pasos para dejar CarPass funcionando en testnet y listo para la demo.
 
+## CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml` corre en cada push/PR a `main`:
+
+- `contracts-validate`: `npm ci` + `npm run compile` + `npm run test:contracts` (raiz).
+- `frontend-validate`: `npm ci` + `npm run lint` + `npm run build` (`frontend/`).
+- `deploy` (solo push a `main`, y solo si las dos validaciones anteriores pasaron):
+  build y deploy a Vercel via CLI, usando los secrets `VERCEL_TOKEN`,
+  `VERCEL_ORG_ID` y `VERCEL_PROJECT_ID`.
+
+El deploy de contratos a Sepolia sigue siendo manual (ver `## Flujo` abajo):
+requiere `DEPLOYER_PRIVATE_KEY` y fondos, y redeployar cambia direcciones, asi
+que no esta automatizado en push a `main`.
+
 ## Precondiciones
 
 - Node `22.13.0+`.
