@@ -1,4 +1,4 @@
-# SDD - EPIC-25: Security Hardening de Integracion Blockchain
+# Security Hardening de Integracion Blockchain
 
 ## Problema que resuelve
 

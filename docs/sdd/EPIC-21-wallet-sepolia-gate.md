@@ -1,4 +1,4 @@
-# SDD - EPIC-21: Wallet & Sepolia Gate
+# Wallet & Sepolia Gate
 
 ## Problema que resuelve
 

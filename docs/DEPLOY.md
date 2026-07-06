@@ -1,6 +1,6 @@
-# Deploy Sepolia
+# Deploy en Sepolia
 
-Guia operativa para dejar CarPass listo para demo publica.
+Pasos para dejar CarPass funcionando en testnet y listo para la demo.
 
 ## Precondiciones
 
@@ -66,9 +66,8 @@ npm run verify:etherscan -- <address de CarPassOracle> <address de CarPass>
 
 ## VehicleParts (autopartes grabadas)
 
-`VehicleParts` (EPIC-22) es un contrato independiente que se vincula al
-`CarPass` ya desplegado por direccion inmutable. No requiere redeploy de
-`CarPass`:
+`VehicleParts` es un contrato aparte que se enlaza al `CarPass` ya desplegado
+por direccion fija. No hace falta redeployar `CarPass`:
 
 ```bash
 npm run deploy:vehicleparts:sepolia
@@ -93,13 +92,13 @@ Deployment actual: `0x3d13C42B7a7755Df78189553f2a194c9D289B446`, enlazado a
 > de una funcion `vehiculoExiste` agregada solo en el codigo fuente de
 > `CarPass`, nunca desplegada on-chain. Se redeployo `VehicleParts` validando
 > existencia con `ownerOf` (ya presente en el `CarPass` real), sin tocar
-> `CarPass`. Ver `docs/sdd/EPIC-22-token-autopartes-grabadas.md`.
+> `CarPass`. Mas detalle en `docs/sdd/EPIC-22-token-autopartes-grabadas.md`.
 
 ## CarPassOracle (oraculos / atestaciones externas)
 
-`CarPassOracle` (EPIC-26) es un contrato independiente para registrar evidencia
-externa vinculada al NFT vehicular. Sirve para demostrar integracion tipo
-oracle sin depender de un proveedor externo complejo para la defensa.
+`CarPassOracle` registra evidencia externa vinculada al NFT del vehiculo.
+Lo usamos en la demo para mostrar atestaciones verificables sin depender de
+un proveedor oracle externo.
 
 ```bash
 npm run deploy:oracle:sepolia

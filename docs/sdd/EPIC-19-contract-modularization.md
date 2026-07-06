@@ -1,4 +1,4 @@
-# SDD - EPIC-19: Contract Modularization
+# Contract Modularization
 
 ## Problema que resuelve
 
@@ -8,7 +8,7 @@ transferencias owner-only, revocacion trazable y sello de calidad. El contrato
 funciona, pero es mas dificil de explicar, auditar y extender porque todo vive
 en un solo archivo.
 
-Esta epica modulariza el contrato sin cambiar el comportamiento externo.
+este modulo modulariza el contrato sin cambiar el comportamiento externo.
 
 ## Alcance
 

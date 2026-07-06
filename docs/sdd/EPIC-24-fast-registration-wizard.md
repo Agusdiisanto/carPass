@@ -1,4 +1,4 @@
-# SDD - EPIC-24: Alta Guiada y Rapida con Blockchain
+# Alta Guiada y Rapida con Blockchain
 
 ## Problema que resuelve
 

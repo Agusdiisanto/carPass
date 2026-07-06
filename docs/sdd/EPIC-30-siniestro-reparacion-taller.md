@@ -1,4 +1,4 @@
-# SDD - EPIC-30: Responsabilidad de reparacion en el taller
+# Responsabilidad de reparacion en el taller
 
 ## Problema que resuelve
 
@@ -60,8 +60,8 @@ Sin cambios de contrato. En frontend, si `reemplazarParte` falla luego de un `ag
 
 - **Impacto en el sello de calidad (EPIC-06, regla 4):** hoy la unica forma de que `reparado` sea `true` en produccion era que la aseguradora lo tildara al declarar el siniestro. Al fijar `reparado = false` siempre desde `AseguradoraView`, cualquier siniestro `GRAVE` cargado por el flujo real de UI queda con `reparado = false` para siempre (no existe una funcion de contrato para actualizar un siniestro ya cargado; el historial es append-only). Consecuencia: todo siniestro grave declarado desde ahora revoca el sello de forma permanente segun `getSelloCalidad`, sin mecanismo de reversion. Se acepta esto conscientemente porque:
   - Agregar una funcion de "marcar siniestro reparado" requeriria cambiar `CarPassTypes.sol`/`CarPassHistory.sol` (nueva funcion o campo mutable) y evaluar re-deploy, lo cual el proyecto esta evitando activamente en esta fase de cierre (ver riesgos documentados en EPIC-22 sobre el costo de redeployar `CarPass`).
-  - El dato semantico real (que autoparte se cambio y cuando) ya queda registrado igual de forma verificable en `VehicleParts` via `reemplazarParte`/`ParteReemplazada`, que es justamente la fuente de verdad de reparacion fisica que pedia esta epica.
-  - `scripts/seed.ts` puede seguir usando `reparado: true` directamente contra el contrato para escenarios de demo (`EPIC-29`) sin pasar por `AseguradoraView`; no se modifica el seed en esta epica.
+  - El dato semantico real (que autoparte se cambio y cuando) ya queda registrado igual de forma verificable en `VehicleParts` via `reemplazarParte`/`ParteReemplazada`, que es justamente la fuente de verdad de reparacion fisica que pedia este modulo.
+  - `scripts/seed.ts` puede seguir usando `reparado: true` directamente contra el contrato para escenarios de demo (`EPIC-29`) sin pasar por `AseguradoraView`; no se modifica el seed en este modulo.
 - El texto "Autoparte afectada: X" en la descripcion del siniestro y "Autoparte reemplazada: X (numero)" en la del service son convenciones de UI, no campos estructurados; quedan on-chain como parte de `descripcion` (string libre), igual que el resto del relato de cada registro.
 - No se agrega ninguna validacion nueva de coherencia entre el siniestro declarado por la aseguradora y el reemplazo posterior hecho por el taller (por ejemplo, no se valida que la autoparte marcada como afectada sea la misma que despues se reemplaza). Se documenta como limitacion conocida, no como bug: el contrato no vincula siniestros con reemplazos de autopartes.
 - El cruce "Reparado" del timeline publico es puramente de presentacion (front-end, `eth_call` de lectura), no cambia el campo `reparado` on-chain del siniestro ni el resultado de `getSelloCalidad`. Es intencional una divergencia visible: el timeline puede mostrar "Reparado" para un siniestro grave mientras el sello de calidad de ese mismo vehiculo sigue en `REVOCADO`, porque el motor de decision (`EPIC-06`) solo lee el campo on-chain, no el cruce de UI. Si se quiere que el sello tambien se recupere, hace falta la funcion de contrato descartada en el punto anterior.

@@ -1,4 +1,4 @@
-# SDD - EPIC-31: UI simple con pasos y spinners para altas y reemplazos
+# UI simple con pasos y spinners para altas y reemplazos
 
 ## Problema que resuelve
 

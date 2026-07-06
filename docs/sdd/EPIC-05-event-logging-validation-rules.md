@@ -1,4 +1,4 @@
-# SDD - EPIC-05: Event Logging & Validation Rules
+# Event Logging & Validation Rules
 
 ## Problema que resuelve
 
@@ -11,7 +11,7 @@ CarPass necesita que cada hito tecnico escrito por un actor autorizado quede atr
 - Mantener `timestamp` como `block.timestamp`, ignorando cualquier timestamp enviado por el caller.
 - Exponer el ultimo kilometraje aceptado para lecturas simples de frontend.
 - Mantener la carga base de siniestro y VTV ya integrada: se guardan append-only, con rol y autoria.
-- No implementar reglas avanzadas nuevas para siniestro ni VTV en esta epica; sus reglas de coherencia completas quedan para fase posterior.
+- No implementar reglas avanzadas nuevas para siniestro ni VTV en este modulo; sus reglas de coherencia completas quedan para fase posterior.
 
 ## Interfaces publicas
 
@@ -66,7 +66,7 @@ Reglas implementadas:
 
 ## Eventos emitidos
 
-Se mantiene el evento existente para evitar churn de ABI innecesario en esta epica:
+Se mantiene el evento existente para evitar churn de ABI innecesario en este modulo:
 
 ```solidity
 event ServiceAgregado(

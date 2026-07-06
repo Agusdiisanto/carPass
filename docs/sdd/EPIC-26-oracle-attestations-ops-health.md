@@ -1,4 +1,4 @@
-# EPIC-26 - Oracle Attestations & Blockchain Ops Health
+# Oracle Attestations & Blockchain Ops Health
 
 ## Problema
 

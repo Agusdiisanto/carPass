@@ -1,4 +1,4 @@
-# SDD - EPIC-29: Escenarios Demo con Transferencias y Autopartes
+# Escenarios Demo con Transferencias y Autopartes
 
 ## Problema que resuelve
 

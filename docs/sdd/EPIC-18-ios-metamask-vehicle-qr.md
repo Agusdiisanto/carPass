@@ -1,4 +1,4 @@
-# SDD - EPIC-18: iOS MetaMask y QR de Pasaporte Post-Alta
+# iOS MetaMask y QR de Pasaporte Post-Alta
 
 ## Problema que resuelve
 

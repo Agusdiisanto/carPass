@@ -1,4 +1,4 @@
-# SDD - EPIC-16: Vehicle Media via Wikimedia Commons
+# Vehicle Media via Wikimedia Commons
 
 ## Problema que resuelve
 

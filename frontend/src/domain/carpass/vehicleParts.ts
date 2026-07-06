@@ -62,8 +62,8 @@ export function parseAutoparteAfectada(descripcion: string): number | null {
 }
 
 /**
- * Un siniestro grave nunca vuelve a marcarse `reparado` on-chain (historial append-only,
- * ver EPIC-24). Si la autoparte que declaro afectada la aseguradora fue reemplazada despues
+ * Un siniestro grave nunca vuelve a marcarse `reparado` on-chain (historial append-only).
+ * Si la autoparte que declaro afectada la aseguradora fue reemplazada despues
  * de esa fecha, se considera reparado a nivel UI aunque el campo on-chain siga en false.
  */
 export function siniestroFueReparado(

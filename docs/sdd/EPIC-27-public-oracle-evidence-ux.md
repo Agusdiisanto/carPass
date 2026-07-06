@@ -1,4 +1,4 @@
-# EPIC-27 - Public Oracle Evidence UX
+# Public Oracle Evidence UX
 
 ## Problema
 

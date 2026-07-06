@@ -1,4 +1,4 @@
-# SDD - EPIC-06: Decision Engine & Quality Seal
+# Decision Engine & Quality Seal
 
 ## Problema que resuelve
 
@@ -12,7 +12,7 @@ CarPass necesita diferenciarse de un historial crudo: un comprador debe poder co
   - `ACTIVO`: valido.
   - `VENCIDO`: con observaciones.
   - `REVOCADO`: no valido.
-- No agregar tests en esta epica.
+- No agregar tests en este modulo.
 
 ### Actualizacion (hardening de gas, 2026-07-03)
 
@@ -43,7 +43,7 @@ Devuelve solo el estado calculado, para lecturas publicas simples.
 
 ## Eventos
 
-- Ninguno propio de esta epica. `calcularSello(uint256)` y `SelloActualizado` se eliminaron (ver "Actualizacion" arriba): no habia getter que leyera la cache que escribian.
+- Ninguno propio de este modulo. `calcularSello(uint256)` y `SelloActualizado` se eliminaron (ver "Actualizacion" arriba): no habia getter que leyera la cache que escribian.
 
 ## Errores esperados
 

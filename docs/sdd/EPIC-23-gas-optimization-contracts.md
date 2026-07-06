@@ -1,4 +1,4 @@
-# SDD - EPIC-23: Optimizacion de Gas en Contratos
+# Optimizacion de Gas en Contratos
 
 ## Problema que resuelve
 

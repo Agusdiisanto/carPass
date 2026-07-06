@@ -1,9 +1,7 @@
-# EPIC-02 — Core Data Model & Contract Skeleton
-## Software/System Design Document (SSD)
+# Core Data Model & Contract Skeleton
 
 **Versión:** 1.1  
 **Fecha:** 2026-06-23  
-**Epic:** EPIC-02 — Core Data Model & Contract Skeleton  
 **Proyecto:** carPass — Historial vehicular inmutable en blockchain
 
 ---

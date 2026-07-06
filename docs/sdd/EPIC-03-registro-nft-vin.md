@@ -1,4 +1,4 @@
-# SDD - EPIC-03: Vehicle NFT ERC-721
+# Vehicle NFT ERC-721
 
 ## Problema que resuelve
 

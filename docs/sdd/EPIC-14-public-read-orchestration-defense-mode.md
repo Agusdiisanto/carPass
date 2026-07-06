@@ -1,4 +1,4 @@
-# SDD - EPIC-14: Public Read Orchestration & Defense Mode
+# Public Read Orchestration & Defense Mode
 
 ## Problema que resuelve
 
@@ -195,7 +195,7 @@ No hay cambios de ABI. EPIC-14 consume las funciones publicas ya usadas por EPIC
 
 No ejecutar validaciones frontend salvo pedido explicito del usuario.
 
-Comandos permitidos para esta epica:
+Comandos permitidos para este modulo:
 
 ```bash
 npm run compile

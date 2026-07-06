@@ -1,4 +1,4 @@
-# SDD - EPIC-22: Token de Autopartes Grabadas
+# Token de Autopartes Grabadas
 
 ## Problema que resuelve
 
@@ -147,7 +147,7 @@ event ParteReemplazada(
 - El owner ERC-721 de cada token de parte se fija una sola vez al mintear y no se sincroniza automaticamente si el vehiculo cambia de dueño en `CarPass`. El campo `ownerOf` del token de parte es informativo, no la fuente de verdad: la fuente de verdad es el mapeo `vehicleTokenId -> Parte`. Se documenta para evitar asumir que `ownerOf` de una parte refleja el dueño actual del vehiculo.
 - Acoplar `VehicleParts` a la direccion de `CarPass` por `immutable` evita duplicar roles, pero implica que un redeploy de `CarPass` (EPIC-08) requiere tambien redeployar `VehicleParts` y volver a dar de alta las partes existentes. Se acepta este costo porque el proyecto ya esta en fase de cierre y un redeploy de `CarPass` es un evento raro y documentado.
 - El numero de grabado queda publico on-chain, igual que el VIN en `CarPass`, por diseno de trazabilidad.
-- No se valida formato del numero de grabado mas alla de no-vacio; normalizacion especifica del estandar de grabado queda fuera de esta epica.
+- No se valida formato del numero de grabado mas alla de no-vacio; normalizacion especifica del estandar de grabado queda fuera de este modulo.
 
 ## Verificacion
 

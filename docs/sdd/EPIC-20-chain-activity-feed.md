@@ -1,4 +1,4 @@
-# SDD - EPIC-20: Feed de actividad on-chain (estilo Etherscan)
+# Feed de actividad on-chain (estilo Etherscan)
 
 ## Problema que resuelve
 

@@ -1,6 +1,6 @@
-# Code Map
+# Mapa del c?digo
 
-Mapa rapido para leer y defender CarPass.
+Referencia r?pida para ubicarte en el repo antes de la defensa.
 
 ## Contrato
 
@@ -13,8 +13,8 @@ Mapa rapido para leer y defender CarPass.
 - `contracts/core/CarPassHistory.sol`: carga y lectura de services, siniestros y VTV.
 - `contracts/core/CarPassSeal.sol`: calculo y cache opcional del sello de calidad.
 - `contracts/core/CarPassTransfers.sol`: restriccion owner-only para transferencias.
-- `contracts/VehicleParts.sol`: NFT de autopartes grabadas (EPIC-22), vinculado a `CarPass` por direccion inmutable; reutiliza `REGISTRADOR_ROLE`/`MECANICO_ROLE` via `hasRole` cross-contract.
-- `contracts/CarPassOracle.sol`: atestaciones externas/oracle (EPIC-26), vinculado a `CarPass`; usa `ORACLE_ROLE`, firmas EIP-712 y batches Merkle verificables con `verifyEvidenceLeaf` (EPIC-28).
+- `contracts/VehicleParts.sol`: NFT de autopartes grabadas, enlazado a `CarPass` por direcci?n fija; reutiliza `REGISTRADOR_ROLE`/`MECANICO_ROLE` v?a `hasRole`.
+- `contracts/CarPassOracle.sol`: atestaciones externas, enlazado a `CarPass`; usa `ORACLE_ROLE`, firmas EIP-712 y batches Merkle con `verifyEvidenceLeaf`.
 - Responsabilidades: VIN unico, roles, services, siniestros, VTV, transferencias owner-only, revocacion trazable y sello de calidad.
 - Invariantes clave:
   - `tokenId` se deriva de `keccak256(vin)`.
@@ -82,8 +82,10 @@ Mapa rapido para leer y defender CarPass.
 - `frontend/src/views/InspectorVTVView.tsx`: carga de VTV.
 - `frontend/src/views/NoRoleView.tsx`: estado para wallet sin rol.
 
-## Deploy y Defensa
+## Documentación
 
-- `docs/DEPLOY.md`: receta de deploy/seed en Sepolia.
-- `docs/DEFENSA.md`: resumen para presentar.
-- `.agents/backlog.md`: estado vivo de epicas y hardening pendiente.
+- `docs/README.md`: índice de guías.
+- `docs/DEPLOY.md`: deploy y seed en Sepolia.
+- `docs/DEFENSA.md`: guía para presentar el TP.
+- `docs/CONTRATO_SEPOLIA.md`: referencia del contrato en testnet.
+- `docs/sdd/`: notas de diseño por funcionalidad.

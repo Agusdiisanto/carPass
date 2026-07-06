@@ -1,10 +1,12 @@
-# CarPass - Guia de defensa
+# CarPass ? Gu?a de defensa
 
-## Resumen
+Trabajo pr?ctico de la materia Blockchain: pasaporte vehicular on-chain.
 
-CarPass es un pasaporte vehicular on-chain. Cada vehiculo se registra como NFT ERC-721 asociado a un VIN y conserva historial tecnico append-only: services, VTV, siniestros y transferencias owner-only. El contrato valida reglas de consistencia y calcula un sello de calidad consultable publicamente.
+## De qu? trata
 
-## Que demuestra el contrato
+Cada auto es un NFT ERC-721 ligado a su VIN. El contrato guarda historial t?cnico que no se puede reescribir: services, VTV, siniestros y transferencias (solo el due?o puede transferir). Valida reglas de consistencia y expone un sello de calidad que cualquiera puede consultar por VIN, sin wallet.
+
+## Qu? mostrar en la exposici?n
 
 - VIN unico por `tokenId = keccak256(vin)`.
 - Roles con `AccessControl`: admin, registrador, mecanico, aseguradora e inspector VTV.
@@ -60,9 +62,9 @@ npm run seed:sepolia
 - Transferir un NFT desde una wallet que no es propietaria.
 - Revocar un taller y mostrar que el historial previo sigue intacto.
 
-## Estado de Epic 08
+## Deploy en Sepolia
 
-El flujo de deploy esta preparado. Para cerrar el despliegue real se necesita `.env` local con:
+El flujo de deploy ya está armado. Para correrlo en tu máquina hace falta un `.env` local con:
 
 - `SEPOLIA_RPC_URL`
 - `DEPLOYER_PRIVATE_KEY`

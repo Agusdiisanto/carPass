@@ -1,4 +1,4 @@
-# SDD - EPIC-10: Siniestros solo por aseguradora y alta 0 km
+# Siniestros solo por aseguradora y alta 0 km
 
 ## Problema que resuelve
 

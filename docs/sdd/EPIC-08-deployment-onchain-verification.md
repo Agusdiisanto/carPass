@@ -1,4 +1,4 @@
-# SDD - EPIC-08: Deployment & On-chain Verification
+# Deployment & On-chain Verification
 
 ## Problema que resuelve
 
@@ -84,5 +84,4 @@ plugin (`hardhat.config.ts`, seccion `verify.etherscan.apiKey` via
 `configVariable("ETHERSCAN_API_KEY")`) y el script `npm run verify:etherscan
 -- <address>` que corre `hardhat verify --network sepolia`. Sigue
 requiriendo `ETHERSCAN_API_KEY` y una address ya desplegada; no se ejecuto
-en esta pasada porque no hay deploy final confirmado (bloqueo existente de
-EPIC-08, ver backlog).
+en esta pasada porque no hay deploy final confirmado.

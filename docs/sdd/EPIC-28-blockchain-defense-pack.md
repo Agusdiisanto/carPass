@@ -1,4 +1,4 @@
-# EPIC-28 - Blockchain Defense Pack
+# Blockchain Defense Pack
 
 ## Problema
 
@@ -16,7 +16,7 @@ CarPass ya tiene contratos, oracle, autopartes y lectura publica. La siguiente m
 - Agregar script `seed:oracle:sepolia` idempotente.
 - Agregar componentes frontend walletless/admin para health blockchain.
 - Mejorar panel de evidencia oracle con provenance y EIP-712.
-- Actualizar docs, backlog y comandos.
+- Actualizar docs, comandos y guias.
 
 Fuera de alcance:
 

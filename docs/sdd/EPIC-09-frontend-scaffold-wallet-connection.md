@@ -1,4 +1,4 @@
-# SDD - EPIC-09: Frontend Scaffold & Wallet Connection
+# Frontend Scaffold & Wallet Connection
 
 ## Problema que resuelve
 
@@ -164,7 +164,7 @@ Smoke manual sugerido:
 - QR desde `localhost` puede fallar entre dispositivos; usar `VITE_PUBLIC_APP_URL` o deploy publico.
 - No existe copia de sesion MetaMask entre notebook y celular: solo misma cuenta + params de URL (ver EPIC-15).
 
-## Relacion con otras epicas
+## Relación con otros módulos
 
 - **EPIC-15:** companion VIN scan y relay QR; comparte `VITE_PUBLIC_APP_URL` y flujo mobile.
 - **EPIC-12:** QR publico de verificacion — fuera de alcance; distinto del QR de wallet Connect.

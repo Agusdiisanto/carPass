@@ -1,4 +1,4 @@
-# SDD - EPIC-10: Contract Integration Layer
+# Contract Integration Layer
 
 ## Problema que resuelve
 

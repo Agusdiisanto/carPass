@@ -173,4 +173,4 @@ await testQualitySealActive();
 await testQualitySealWarnsWithoutVtv();
 await testQualitySealRevokedBySevereUnrepairedAccident();
 
-console.log("EPIC-07 contract suite passed: km, roles, duplicate VIN, transfer, revocation and seal states.");
+console.log("CarPass contract suite passed: km, roles, duplicate VIN, transfer, revocation and seal states.");

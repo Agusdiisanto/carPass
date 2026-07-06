@@ -1,4 +1,4 @@
-# SDD - EPIC-17: Cambio de Dominio Operativo
+# Cambio de Dominio Operativo
 
 ## Problema que resuelve
 

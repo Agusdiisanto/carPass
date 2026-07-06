@@ -1,4 +1,4 @@
-# SDD - EPIC-15: Phone Companion VIN Scan
+# Phone Companion VIN Scan
 
 ## Problema que resuelve
 
@@ -14,7 +14,7 @@ Operadores que conectan wallet desde notebook no pueden escanear comodamente el 
 - Deep link `?vin=` para completar la busqueda al recibir el codigo.
 - QR fisico/post-alta del vehiculo como URL publica con `?vin=`.
 
-No incluye WalletConnect generico ni sync realtime cross-device. La conexion wallet por QR en desktop (MetaMask Connect) vive en EPIC-09; este epic solo reutiliza `VITE_PUBLIC_APP_URL` y flujos mobile.
+No incluye WalletConnect generico ni sync realtime cross-device. La conexion wallet por QR en desktop (MetaMask Connect) vive en EPIC-09; este modulo solo reutiliza `VITE_PUBLIC_APP_URL` y flujos mobile.
 
 ## Entradas
 

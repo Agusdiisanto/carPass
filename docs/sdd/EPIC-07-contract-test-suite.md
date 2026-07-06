@@ -1,4 +1,4 @@
-# SDD - EPIC-07: Contract Test Suite
+# Contract Test Suite
 
 ## Problema que resuelve
 

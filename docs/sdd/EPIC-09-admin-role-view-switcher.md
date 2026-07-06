@@ -1,4 +1,4 @@
-# SDD - EPIC-09: Admin Role View Switcher
+# Admin Role View Switcher
 
 ## Problema que resuelve
 
