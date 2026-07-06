@@ -22,10 +22,12 @@ export function InspectorVTVView({
   address,
   wrongNetwork = false,
   embedded = false,
+  receivedVin = '',
 }: {
   address: string
   wrongNetwork?: boolean
   embedded?: boolean
+  receivedVin?: string
 }) {
   const { busy, message, lastOp, agregarVTV } = useCarPass()
   const lookup = useVehicleLookup()

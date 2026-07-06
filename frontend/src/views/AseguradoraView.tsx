@@ -17,10 +17,12 @@ export function AseguradoraView({
   address,
   wrongNetwork = false,
   embedded = false,
+  receivedVin = '',
 }: {
   address: string
   wrongNetwork?: boolean
   embedded?: boolean
+  receivedVin?: string
 }) {
   const { busy, message, lastOp, agregarSiniestro } = useCarPass()
   const lookup = useVehicleLookup()
@@ -48,7 +50,7 @@ export function AseguradoraView({
 
   const panels = (
     <div className="operative-flow operative-flow--aseguradora">
-      <VehicleIdentifyPanel lookup={lookup} accent="aseguradora" />
+      <VehicleIdentifyPanel lookup={lookup} accent="aseguradora" receivedVin={receivedVin} />
 
       {lookup.found ? (
         <section className="panel panel--operative">

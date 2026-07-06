@@ -17,10 +17,12 @@ export function TallerView({
   address,
   wrongNetwork = false,
   embedded = false,
+  receivedVin = '',
 }: {
   address: string
   wrongNetwork?: boolean
   embedded?: boolean
+  receivedVin?: string
 }) {
   const { busy, message, lastOp, agregarService } = useCarPass()
   const lookup = useVehicleLookup({ loadMileage: true })
@@ -128,6 +130,7 @@ export function TallerView({
         lookup={lookup}
         accent="taller"
         showMileage
+        receivedVin={receivedVin}
         onIdentified={(result) => setKm(result.lastKm + 1000)}
       />
 
