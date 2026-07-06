@@ -18,7 +18,7 @@ import {
 } from '../domain/carpass/eventLabels'
 import { getSealUi } from '../domain/carpass/seal'
 import { isValidVin } from '../domain/carpass/validators'
-import { siniestroFueReparado, type Parte } from '../domain/carpass/vehicleParts'
+import { resolveDisplaySello, siniestroFueReparado, type Parte } from '../domain/carpass/vehicleParts'
 import { getPartesVehiculo, hasContractAddress as hasVehiclePartsContract } from '../hooks/useVehicleParts'
 import { DemoVehicleCard } from '../components/DemoVehicleCard'
 import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
@@ -115,12 +115,14 @@ function ShareIcon() {
 
 function VehicleHeroCard({
   data,
+  partes,
   connected = false,
   role = null,
   onGoToPanel,
   partsRefreshKey = 0,
 }: {
   data: Historial
+  partes: Parte[]
   connected?: boolean
   role?: Role | null
   onGoToPanel?: () => void
@@ -129,7 +131,7 @@ function VehicleHeroCard({
   const lastKm = data.services.length
     ? Number(data.services[data.services.length - 1].kilometraje)
     : 0
-  const sello = getSealUi(data.sello.estado)
+  const sello = getSealUi(resolveDisplaySello(data.sello, data.siniestros, partes).estado)
   const media = useVehicleMedia({
     vin: data.info.vin,
     marca: data.info.marca,
@@ -218,8 +220,8 @@ function SourcePill({ data, syncing = false }: { data: Historial; syncing?: bool
   )
 }
 
-function SealQualityCard({ data }: { data: Historial }) {
-  const { sello } = data
+function SealQualityCard({ data, partes }: { data: Historial; partes: Parte[] }) {
+  const sello = resolveDisplaySello(data.sello, data.siniestros, partes)
   const info = getSealUi(sello.estado)
   const sourceDetail = getReadSourceDetail(data)
 
@@ -741,13 +743,14 @@ export function PublicView({
         <div className="pv-passport-layout">
           <VehicleHeroCard
             data={data}
+            partes={partes}
             connected={connected}
             role={role}
             onGoToPanel={connected ? handleGoToPanel : undefined}
             partsRefreshKey={partsRefreshKey}
           />
         </div>
-        <SealQualityCard data={data} />
+        <SealQualityCard data={data} partes={partes} />
         <OracleEvidencePanel tokenId={data.tokenId} />
 
         {isMobile && getRememberedWalletHint() ? (
