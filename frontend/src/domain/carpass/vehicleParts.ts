@@ -1,4 +1,5 @@
 import { coerceString } from './formatters'
+import type { SelloCalidad } from '../../hooks/useCarPass'
 
 export const TOTAL_TIPOS_PARTE = 6
 
@@ -75,4 +76,32 @@ export function siniestroFueReparado(
   if (tipo === null) return false
   const parte = partes.find((p) => p.tipo === tipo)
   return Boolean(parte && parte.reemplazada && parte.timestamp > siniestro.timestamp)
+}
+
+const MOTIVO_SINIESTRO_SIN_REPARAR = 'Siniestro grave sin reparacion registrada'
+const SINIESTRO_GRAVEDAD_GRAVE = 2
+
+/**
+ * El campo on-chain `reparado` de un siniestro GRAVE nunca puede volver a ponerse en
+ * `true` (historial append-only), asi que `getSelloCalidad` revoca el sello para
+ * siempre en cuanto se declara uno. Si el taller ya reemplazo la autoparte declarada
+ * afectada, se ajusta el sello mostrado para reflejar esa reparacion verificable en
+ * `VehicleParts`, en vez de seguir mostrando "NO VALIDO" de forma contradictoria con
+ * el timeline publico.
+ */
+export function resolveDisplaySello(
+  sello: SelloCalidad,
+  siniestros: Array<{ descripcion: string; reparado: boolean; timestamp: bigint; gravedad: number }>,
+  partes: Parte[],
+): SelloCalidad {
+  if (sello.motivo !== MOTIVO_SINIESTRO_SIN_REPARAR) return sello
+
+  const graves = siniestros.filter((s) => s.gravedad === SINIESTRO_GRAVEDAD_GRAVE)
+  const todosReparados = graves.length > 0 && graves.every((s) => siniestroFueReparado(s, partes))
+  if (!todosReparados) return sello
+
+  return {
+    estado: 1,
+    motivo: 'Siniestro grave reparado en taller (reemplazo de autoparte verificado). Sello on-chain pendiente de actualizacion.',
+  }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatKm } from '../domain/carpass/formatters'
+import { formatKm, normalizeVin } from '../domain/carpass/formatters'
 import { isValidVin } from '../domain/carpass/validators'
 import type { VehicleLookupResult } from '../hooks/useVehicleLookup'
 import { clearVinFromUrl, getVinFromLocation } from '../lib/companionUrl'
@@ -27,6 +27,8 @@ type VehicleIdentifyPanelProps = {
   onIdentified?: (result: VehicleLookupResult) => void
   showMileage?: boolean
   autoOpenScanner?: boolean
+  /** VIN recibido del celular mientras el panel ya está montado (admin companion). */
+  receivedVin?: string
 }
 
 function QrIcon() {
@@ -79,6 +81,7 @@ export function VehicleIdentifyPanel({
   onIdentified,
   showMileage = false,
   autoOpenScanner = isMobileDevice(),
+  receivedVin = '',
 }: VehicleIdentifyPanelProps) {
   const [qrOpen, setQrOpen] = useState(false)
   const [bootstrapped, setBootstrapped] = useState(false)
@@ -111,6 +114,14 @@ export function VehicleIdentifyPanel({
 
     setBootstrapped(true)
   }, [bootstrapped])
+
+  useEffect(() => {
+    if (!receivedVin) return
+    const normalized = normalizeVin(receivedVin)
+    if (!isValidVin(normalized)) return
+    if (lookup.found && lookup.vehicle?.vin === normalized) return
+    void runSearch(normalized)
+  }, [receivedVin, lookup.found, lookup.vehicle?.vin])
 
   async function handleQrDetected(vin: string) {
     await runSearch(vin)

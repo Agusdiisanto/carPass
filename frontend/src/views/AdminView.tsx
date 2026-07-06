@@ -124,6 +124,7 @@ export function AdminView({
                 onReceiveFromPhone={() => setQrReceiveOpen(true)}
                 onViewPassport={onViewPassport}
                 onGoToMisAutos={onGoToMisAutos}
+                receivedVin={receivedVin}
               />
             )}
           </div>

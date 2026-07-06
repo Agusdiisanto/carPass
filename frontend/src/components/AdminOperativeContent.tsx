@@ -14,6 +14,7 @@ type AdminOperativeContentProps = {
   onReceiveFromPhone: () => void
   onViewPassport?: (vin: string) => void
   onGoToMisAutos?: () => void
+  receivedVin?: string
 }
 
 export function AdminOperativeContent({
@@ -24,6 +25,7 @@ export function AdminOperativeContent({
   onReceiveFromPhone,
   onViewPassport = () => {},
   onGoToMisAutos,
+  receivedVin = '',
 }: AdminOperativeContentProps) {
   if (section === 'inicio') {
     return (
@@ -51,11 +53,11 @@ export function AdminOperativeContent({
     return <RegistradorView address={address} wrongNetwork={wrongNetwork} />
   }
   if (section === 'taller') {
-    return <TallerView address={address} wrongNetwork={wrongNetwork} />
+    return <TallerView address={address} wrongNetwork={wrongNetwork} receivedVin={receivedVin} />
   }
   if (section === 'aseguradora') {
-    return <AseguradoraView address={address} wrongNetwork={wrongNetwork} />
+    return <AseguradoraView address={address} wrongNetwork={wrongNetwork} receivedVin={receivedVin} />
   }
 
-  return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} />
+  return <InspectorVTVView address={address} wrongNetwork={wrongNetwork} receivedVin={receivedVin} />
 }
