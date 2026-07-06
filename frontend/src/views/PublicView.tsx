@@ -25,7 +25,6 @@ import { SearchLoadingSkeleton } from '../components/SearchLoadingSkeleton'
 import { BrandLogo } from '../components/BrandLogo'
 import { VehiclePassportFlipHero } from '../components/VehiclePassportFlipHero'
 import { VehiclePartsStatusDiagram } from '../components/VehiclePartsStatusDiagram'
-import { OracleEvidencePanel } from '../components/OracleEvidencePanel'
 import { ConnectedWalletStrip } from '../components/ConnectedWalletStrip'
 import { PhoneCompanionCard } from '../components/PhoneCompanionCard'
 import { VinSearchPanel } from '../components/VinSearchPanel'
@@ -748,7 +747,6 @@ export function PublicView({
           />
         </div>
         <SealQualityCard data={data} />
-        <OracleEvidencePanel tokenId={data.tokenId} />
 
         {isMobile && getRememberedWalletHint() ? (
           <MobileLinkBanner connectedAddress={connected ? walletAddress : undefined} />

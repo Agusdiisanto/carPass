@@ -1,14 +1,12 @@
 import { Contract, isAddress } from 'ethers'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
-import { CARPASS_ORACLE_ABI } from '../contracts/carPassOracleAbi'
 import { VEHICLEPARTS_ABI } from '../contracts/vehiclePartsAbi'
 import { CONTRACT_ADDRESS as CARPASS_ADDRESS, hasContractAddress as hasCarPassAddress } from './useCarPass'
 import {
   CONTRACT_ADDRESS as VEHICLEPARTS_ADDRESS,
   hasContractAddress as hasVehiclePartsAddress,
 } from './useVehicleParts'
-import { hasOracleAddress, resolveOracleAddress } from '../domain/carpass/oracleEvidence'
 import { getPublicProvider } from '../lib/publicProvider'
 
 export type BlockchainHealthItem = {
@@ -33,8 +31,6 @@ async function hasBytecode(address: string) {
 }
 
 export function useBlockchainHealth() {
-  const oracleAddress = useMemo(() => resolveOracleAddress(), [])
-  const oracleConfigured = hasOracleAddress(oracleAddress)
   const [state, setState] = useState<BlockchainHealthState>({
     loading: true,
     items: [],
@@ -80,35 +76,12 @@ export function useBlockchainHealth() {
         href: hasVehiclePartsAddress ? `${EXPLORER}${VEHICLEPARTS_ADDRESS}` : undefined,
       })
 
-      const oracleBytecode = oracleConfigured ? await hasBytecode(oracleAddress).catch(() => false) : false
-      let oracleLinked = false
-      if (oracleBytecode && hasCarPassAddress) {
-        try {
-          const oracle = new Contract(oracleAddress, CARPASS_ORACLE_ABI, getPublicProvider())
-          const linked = String(await oracle.carPass())
-          oracleLinked = linked.toLowerCase() === CARPASS_ADDRESS.toLowerCase()
-        } catch {
-          oracleLinked = false
-        }
-      }
-      items.push({
-        key: 'oracle',
-        label: 'CarPassOracle',
-        status: oracleBytecode && oracleLinked ? 'ok' : 'pending',
-        detail: oracleConfigured
-          ? oracleBytecode
-            ? oracleLinked ? 'Oracle desplegado y enlazado a CarPass' : 'Oracle vivo pero link CarPass no coincide'
-            : 'Address oracle configurada sin bytecode'
-          : 'Listo localmente, pendiente deploy Sepolia',
-        href: oracleConfigured ? `${EXPLORER}${oracleAddress}` : undefined,
-      })
-
-      const abiReady = Boolean(CARPASS_ABI.length && VEHICLEPARTS_ABI.length && CARPASS_ORACLE_ABI.length)
+      const abiReady = Boolean(CARPASS_ABI.length && VEHICLEPARTS_ABI.length)
       items.push({
         key: 'abi',
         label: 'ABI exportada',
         status: abiReady ? 'ok' : 'warn',
-        detail: abiReady ? 'Frontend tiene ABIs de CarPass, VehicleParts y Oracle' : 'Falta exportar alguna ABI',
+        detail: abiReady ? 'Frontend tiene ABIs de CarPass y VehicleParts' : 'Falta exportar alguna ABI',
       })
 
       if (!cancelled) {
@@ -121,7 +94,7 @@ export function useBlockchainHealth() {
     return () => {
       cancelled = true
     }
-  }, [oracleAddress, oracleConfigured])
+  }, [])
 
   return state
 }

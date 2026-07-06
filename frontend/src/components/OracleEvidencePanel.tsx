@@ -38,7 +38,7 @@ function OracleEvidenceRow({ item }: { item: OracleEvidenceItem }) {
             {formatOracleDate(item.reportedAt)}
             {validity}
           </p>
-          {batchTone && (
+          {isBatch && (
             <p className={`oracle-row__meta oracle-row__meta--${batchTone}`}>
               {batchVerificationLabel(item)}
             </p>
