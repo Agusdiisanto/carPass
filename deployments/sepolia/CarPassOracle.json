@@ -1,0 +1,11 @@
+{
+  "contractName": "CarPassOracle",
+  "network": "sepolia",
+  "chainId": "11155111",
+  "address": "0x2F516df9D6A4059e688Bfe4D1F71110b4FFa67a7",
+  "carPassAddress": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
+  "deployer": "0xdF1e04Ed8A3eD3bfA19B33fCc8082Cd6fa4dA988",
+  "transactionHash": "0x7f6f797ba511dedfc82f793d64a2ff1d73de18db9d798f2597414bb64258cb80",
+  "blockNumber": 11218534,
+  "deployedAt": "2026-07-06T23:14:14.051Z"
+}
