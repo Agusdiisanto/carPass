@@ -1,6 +1,6 @@
 {
   "network": "sepolia",
-  "generatedAt": "2026-07-05T17:02:16.055Z",
+  "generatedAt": "2026-07-06T23:15:33.288Z",
   "contracts": {
     "CarPass": {
       "contractName": "CarPass",
@@ -12,35 +12,35 @@
       "deployedAt": "",
       "deployer": "",
       "carPassAddress": "",
-      "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\CarPass.sol\\CarPass.json",
+      "artifactPath": "/Users/ezequielgonzalez/Documents/workspace/carPass/artifacts/contracts/CarPass.sol/CarPass.json",
       "artifactPresent": true,
-      "abiSha256": "9c97c229c30e7c878548fa2f7eba927ae94445a0544c298c8af1041ab19b8688"
+      "abiSha256": "10c168e85367174bc88afa075fc6db852ed1045561339d29b0d26a763ce3cebb"
     },
     "VehicleParts": {
       "contractName": "VehicleParts",
       "network": "sepolia",
       "chainId": "11155111",
-      "address": "0xAfBcC113fB1305efEAf9D8DA26f499dC0b589e15",
-      "transactionHash": "0xa9c5180471e6d12a4d3feba24113c6b29cd2aa6a6e021dbad0e14ccd5d40abc9",
-      "blockNumber": 11175893,
-      "deployedAt": "2026-06-30T23:16:26.339Z",
+      "address": "0x3d13C42B7a7755Df78189553f2a194c9D289B446",
+      "transactionHash": "0x762ec08d33c965e717526ac2d5a492b3b5de4491bbc08b892f857d335dd43f9b",
+      "blockNumber": 11176060,
+      "deployedAt": "2026-06-30T23:49:49.175Z",
       "deployer": "0xdF1e04Ed8A3eD3bfA19B33fCc8082Cd6fa4dA988",
       "carPassAddress": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
-      "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\VehicleParts.sol\\VehicleParts.json",
+      "artifactPath": "/Users/ezequielgonzalez/Documents/workspace/carPass/artifacts/contracts/VehicleParts.sol/VehicleParts.json",
       "artifactPresent": true,
       "abiSha256": "9dac00b46b845c577ecc30e82ccfce9e7e7ed9967a85707fd13a41907a10517c"
     },
     "CarPassOracle": {
       "contractName": "CarPassOracle",
       "network": "sepolia",
-      "chainId": "",
-      "address": "",
-      "transactionHash": "",
-      "blockNumber": null,
-      "deployedAt": "",
-      "deployer": "",
-      "carPassAddress": "",
-      "artifactPath": "C:\\Users\\agusd\\OneDrive\\Escritorio\\Hobbie\\carPass\\artifacts\\contracts\\CarPassOracle.sol\\CarPassOracle.json",
+      "chainId": "11155111",
+      "address": "0x2F516df9D6A4059e688Bfe4D1F71110b4FFa67a7",
+      "transactionHash": "0x7f6f797ba511dedfc82f793d64a2ff1d73de18db9d798f2597414bb64258cb80",
+      "blockNumber": 11218534,
+      "deployedAt": "2026-07-06T23:14:14.051Z",
+      "deployer": "0xdF1e04Ed8A3eD3bfA19B33fCc8082Cd6fa4dA988",
+      "carPassAddress": "0x0b6115F7a462DAcf74B9aE4B68Cb9934Ba1DBe7D",
+      "artifactPath": "/Users/ezequielgonzalez/Documents/workspace/carPass/artifacts/contracts/CarPassOracle.sol/CarPassOracle.json",
       "artifactPresent": true,
       "abiSha256": "0e1b62193658e82c8027e9fe3def37d8384cf82dfd2368f88306e0b80a2ee872"
     }

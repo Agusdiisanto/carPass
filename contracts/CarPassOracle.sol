@@ -8,7 +8,7 @@ import {Hashes} from "@openzeppelin/contracts/utils/cryptography/Hashes.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 interface ICarPassOracleTarget {
-    function vehiculoExiste(uint256 tokenId) external view returns (bool);
+    function ownerOf(uint256 tokenId) external view returns (address);
 }
 
 /**
@@ -196,7 +196,7 @@ contract CarPassOracle is AccessControl, EIP712 {
         bytes32[] calldata leaves,
         bytes32 metadataHash
     ) external onlyRole(ORACLE_ROLE) returns (bytes32 batchId, bytes32 merkleRoot) {
-        if (!carPass.vehiculoExiste(vehicleTokenId)) {
+        if (!_vehiculoExiste(vehicleTokenId)) {
             revert VehiculoOracleNoExiste(vehicleTokenId);
         }
         if (leaves.length == 0) {
@@ -323,7 +323,7 @@ contract CarPassOracle is AccessControl, EIP712 {
         uint64 validUntil,
         address oracle
     ) private returns (bytes32 attestationId) {
-        if (!carPass.vehiculoExiste(vehicleTokenId)) {
+        if (!_vehiculoExiste(vehicleTokenId)) {
             revert VehiculoOracleNoExiste(vehicleTokenId);
         }
         if (externalIdHash == bytes32(0) || payloadHash == bytes32(0)) {
@@ -380,6 +380,16 @@ contract CarPassOracle is AccessControl, EIP712 {
         bytes32 externalIdHash
     ) private pure returns (bytes32) {
         return keccak256(abi.encode(vehicleTokenId, kind, externalIdHash));
+    }
+
+    /// @dev Valida existencia de vehiculo via try/catch sobre ownerOf (ERC-721 estandar),
+    ///      sin depender de funciones custom que requieran redeployar CarPass.
+    function _vehiculoExiste(uint256 tokenId) private view returns (bool) {
+        try carPass.ownerOf(tokenId) returns (address owner) {
+            return owner != address(0);
+        } catch {
+            return false;
+        }
     }
 
     /// @dev Arbol Merkle estandar (par ordenado + keccak256 conmutativo), compatible con
