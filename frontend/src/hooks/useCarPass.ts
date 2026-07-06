@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, ZeroAddress, isAddress } from 'ethers'
+import { BrowserProvider, Contract, ZeroAddress, isAddress, type Provider } from 'ethers'
 import { useState } from 'react'
 import { CARPASS_ABI } from '../contracts/carpassAbi'
 import { CARPASS_DEPLOYMENT } from '../contracts/carpassDeployment'
@@ -193,7 +193,7 @@ export async function getMisVehiculos(address: string): Promise<Array<{ tokenId:
     .filter((vehicle) => vehicle.ownerAddress.toLowerCase() === address.toLowerCase())
     .map((vehicle) => BigInt(vehicle.tokenId))
 
-  let provider = getPublicProvider()
+  let provider: Provider = getPublicProvider()
   let tokenIds = snapshotCandidates
 
   try {
