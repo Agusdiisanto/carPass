@@ -47,7 +47,7 @@ export function InspectorVTVView({
 
   const panels = (
     <div className="operative-flow operative-flow--inspector">
-      <VehicleIdentifyPanel lookup={lookup} accent="inspector" />
+      <VehicleIdentifyPanel lookup={lookup} accent="inspector" receivedVin={receivedVin} />
 
       {lookup.found ? (
         <section className="panel panel--operative">
