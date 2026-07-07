@@ -91,12 +91,12 @@ const SINIESTRO_GRAVEDAD_GRAVE = 2
  */
 export function resolveDisplaySello(
   sello: SelloCalidad,
-  siniestros: Array<{ descripcion: string; reparado: boolean; timestamp: bigint; gravedad: number }>,
+  siniestros: Array<{ descripcion: string; reparado: boolean; timestamp: bigint; gravedad: number | bigint }>,
   partes: Parte[],
 ): SelloCalidad {
   if (sello.motivo !== MOTIVO_SINIESTRO_SIN_REPARAR) return sello
 
-  const graves = siniestros.filter((s) => s.gravedad === SINIESTRO_GRAVEDAD_GRAVE)
+  const graves = siniestros.filter((s) => Number(s.gravedad) === SINIESTRO_GRAVEDAD_GRAVE)
   const todosReparados = graves.length > 0 && graves.every((s) => siniestroFueReparado(s, partes))
   if (!todosReparados) return sello
 
